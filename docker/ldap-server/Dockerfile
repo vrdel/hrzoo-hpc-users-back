@@ -6,7 +6,7 @@ RUN groupadd user -g 1000 && useradd -u 1000 -g 1000 user -m -d /home/user -s /b
 RUN dnf -y update; dnf clean all
 RUN \
     dnf -y install \
-			procps-ng \
+      procps-ng \
       git \
       glibc-all-langpacks \
       iproute \
@@ -19,6 +19,7 @@ RUN \
       python3-devel \
       python3-pip \
       python3-setuptools \
+      rpmdevtools \
       sudo \
       vim \
       wget \
@@ -28,7 +29,7 @@ RUN pip install -U pip; pip3 install -U pip
 RUN passwd -d root
 VOLUME [ "/sys/fs/cgroup" ]
 RUN echo "user ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
-RUN echo "Defaults	env_keep += \"PYTHONPATH\"" >> /etc/sudoers
+RUN echo "Defaults  env_keep += \"PYTHONPATH\"" >> /etc/sudoers
 USER user
 WORKDIR /home/user
 RUN curl -sfL https://git.io/chezmoi | sh
