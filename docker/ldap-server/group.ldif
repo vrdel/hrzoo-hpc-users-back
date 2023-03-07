@@ -1,4 +1,4 @@
-dn: cn=adm,ou=Group,dc=srce,dc=hr
+dn: cn=adm,ou=Group,dc=hpc,dc=srce,dc=hr
 objectClass: posixGroup
 objectClass: top
 cn: adm
@@ -7,7 +7,7 @@ gidNumber: 4
 memberUid: ldap
 memberUid: user
 
-dn: cn=user,ou=Group,dc=srce,dc=hr
+dn: cn=user,ou=Group,dc=hpc,dc=srce,dc=hr
 objectClass: posixGroup
 objectClass: top
 cn: user

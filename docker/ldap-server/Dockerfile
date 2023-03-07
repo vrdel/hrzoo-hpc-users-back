@@ -6,7 +6,6 @@ RUN groupadd user -g 1000 && useradd -u 1000 -g 1000 user -m -d /home/user -s /b
 RUN dnf -y update; dnf clean all
 RUN \
     dnf -y install \
-      telnet \
       bind-utils \
       git \
       glibc-all-langpacks \
@@ -33,6 +32,8 @@ RUN echo "user ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
 RUN echo "Defaults  env_keep += \"PYTHONPATH\"" >> /etc/sudoers
 USER user
 WORKDIR /home/user
+RUN mkdir /home/user/ldap-conf
+COPY *.ldif /home/user/ldap-conf/
 RUN curl -sfL https://git.io/chezmoi | sh
 RUN sudo subscription-manager register --username ${RHUSER} --password ${RHPASS} && sudo subscription-manager attach --auto
 RUN sudo subscription-manager repos --enable codeready-builder-for-rhel-8-$(arch)-rpms
