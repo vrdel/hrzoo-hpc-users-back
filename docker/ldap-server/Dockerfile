@@ -39,5 +39,5 @@ RUN sudo subscription-manager register --username ${RHUSER} --password ${RHPASS}
 RUN sudo subscription-manager repos --enable codeready-builder-for-rhel-8-$(arch)-rpms
 RUN sudo dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
 RUN sudo dnf install -y vim rpmdevtools ripgrep procps-ng make ctags ack passwd mc make vifm git fortune-mod ack the_silver_searcher ncurses-compat-libs
-RUN sudo dnf update -y && sudo dnf install -y authselect openldap-clients openldap-servers oddjob-mkhomedir
+RUN sudo dnf update -y && sudo dnf install -y sssd sssd-ldap authselect openldap-clients openldap-servers oddjob-mkhomedir
 CMD ["/sbin/init"]
