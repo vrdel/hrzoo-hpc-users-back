@@ -1,0 +1,19 @@
+dn: dc=hpc,dc=srce,dc=hr
+objectClass: top
+objectClass: dcObject
+objectClass: organization
+o: hpc srce hr
+dc: hpc
+
+dn: cn=Manager,dc=hpc,dc=srce,dc=hr
+objectClass: organizationalRole
+cn: Manager
+description: Directory Manager
+
+dn: ou=People,dc=hpc,dc=srce,dc=hr
+objectClass: organizationalUnit
+ou: People
+
+dn: ou=Group,dc=hpc,dc=srce,dc=hr
+objectClass: organizationalUnit
+ou: Group

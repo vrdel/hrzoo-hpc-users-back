@@ -1,0 +1,15 @@
+dn: cn=adm,ou=Group,dc=srce,dc=hr
+objectClass: posixGroup
+objectClass: top
+cn: adm
+userPassword: {crypt}x
+gidNumber: 4
+memberUid: ldap
+memberUid: user
+
+dn: cn=user,ou=Group,dc=srce,dc=hr
+objectClass: posixGroup
+objectClass: top
+cn: user
+userPassword: {crypt}x
+gidNumber: 1000
