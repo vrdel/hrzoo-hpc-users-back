@@ -1,0 +1,11 @@
+dn: uid=user2,ou=People,dc=hpc,dc=srce,dc=hr
+uid: user2
+cn: user2
+objectClass: account
+objectClass: posixAccount
+objectClass: top
+userPassword: {SSHA}HWrHLPxCYq+HpeISnglMssj9yFz8bXnu
+loginShell: /bin/zsh
+uidNumber: 1001
+gidNumber: 1000
+homeDirectory: /home/user2

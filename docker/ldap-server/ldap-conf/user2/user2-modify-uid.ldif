@@ -1,0 +1,4 @@
+dn: uid=user2,ou=People,dc=hpc,dc=srce,dc=hr
+changetype: modify
+replace: uidNumber
+uidNumber: 1001
