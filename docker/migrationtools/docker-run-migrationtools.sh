@@ -14,7 +14,7 @@ docker run \
 -v $HOME/.zsh_history:/home/user/.zsh_history \
 -v $HOME:/mnt/ \
 -v $HOME/.ssh:/home/user/.ssh/ \
--h docker-rh8 \
+-h docker-rh7 \
 --net host \
 --name hrzoo-migrationtools \
 -u user \

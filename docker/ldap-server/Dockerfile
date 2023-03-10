@@ -32,8 +32,7 @@ RUN echo "user ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
 RUN echo "Defaults  env_keep += \"PYTHONPATH\"" >> /etc/sudoers
 USER user
 WORKDIR /home/user
-RUN mkdir /home/user/ldap-conf
-COPY *.ldif /home/user/ldap-conf/
+COPY ldap-conf/ /home/user/ldap-conf/
 RUN curl -sfL https://git.io/chezmoi | sh
 RUN sudo subscription-manager register --username ${RHUSER} --password ${RHPASS} && sudo subscription-manager attach --auto
 RUN sudo subscription-manager repos --enable codeready-builder-for-rhel-8-$(arch)-rpms

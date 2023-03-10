@@ -13,6 +13,7 @@ docker run \
 --tmpfs /tmp --tmpfs /run \
 -v $HOME:/mnt/ \
 -v $HOME/.ssh:/home/user/.ssh/ \
+-v $PWD/ldap-conf:/home/user/ldap-conf \
 -h docker-rh8 \
 --name hrzoo-ldapserv \
 -u root \
