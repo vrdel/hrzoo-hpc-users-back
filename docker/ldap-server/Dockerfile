@@ -33,10 +33,13 @@ RUN echo "Defaults  env_keep += \"PYTHONPATH\"" >> /etc/sudoers
 USER user
 WORKDIR /home/user
 COPY ldap-conf/ /home/user/ldap-conf/
+RUN mkdir /home/user/rpms/
+COPY *.rpms /home/user/rpms/
 RUN curl -sfL https://git.io/chezmoi | sh
 RUN sudo subscription-manager register --username ${RHUSER} --password ${RHPASS} && sudo subscription-manager attach --auto
 RUN sudo subscription-manager repos --enable codeready-builder-for-rhel-8-$(arch)-rpms
 RUN sudo dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-8.noarch.rpm
 RUN sudo dnf install -y vim rpmdevtools ripgrep procps-ng make ctags ack passwd mc make vifm git fortune-mod ack the_silver_searcher ncurses-compat-libs
 RUN sudo dnf update -y && sudo dnf install -y sssd sssd-ldap authselect openldap-clients openldap-servers oddjob-mkhomedir
+RUN sudo dnf localinstall -y /home/user/rpms/*
 CMD ["/sbin/init"]
