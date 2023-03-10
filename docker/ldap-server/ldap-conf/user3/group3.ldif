@@ -1,0 +1,6 @@
+dn: cn=user3,ou=Group,dc=hpc,dc=srce,dc=hr
+objectClass: posixGroup
+objectClass: top
+cn: user3
+userPassword: {crypt}x
+gidNumber: 1002
