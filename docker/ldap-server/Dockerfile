@@ -34,7 +34,7 @@ USER user
 WORKDIR /home/user
 COPY ldap-conf/ /home/user/ldap-conf/
 RUN mkdir /home/user/rpms/
-COPY *.rpms /home/user/rpms/
+COPY rpms/* /home/user/rpms/
 RUN curl -sfL https://git.io/chezmoi | sh
 RUN sudo subscription-manager register --username ${RHUSER} --password ${RHPASS} && sudo subscription-manager attach --auto
 RUN sudo subscription-manager repos --enable codeready-builder-for-rhel-8-$(arch)-rpms
