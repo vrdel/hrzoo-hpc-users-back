@@ -18,6 +18,7 @@ language.
 
 %package -n python%{python3_pkgversion}-pyasn1
 Summary:    ASN.1 tools for Python 3
+Provides:   python3.9dist(pyasn1)
 BuildRequires:  python%{python3_pkgversion}-devel
 BuildRequires:  python%{python3_pkgversion}-setuptools
 
@@ -27,6 +28,7 @@ language.
 
 %package -n python%{python3_pkgversion}-pyasn1-modules
 Summary:    Modules for pyasn1
+Provides:   python3.9dist(pyasn1-modules)
 Requires:   python%{python3_pkgversion}-pyasn1 >= 0.4.7, python%{python3_pkgversion}-pyasn1 < 0.6.0
 
 %description -n python%{python3_pkgversion}-pyasn1-modules
