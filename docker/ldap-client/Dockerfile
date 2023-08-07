@@ -54,5 +54,11 @@ COPY certs/ /home/user/certs/
 RUN mkdir /home/user/rpms/
 COPY rpms/* /home/user/rpms/
 RUN curl -sfL https://git.io/chezmoi | sh
+COPY chezmoi-config-apply.sh /home/user
 RUN sudo dnf localinstall -y /home/user/rpms/*
+RUN sudo cp certs/root.cert /etc/pki/ca-trust/source/anchors && sudo update-ca-trust
+RUN sudo cp ldap-conf/etc_openldap/ldap.conf /etc/openldap/
+RUN sudo authselect select --force sssd with-mkhomedir
+RUN sudo cp ldap-conf/pubkey/etc_ldap.conf /etc/ldap.conf && sudo cp ldap-conf/pubkey/etc_sshd_config /etc/ssh/sshd_config
+RUN sudo cp ldap-conf/sudo/etc_nsswitch.conf /etc/nsswitch.conf && sudo cp ldap-conf/sudo/etc_sssd.conf /etc/sssd/ && sudo cp ldap-conf/sudo/etc_sudo-ldap.conf /etc/sudo-ldap.conf
 CMD ["/sbin/init"]

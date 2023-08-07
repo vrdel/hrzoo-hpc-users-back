@@ -56,6 +56,7 @@ COPY certs/ /home/user/certs/
 RUN mkdir /home/user/rpms/
 COPY rpms/* /home/user/rpms/
 RUN curl -sfL https://git.io/chezmoi | sh
+COPY chezmoi-config-apply.sh /home/user
 RUN sudo dnf localinstall -y /home/user/rpms/*
 RUN sudo cp \
     ldap-conf/pubkey/openssh-lpk-openldap.ldif ldap-conf/pubkey/openssh-lpk-openldap.schema /etc/openldap/schema
