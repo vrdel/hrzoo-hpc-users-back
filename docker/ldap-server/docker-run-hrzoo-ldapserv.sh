@@ -10,12 +10,10 @@ docker run \
 -v /etc/localtime:/etc/localtime \
 -v /tmp/.X11-unix:/tmp/.X11-unix \
 -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
---tmpfs /tmp --tmpfs /run \
 -v $HOME:/mnt/ \
 -v $HOME/.ssh:/home/user/.ssh/ \
 -v $PWD/ldap-conf:/home/user/ldap-conf \
--h docker-rh8 \
+-h docker-hrzooldapserv \
 --name hrzoo-ldapserv \
--u root \
 --rm -ti \
 ipanema:5000/hrzoo-ldapserv:$TAG
