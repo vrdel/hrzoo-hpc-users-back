@@ -13,7 +13,9 @@ docker run \
 -v $HOME:/mnt/ \
 -v $HOME/.ssh:/home/user/.ssh/ \
 -v $PWD/ldap-conf:/home/user/ldap-conf \
--h docker-hrzooldapserv \
---name hrzoo-ldapserv-2 \
+--tmpfs /tmp --tmpfs /run \
+-h docker-hrzooldapclient \
+--name hrzoo-ldapclient \
+-u root \
 --rm -ti \
-ipanema:5000/hrzoo-ldapserv-2:$TAG
+ipanema:5000/hrzoo-ldapclient:$TAG
