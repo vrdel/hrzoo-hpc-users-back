@@ -52,12 +52,16 @@ RUN echo -e "user ALL=(ALL) NOPASSWD: ALL\nDefaults env_keep += \"HOME\"" >> /et
 USER user
 WORKDIR /home/user
 COPY ldap-conf/ /home/user/ldap-conf/
+COPY certs/ /home/user/certs/
 RUN mkdir /home/user/rpms/
 COPY rpms/* /home/user/rpms/
 RUN curl -sfL https://git.io/chezmoi | sh
 RUN sudo dnf localinstall -y /home/user/rpms/*
 RUN sudo cp \
-    /home/user/ldap-conf/pubkey/openssh-lpk-openldap.ldif /home/user/ldap-conf/pubkey/openssh-lpk-openldap.schema /etc/openldap/schema
+    ldap-conf/pubkey/openssh-lpk-openldap.ldif ldap-conf/pubkey/openssh-lpk-openldap.schema /etc/openldap/schema
 RUN sudo cp \
-    /home/user/ldap-conf/pubkey/sudo.schema /home/user/ldap-conf/pubkey/sudo.ldif /etc/openldap/schema
+    ldap-conf/sudo/sudo.schema ldap-conf/sudo/sudo.ldif /etc/openldap/schema
+RUN sudo cp certs/ldap.cert certs/ldap.key /etc/openldap/certs/
+RUN sudo cp certs/root.cert /etc/pki/ca-trust/source/anchors && sudo update-ca-trust
+RUN sudo cp ldap-conf/etc_openldap/slapd.ldif ldap-conf/etc_openldap/ldap.conf /etc/openldap/
 CMD ["sudo", "/usr/bin/supervisord", "-nc",  "/etc/supervisord.conf"]
