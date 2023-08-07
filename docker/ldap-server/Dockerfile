@@ -5,17 +5,9 @@ RUN dnf -y install epel-release && dnf -y makecache && dnf -y update
 RUN \
     dnf -y install \
       ack \
+      bind-utils \
       ctags \
       git \
-      mc \
-      ncurses-compat-libs \
-      ripgrep \
-      rpmdevtools \
-      supervisor \
-      telnet \
-      the_silver_searcher \
-      vifm \
-      bind-utils \
       git \
       glibc-all-langpacks \
       glibc-all-langpacks \
@@ -24,6 +16,8 @@ RUN \
       iputils \
       make \
       man \
+      mc \
+      ncurses-compat-libs \
       net-tools \
       nmap \
       passwd \
@@ -31,7 +25,13 @@ RUN \
       python3-devel \
       python3-pip \
       python3-setuptools \
+      ripgrep \
+      rpmdevtools \
       sudo \
+      supervisor \
+      telnet \
+      the_silver_searcher \
+      vifm \
       vim \
       wget \
       yum-utils \
@@ -56,4 +56,8 @@ RUN mkdir /home/user/rpms/
 COPY rpms/* /home/user/rpms/
 RUN curl -sfL https://git.io/chezmoi | sh
 RUN sudo dnf localinstall -y /home/user/rpms/*
+RUN sudo cp \
+    /home/user/ldap-conf/pubkey/openssh-lpk-openldap.ldif /home/user/ldap-conf/pubkey/openssh-lpk-openldap.schema /etc/openldap/schema
+RUN sudo cp \
+    /home/user/ldap-conf/pubkey/sudo.schema /home/user/ldap-conf/pubkey/sudo.ldif /etc/openldap/schema
 CMD ["sudo", "/usr/bin/supervisord", "-nc",  "/etc/supervisord.conf"]
