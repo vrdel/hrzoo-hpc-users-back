@@ -1,16 +1,29 @@
 FROM rockylinux:8
 MAINTAINER dvrcic@srce.hr
 RUN groupadd user -g 1000 && useradd -u 1000 -g 1000 user -m -d /home/user -s /bin/zsh
-RUN dnf -y update; dnf clean all
+RUN dnf -y install epel-release && dnf -y makecache && dnf -y update
 RUN \
     dnf -y install \
+      ack \
+      ctags \
+      git \
+      mc \
+      ncurses-compat-libs \
+      ripgrep \
+      rpmdevtools \
+      supervisor \
+      telnet \
+      the_silver_searcher \
+      vifm \
       bind-utils \
       git \
+      glibc-all-langpacks \
       glibc-all-langpacks \
       hostname \
       iproute \
       iputils \
       make \
+      man \
       net-tools \
       nmap \
       passwd \
@@ -23,20 +36,24 @@ RUN \
       wget \
       yum-utils \
       zsh
+RUN sed -r -i 's/enabled=0/enabled=1/g' /etc/yum.repos.d/Rocky-PowerTools.repo
+RUN dnf makecache -y && sudo dnf -y install \
+  sssd \
+  sssd-ldap \
+  authselect \
+  openldap-clients \
+  openldap-servers \
+  oddjob-mkhomedir
 RUN pip install -U pip; pip3 install -U pip
 RUN passwd -d root
 VOLUME [ "/sys/fs/cgroup" ]
-RUN echo "user ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
-RUN echo "Defaults  env_keep += \"PYTHONPATH\"" >> /etc/sudoers
+RUN sed -r -i 's/(^Defaults.*always_set_home)/# \1/' /etc/sudoers
+RUN echo -e "user ALL=(ALL) NOPASSWD: ALL\nDefaults env_keep += \"HOME\"" >> /etc/sudoers
 USER user
 WORKDIR /home/user
 COPY ldap-conf/ /home/user/ldap-conf/
 RUN mkdir /home/user/rpms/
 COPY rpms/* /home/user/rpms/
 RUN curl -sfL https://git.io/chezmoi | sh
-RUN sudo dnf install -y epel-release
-RUN sudo dnf makecache -y && sudo dnf install -y vim rpmdevtools ripgrep procps-ng make ctags ack passwd mc make vifm git fortune-mod ack the_silver_searcher ncurses-compat-libs
-RUN sudo sed -r -i 's/enabled=0/enabled=1/g' /etc/yum.repos.d/Rocky-PowerTools.repo
-RUN sudo dnf makecache -y && sudo dnf -y install sssd sssd-ldap authselect openldap-clients openldap-servers oddjob-mkhomedir
 RUN sudo dnf localinstall -y /home/user/rpms/*
-CMD ["/sbin/init"]
+CMD ["sudo", "/usr/bin/supervisord", "-nc",  "/etc/supervisord.conf"]
