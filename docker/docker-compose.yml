@@ -1,0 +1,63 @@
+services:
+
+  hrzoo-ldap-server:
+    env_file:
+      - compose.env
+    image: $IMAGE_SERVER
+    command: sudo /usr/bin/supervisord -nc /etc/supervisord.conf
+    container_name: hrzoo-ldapserv
+    hostname: docker-hrzooldapserv
+    tty: true
+    user: user
+    stdin_open: true
+    ports:
+      - "389:389"
+      - "636:636"
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup
+      - $HOME:/mnt
+      - $HOME/.ssh:/home/user/.ssh/
+      - /dev/log:/dev/log
+      - /etc/localtime:/etc/localtime:ro
+      - ./ldap-server/ldap-conf/:/home/user/ldap-conf
+    networks:
+      hrzoo-ldap-app_net:
+        ipv4_address: 172.20.1.13
+
+  hrzoo-ldap-client:
+    env_file:
+      - compose.env
+    image: $IMAGE_CLIENT
+    command: /sbin/init
+    container_name: hrzoo-ldapclient
+    hostname: docker-hrzooldapclient
+    tty: true
+    stdin_open: true
+    user: root
+    tmpfs:
+      - /run
+      - /tmp
+    depends_on:
+      - hrzoo-ldap-server
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup
+      - $HOME:/mnt
+      - $HOME/.ssh:/home/user/.ssh/
+      - /dev/log:/dev/log
+      - /etc/localtime:/etc/localtime:ro
+      - ./ldap-client/ldap-conf/:/home/user/ldap-conf
+    networks:
+      hrzoo-ldap-app_net:
+        ipv4_address: 172.20.1.12
+
+networks:
+
+  hrzoo-ldap-app_net:
+    driver: bridge
+    enable_ipv6: false
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.20.1.0/24
+          gateway: 172.20.1.1
+
