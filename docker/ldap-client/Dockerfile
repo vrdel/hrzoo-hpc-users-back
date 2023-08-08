@@ -63,6 +63,6 @@ RUN sudo authselect select --force sssd with-mkhomedir
 RUN sudo cp ldap-conf/pubkey/etc_ldap.conf /etc/ldap.conf \
     && sudo cp ldap-conf/pubkey/etc_sshd_config /etc/ssh/sshd_config
 RUN sudo cp ldap-conf/sudo/etc_nsswitch.conf /etc/nsswitch.conf \
-    && sudo cp ldap-conf/sudo/etc_sssd.conf /etc/sssd/ \
+    && sudo cp ldap-conf/sudo/etc_sssd.conf /etc/sssd/sssd.conf \
     && sudo cp ldap-conf/sudo/etc_sudo-ldap.conf /etc/sudo-ldap.conf
 CMD ["/sbin/init"]
