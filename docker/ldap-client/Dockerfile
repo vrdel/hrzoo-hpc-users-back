@@ -37,11 +37,11 @@ RUN \
       zsh
 RUN sed -r -i 's/enabled=0/enabled=1/g' /etc/yum.repos.d/Rocky-PowerTools.repo
 RUN dnf makecache -y && sudo dnf -y install \
-  sssd \
-  sssd-ldap \
-  authselect \
-  openldap-clients \
-  oddjob-mkhomedir
+    sssd \
+    sssd-ldap \
+    authselect \
+    openldap-clients \
+    oddjob-mkhomedir
 RUN pip install -U pip; pip3 install -U pip
 RUN passwd -d root
 VOLUME [ "/sys/fs/cgroup" ]
@@ -56,9 +56,13 @@ COPY rpms/* /home/user/rpms/
 RUN curl -sfL https://git.io/chezmoi | sh
 COPY chezmoi-config-apply.sh /home/user
 RUN sudo dnf localinstall -y /home/user/rpms/*
-RUN sudo cp certs/root.cert /etc/pki/ca-trust/source/anchors && sudo update-ca-trust
+RUN sudo cp certs/root.cert /etc/pki/ca-trust/source/anchors \
+	  && sudo update-ca-trust
 RUN sudo cp ldap-conf/etc_openldap/ldap.conf /etc/openldap/
 RUN sudo authselect select --force sssd with-mkhomedir
-RUN sudo cp ldap-conf/pubkey/etc_ldap.conf /etc/ldap.conf && sudo cp ldap-conf/pubkey/etc_sshd_config /etc/ssh/sshd_config
-RUN sudo cp ldap-conf/sudo/etc_nsswitch.conf /etc/nsswitch.conf && sudo cp ldap-conf/sudo/etc_sssd.conf /etc/sssd/ && sudo cp ldap-conf/sudo/etc_sudo-ldap.conf /etc/sudo-ldap.conf
+RUN sudo cp ldap-conf/pubkey/etc_ldap.conf /etc/ldap.conf \
+    && sudo cp ldap-conf/pubkey/etc_sshd_config /etc/ssh/sshd_config
+RUN sudo cp ldap-conf/sudo/etc_nsswitch.conf /etc/nsswitch.conf \
+    && sudo cp ldap-conf/sudo/etc_sssd.conf /etc/sssd/ \
+    && sudo cp ldap-conf/sudo/etc_sudo-ldap.conf /etc/sudo-ldap.conf
 CMD ["/sbin/init"]
