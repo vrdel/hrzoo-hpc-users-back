@@ -61,13 +61,45 @@ sudo ldapadd -h localhost -x -w foobar -D "cn=Manager,dc=hpc,dc=srce,dc=hr" -f /
 sudo ldapadd -h localhost -x -w foobar -D "cn=Manager,dc=hpc,dc=srce,dc=hr" -f /home/user/ldap-conf/base/passwd.ldif
 ```
 
+#### sudoers
+
+```
+sudo -s
+export SUDOERS_BASE="ou=SUDOers,dc=hpc,dc=srce,dc=hr"
+cvtsudoers -f ldif -o /tmp/sudoers.ldif /etc/sudoers
+```
+
+Edit `/tmp/sudoers.ldif` and prepend:
+```
+dn: ou=SUDOers,dc=hpc,dc=srce,dc=hr
+objectClass: top
+objectClass: organizationalUnit
+ou: SUDOers
+description: SUDOers container
+
+dn: cn=defaults,ou=SUDOers,dc=hpc,dc=srce,dc=hr
+...
+```
+
+```
+ldapadd -x -W -D "cn=Manager,dc=hpc,dc=srce,dc=hr" -f /tmp/sudoers.ldif
+```
+
+#### test query
+
 Initiate test query and watch logs:
 ```
 sudo ldapsearch -x -h localhost
 tail -f /home/user/ldap-logs
 ```
 
+#### save changes
+
 Commit changes:
 ```
 docker commit hrzoo-ldapserv ipanema:5000/hrzoo-ldapserv
 ```
+
+### Client configuration
+
+TODO
