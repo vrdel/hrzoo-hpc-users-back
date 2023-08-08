@@ -62,7 +62,8 @@ RUN sudo cp \
     ldap-conf/pubkey/openssh-lpk-openldap.ldif ldap-conf/pubkey/openssh-lpk-openldap.schema /etc/openldap/schema
 RUN sudo cp \
     ldap-conf/sudo/sudo.schema ldap-conf/sudo/sudo.ldif /etc/openldap/schema
-RUN sudo cp certs/ldap.cert certs/ldap.key /etc/openldap/certs/
+RUN sudo cp certs/ldap.cert certs/ldap.key /etc/openldap/certs/ && sudo chown -R ldap:ldap /etc/openldap/certs
 RUN sudo cp certs/root.cert /etc/pki/ca-trust/source/anchors && sudo update-ca-trust
 RUN sudo cp ldap-conf/etc_openldap/slapd.ldif ldap-conf/etc_openldap/ldap.conf /etc/openldap/
+COPY etc_supervisord.d/hrzoo-ldap.ini /etc/supervisord.d/
 CMD ["sudo", "/usr/bin/supervisord", "-nc",  "/etc/supervisord.conf"]
