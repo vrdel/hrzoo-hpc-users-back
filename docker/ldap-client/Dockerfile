@@ -7,8 +7,7 @@ RUN \
       ack \
       bind-utils \
       ctags \
-      git \
-      git \
+      gcc \
       glibc-all-langpacks \
       hostname \
       iproute \
@@ -19,12 +18,13 @@ RUN \
       ncurses-compat-libs \
       net-tools \
       nmap \
-			openssh-server \
+      openssh-server \
       passwd \
       procps-ng \
       python3-devel \
       python3-pip \
       python3-setuptools \
+      python39-devel \
       ripgrep \
       rpmdevtools \
       sudo \
@@ -41,6 +41,7 @@ RUN dnf makecache -y && sudo dnf -y install \
     sssd-ldap \
     authselect \
     openldap-clients \
+    openldap-devel
     oddjob-mkhomedir
 RUN pip install -U pip; pip3 install -U pip
 RUN passwd -d root
@@ -58,7 +59,7 @@ RUN curl -sfL https://git.io/chezmoi | sh
 COPY chezmoi-config-apply.sh /home/user
 RUN sudo dnf localinstall -y /home/user/rpms/*
 RUN sudo cp certs/root.cert /etc/pki/ca-trust/source/anchors \
-	  && sudo update-ca-trust
+    && sudo update-ca-trust
 RUN sudo cp ldap-conf/etc_openldap/ldap.conf /etc/openldap/
 RUN sudo authselect select --force sssd with-mkhomedir
 RUN sudo cp ldap-conf/pubkey/etc_ldap.conf /etc/ldap.conf \
