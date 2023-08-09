@@ -49,6 +49,7 @@ RUN sed -r -i 's/(^Defaults.*always_set_home)/# \1/' /etc/sudoers
 RUN echo -e "user ALL=(ALL) NOPASSWD: ALL\nDefaults env_keep += \"HOME\"" >> /etc/sudoers
 USER user
 WORKDIR /home/user
+RUN sudo python3.9 -m venv /opt/hrzoo-ldapsync
 COPY ldap-conf/ /home/user/ldap-conf/
 COPY certs/ /home/user/certs/
 RUN mkdir /home/user/rpms/
