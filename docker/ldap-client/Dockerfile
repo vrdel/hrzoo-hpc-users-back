@@ -7,6 +7,7 @@ RUN \
       ack \
       bind-utils \
       ctags \
+      git \
       gcc \
       glibc-all-langpacks \
       hostname \
@@ -41,7 +42,7 @@ RUN dnf makecache -y && sudo dnf -y install \
     sssd-ldap \
     authselect \
     openldap-clients \
-    openldap-devel
+    openldap-devel \
     oddjob-mkhomedir
 RUN pip install -U pip; pip3 install -U pip
 RUN passwd -d root
