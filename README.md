@@ -19,6 +19,13 @@ docker exec -t -u user -i hrzoo-ldapserv /bin/zsh
 ./chezmoi-config-apply.sh
 ```
 
+#### Predefined settings
+
+These settings are implied in the configuration files of server and client:
+* hostnames: `docker-hrzooldapserv`, `docker-hrzooldapclient`
+* base LDAP DN: `dc=hpc,dc=srce,dc=hr`
+* LDAP password: `foobar`
+
 ### CA and LDAP certificate
 
 * CA certificate
@@ -35,6 +42,11 @@ openssl x509 -req -in ldap.csr -CA root.cert -CAkey root.key -CAcreateserial -ou
 ```
 
 ### OpenLDAP configuration
+
+Container context:
+```
+docker exec -t -u user -i hrzoo-ldapserv /bin/zsh
+```
 
 Initial configuration:
 ```
@@ -54,6 +66,8 @@ Restart service:
 sudo supervisorctl restart openldap
 ```
 
+#### Base ldifs
+
 Preset password=`foobar`
 ```
 sudo ldapadd -h localhost -x -w foobar -D "cn=Manager,dc=hpc,dc=srce,dc=hr" -f /home/user/ldap-conf/base/base.ldif
@@ -61,7 +75,7 @@ sudo ldapadd -h localhost -x -w foobar -D "cn=Manager,dc=hpc,dc=srce,dc=hr" -f /
 sudo ldapadd -h localhost -x -w foobar -D "cn=Manager,dc=hpc,dc=srce,dc=hr" -f /home/user/ldap-conf/base/passwd.ldif
 ```
 
-#### sudoers
+#### sudoers ldif
 
 ```
 sudo -s
@@ -85,7 +99,7 @@ dn: cn=defaults,ou=SUDOers,dc=hpc,dc=srce,dc=hr
 ldapadd -x -W -D "cn=Manager,dc=hpc,dc=srce,dc=hr" -f /tmp/sudoers.ldif
 ```
 
-#### test query
+#### Test query
 
 Initiate test query and watch logs:
 ```
@@ -93,13 +107,9 @@ sudo ldapsearch -x -h localhost
 tail -f /home/user/ldap-logs
 ```
 
-#### save changes
+#### Save changes
 
 Commit changes:
 ```
 docker commit hrzoo-ldapserv ipanema:5000/hrzoo-ldapserv
 ```
-
-### Client configuration
-
-TODO
