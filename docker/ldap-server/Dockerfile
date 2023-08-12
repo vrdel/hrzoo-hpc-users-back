@@ -43,6 +43,7 @@ RUN dnf makecache -y && sudo dnf -y install \
   authselect \
   openldap-clients \
   openldap-servers \
+  openssh-ldap \
   oddjob-mkhomedir
 RUN pip install -U pip; pip3 install -U pip
 RUN passwd -d root
@@ -58,10 +59,14 @@ COPY rpms/* /home/user/rpms/
 RUN curl -sfL https://git.io/chezmoi | sh
 COPY chezmoi-config-apply.sh /home/user
 RUN sudo dnf localinstall -y /home/user/rpms/*
-RUN sudo cp \
-    ldap-conf/pubkey/openssh-lpk-openldap.ldif ldap-conf/pubkey/openssh-lpk-openldap.schema /etc/openldap/schema
-RUN sudo cp \
-    ldap-conf/sudo/sudo.schema ldap-conf/sudo/sudo.ldif /etc/openldap/schema
+RUN sudo ln -s \
+    /usr/share/doc/openssh-ldap/openssh-lpk-openldap.schema /etc/openldap/schema && \
+    sudo ln -s \
+    /usr/share/doc/openssh-ldap/openssh-lpk-openldap.ldif /etc/openldap/schema
+RUN sudo ln -s \
+    /usr/share/doc/sudo/schema.OpenLDAP /etc/openldap/schema/sudo.schema && \
+    sudo cp \
+    ldap-conf/sudo/sudo.ldif /etc/openldap/schema
 RUN sudo cp certs/ldap.cert certs/ldap.key /etc/openldap/certs/ && sudo chown -R ldap:ldap /etc/openldap/certs
 RUN sudo cp certs/root.cert /etc/pki/ca-trust/source/anchors && sudo update-ca-trust
 RUN sudo cp ldap-conf/etc_openldap/slapd.ldif ldap-conf/etc_openldap/ldap.conf /etc/openldap/
