@@ -53,6 +53,7 @@ services:
       - ../accounts-hpc/modules/:$VENV_HPC/lib/python3.9/site-packages/accounts_hpc
       - ../docker/ldap-client/syncsite.sh:/home/user/syncsite.sh
       - ../docker/ldap-client/pypath.sh:/home/user/pypath.sh
+      - ../docker/ldap-client/pysitepkg:/home/user/pysitepkg
     networks:
       hrzoo-ldap-app_net:
         ipv4_address: 172.20.1.12
