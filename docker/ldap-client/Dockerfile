@@ -27,6 +27,7 @@ RUN \
       python3-setuptools \
       python39-devel \
       ripgrep \
+      rsync \
       rpmdevtools \
       sudo \
       telnet \
