@@ -47,13 +47,16 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - ./ldap-client/ldap-conf/:/home/user/ldap-conf
       - ../accounts-hpc/bin/empty:$VENV_HPC/bin/empty
-      - ../accounts-hpc/etc/:$VENV_HPC/etc/accounts-hpc
+      - ../accounts-hpc/bin/ldap-sync.py:$VENV_HPC/bin/ldap-sync.py
+      - ../accounts-hpc/bin/web-sync.py:$VENV_HPC/bin/web-sync.py
+      - ../accounts-hpc/config/:$VENV_HPC/etc/accounts-hpc
       - ../accounts-hpc/cron/:$VENV_HPC/cron
       - ../accounts-hpc/var/:$VENV_HPC/var
       - ../accounts-hpc/modules/:$VENV_HPC/lib/python3.9/site-packages/accounts_hpc
       - ../docker/ldap-client/syncsite.sh:/home/user/syncsite.sh
       - ../docker/ldap-client/pypath.sh:/home/user/pypath.sh
       - ../docker/ldap-client/pysitepkg:/home/user/pysitepkg
+      - ../accounts-hpc/:/home/user/accounts-hpc-source/
     networks:
       hrzoo-ldap-app_net:
         ipv4_address: 172.20.1.12

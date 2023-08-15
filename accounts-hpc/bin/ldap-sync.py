@@ -1,9 +1,12 @@
+#!/usr/bin/env python
+
 import bonsai
-from accounts_hpc import config
+from accounts_hpc.config import parse_config
 
 
 def main():
-    pass
+    confopts = parse_config()
+    import ipdb; ipdb.set_trace()
 
 
 if __name__ == '__main__':
