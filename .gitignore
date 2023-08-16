@@ -3,8 +3,8 @@ build/
 dist/
 *__pycache__*
 .ropeproject
+*.log
 
 accounts-hpc.conf
 
 docker/ldap-client/pysitepkg*
-
