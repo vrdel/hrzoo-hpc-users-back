@@ -4,5 +4,7 @@ dist/
 *__pycache__*
 .ropeproject
 
+accounts-hpc.conf
+
 docker/ldap-client/pysitepkg*
 
