@@ -15,6 +15,8 @@ def parse_config(logger=None):
             for section in config.sections():
                 if section.startswith('ldap'):
                     confopts['ldap'] = ({'server': config.get(section, 'server')})
+                    confopts['ldap'].update({'user': config.get(section,'user')})
+                    confopts['ldap'].update({'password': config.get(section,'password')})
 
             return confopts
 

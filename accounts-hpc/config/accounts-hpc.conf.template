@@ -1,0 +1,4 @@
+[ldap]
+server = ldap://docker-hrzooldapserv
+user = cn=Manager,dc=example,dc=domain,dc=hr
+password = password
