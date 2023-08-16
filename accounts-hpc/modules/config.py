@@ -17,6 +17,7 @@ def parse_config(logger=None):
                     confopts['ldap'] = ({'server': config.get(section, 'server')})
                     confopts['ldap'].update({'user': config.get(section,'user')})
                     confopts['ldap'].update({'password': config.get(section,'password')})
+                    confopts['ldap'].update({'basedn': config.get(section,'basedn')})
 
             return confopts
 

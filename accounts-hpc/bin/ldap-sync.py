@@ -13,7 +13,9 @@ def main():
             password=confopts['ldap']['password']
         )
     conn = client.connect()
-    conn.whoami()
+    print(conn.whoami())
+
+    print(conn.search(f"ou=People,{confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.ONE))
 
 
 
