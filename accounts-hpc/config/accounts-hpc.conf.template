@@ -1,5 +1,11 @@
+[DEFAULT]
+VENV = /opt/hrzoo-accounts-hpc
+
 [ldap]
 server = ldap://docker-hrzooldapserv
 user = cn=Manager,dc=example,dc=domain,dc=hr
 password = password
 basedn = dc=example,dc=example,dc=hr
+
+[db]
+path = %(VENV)s/var/lib/cache.db
