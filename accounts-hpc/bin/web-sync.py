@@ -15,7 +15,9 @@ def main():
 
     confopts = parse_config()
 
-    engine = create_engine("sqlite://{}".format(confopts['db']['path']), echo=True)
+    import ipdb; ipdb.set_trace()
+
+    engine = create_engine("sqlite:///{}".format(confopts['db']['path']), echo=True)
     Base.metadata.create_all(engine)
 
 
