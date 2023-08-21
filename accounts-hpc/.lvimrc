@@ -1,4 +1,4 @@
-let b:ale_linters = ['mypy', 'pyflakes', 'flake8']
-let g:ale_python_pyflakes_executable = './lint/ale-exe-pyflakes.sh'
-let g:ale_python_mypy_executable = './lint/ale-exe-mypy.sh'
-let g:ale_python_flake8_executable = './lint/ale-exe-flake8.sh'
+let $ALELINTPATH = $HOME . "/my_work/srce/git.hrzoo-hpc-users-back/hrzoo-hpc-users-back/accounts-hpc/lint"
+let b:ale_linters = ['mypy', 'flake8']
+let g:ale_python_mypy_executable = $ALELINTPATH .  '/ale-exe-mypy.sh'
+let g:ale_python_flake8_executable =  $ALELINTPATH . '/ale-exe-flake8.sh'
