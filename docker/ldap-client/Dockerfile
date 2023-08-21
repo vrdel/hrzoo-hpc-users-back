@@ -30,6 +30,7 @@ RUN \
       rsync \
       rpmdevtools \
       sudo \
+      sqlite \
       telnet \
       the_silver_searcher \
       vifm \
