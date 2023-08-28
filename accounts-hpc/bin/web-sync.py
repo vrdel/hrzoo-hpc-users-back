@@ -2,9 +2,9 @@
 
 import sys
 
-from accounts_hpc.config import parse_config
-from accounts_hpc.log import Logger
-from accounts_hpc.db import Base
+from accounts_hpc.config import parse_config  # type: ignore
+from accounts_hpc.log import Logger  # type: ignore
+from accounts_hpc.db import Base  # type: ignore
 
 from sqlalchemy import create_engine
 
@@ -14,6 +14,7 @@ def main():
     logger = lobj.get()
 
     confopts = parse_config()
+    import ipdb; ipdb.set_trace()
 
     engine = create_engine("sqlite:///{}".format(confopts['db']['path']), echo=True)
 

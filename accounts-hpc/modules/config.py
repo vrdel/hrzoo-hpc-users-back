@@ -15,12 +15,18 @@ def parse_config(logger=None):
             for section in config.sections():
                 if section.startswith('ldap'):
                     confopts['ldap'] = ({'server': config.get(section, 'server')})
-                    confopts['ldap'].update({'user': config.get(section,'user')})
-                    confopts['ldap'].update({'password': config.get(section,'password')})
-                    confopts['ldap'].update({'basedn': config.get(section,'basedn')})
+                    confopts['ldap'].update({'user': config.get(section, 'user')})
+                    confopts['ldap'].update({'password': config.get(section, 'password')})
+                    confopts['ldap'].update({'basedn': config.get(section, 'basedn')})
 
                 if section.startswith('db'):
                     confopts['db'] = ({'path': config.get(section, 'path')})
+
+                if section.startswith('hzsiapi'):
+                    confopts['hzsiapi'] = ({'users': config.get(section, 'users')})
+                    confopts['hzsiapi'].update({'projects': config.get(section, 'projects')})
+                    confopts['hzsiapi'].update({'sshkeys': config.get(section, 'sshkeys')})
+                    confopts['hzsiapi'].update({'userproject': config.get(section, 'userproject')})
 
             if 'DEFAULT' in config:
                 confopts['DEFAULT'] = ({'VENV': config.get('DEFAULT', 'VENV')})
