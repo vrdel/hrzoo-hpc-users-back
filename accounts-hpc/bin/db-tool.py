@@ -3,11 +3,13 @@
 import sys
 import argparse
 
-from accounts_hpc.config import parse_config
-from accounts_hpc.log import Logger
-from accounts_hpc.db import Base
+
+from accounts_hpc.config import parse_config  # type: ignore
+from accounts_hpc.log import Logger  # type: ignore
+from accounts_hpc.db import Base  # type: ignore
 
 from sqlalchemy import create_engine
+
 
 def main():
     parser = argparse.ArgumentParser(description='DB tool that help with initial create and evolution of database')
