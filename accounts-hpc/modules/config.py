@@ -28,6 +28,15 @@ def parse_config(logger=None):
                     confopts['hzsiapi'].update({'sshkeys': config.get(section, 'sshkeys')})
                     confopts['hzsiapi'].update({'userproject': config.get(section, 'userproject')})
 
+                if section.startswith('connection'):
+                    confopts['connection'] = ({'timeout': config.get(section, 'timeout')})
+                    confopts['connection'].update({'retry': config.get(section, 'retry')})
+                    confopts['connection'].update({'sleepretry': config.get(section, 'sleepretry')})
+
+                if section.startswith('authentication'):
+                    confopts['authentication'] = ({'verifyservercert': config.get(section, 'verifyservercert')})
+                    confopts['authentication'].update({'cafile': config.get(section, 'cafile')})
+
             if 'DEFAULT' in config:
                 confopts['DEFAULT'] = ({'VENV': config.get('DEFAULT', 'VENV')})
 

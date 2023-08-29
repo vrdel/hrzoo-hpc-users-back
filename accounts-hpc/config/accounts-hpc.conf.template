@@ -1,6 +1,15 @@
 [DEFAULT]
 VENV = /opt/hrzoo-accounts-hpc
 
+[connection]
+Timeout = 180
+Retry = 3
+SleepRetry = 60
+
+[authentication]
+verifyservercert = False
+cafile = /etc/pki/tls/certs/ca-bundle.crt
+
 [ldap]
 server = ldap://docker-hrzooldapserv
 user = cn=Manager,dc=example,dc=domain,dc=hr
