@@ -15,7 +15,7 @@ from sqlalchemy import create_engine
 
 
 async def fetch_data(logger, confopts, feed, token):
-    session = SessionWithRetry(logger, confopts, handle_session_close=True)
+    session = SessionWithRetry(logger, confopts, token, handle_session_close=True)
 
     try:
         res = await session.http_get(feed)

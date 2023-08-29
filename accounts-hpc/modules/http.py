@@ -53,7 +53,7 @@ class SessionWithRetry(object):
         if self.token:
             headers = headers or {}
             headers.update({
-                'Authorization': 'Api-Key {self.token}',
+                'Authorization': f'Api-Key {self.token}',
                 'Accept': 'application/json'
             })
         try:
