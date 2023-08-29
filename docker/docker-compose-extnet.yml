@@ -21,8 +21,7 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - ./ldap-server/ldap-conf/:/home/user/ldap-conf
     networks:
-      hrzoo-ldap-app_net:
-        ipv4_address: 172.20.1.13
+      - docker_hzsi-front-app_net
 
   hrzoo-ldap-client:
     env_file:
@@ -58,16 +57,8 @@ services:
       - ../docker/ldap-client/pysitepkg:/home/user/pysitepkg
       - ../accounts-hpc/:/home/user/accounts-hpc-source/
     networks:
-      hrzoo-ldap-app_net:
-        ipv4_address: 172.20.1.12
+      - docker_hzsi-front-app_net
 
 networks:
-  hrzoo-ldap-app_net:
-    driver: bridge
-    enable_ipv6: false
-    ipam:
-      driver: default
-      config:
-        - subnet: 172.20.1.0/24
-          gateway: 172.20.1.1
-
+  docker_hzsi-front-app_net:
+    external: true
