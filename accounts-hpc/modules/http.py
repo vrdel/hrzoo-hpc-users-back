@@ -4,7 +4,7 @@ import aiohttp
 import random
 
 from aiohttp import client_exceptions, http_exceptions
-from modules.exceptions import SyncHttpError
+from accounts_hpc.exceptions import SyncHttpError
 
 
 def module_class_name(obj):
@@ -30,14 +30,15 @@ def build_connection_retry_settings(confopts):
 
 
 class SessionWithRetry(object):
-    def __init__(self, logger, confopts, token=None, custauth=None,
-                 verbose_ret=False, handle_session_close=False):
+    def __init__(self, logger, confopts, token=None, verbose_ret=False,
+            handle_session_close=False):
         self.ssl_context = build_ssl_settings(confopts)
         n_try, client_timeout = build_connection_retry_settings(confopts)
         client_timeout = aiohttp.ClientTimeout(total=client_timeout,
                                                connect=client_timeout, sock_connect=client_timeout,
                                                sock_read=client_timeout)
         self.session = aiohttp.ClientSession(timeout=client_timeout)
+        self.confopts = confopts
         self.n_try = n_try
         self.logger = logger
         self.token = token
@@ -56,14 +57,14 @@ class SessionWithRetry(object):
                 'Accept': 'application/json'
             })
         try:
-            sleepsecs = float(self.globopts['ConnectionSleepRetry'.lower()])
+            sleepsecs = float(self.confopts['connection']['sleepretry'])
 
             while n <= self.n_try:
                 if n > 1:
                     self.logger.info(f"{module_class_name(self)} : HTTP Connection try - {n} after sleep {sleepsecs} seconds")
                 try:
                     async with method_obj(url, data=data, headers=headers,
-                                          ssl=self.ssl_context, auth=self.custauth) as response:
+                                          ssl=self.ssl_context) as response:
                         if response.status in self.erroneous_statuses:
                             self.logger.error('{}.http_{}({}) - Erroneous HTTP status: {} {}'.
                                               format(module_class_name(self),

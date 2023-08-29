@@ -9,6 +9,7 @@ SleepRetry = 60
 [authentication]
 verifyservercert = False
 cafile = /etc/pki/tls/certs/ca-bundle.crt
+token = 3nmQkL2u.TCFKrZy0kQ2sSDSShTynnynQCl8LOScA
 
 [ldap]
 server = ldap://docker-hrzooldapserv

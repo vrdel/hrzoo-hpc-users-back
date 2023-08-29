@@ -36,6 +36,7 @@ def parse_config(logger=None):
                 if section.startswith('authentication'):
                     confopts['authentication'] = ({'verifyservercert': config.get(section, 'verifyservercert')})
                     confopts['authentication'].update({'cafile': config.get(section, 'cafile')})
+                    confopts['authentication'].update({'token': config.get(section, 'token')})
 
             if 'DEFAULT' in config:
                 confopts['DEFAULT'] = ({'VENV': config.get('DEFAULT', 'VENV')})
