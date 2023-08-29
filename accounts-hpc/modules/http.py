@@ -3,7 +3,7 @@ import asyncio
 import aiohttp
 import random
 
-from aiohttp import client_exceptions, http_exceptions, ClientSession
+from aiohttp import client_exceptions, http_exceptions
 from modules.exceptions import SyncHttpError
 
 
@@ -13,12 +13,9 @@ def module_class_name(obj):
     return name.replace("'", '')
 
 
-def build_ssl_settings(globopts):
+def build_ssl_settings(confopts):
     try:
-        sslcontext = ssl.create_default_context(capath=globopts['AuthenticationCAPath'.lower()],
-                                                cafile=globopts['AuthenticationCAFile'.lower()])
-        sslcontext.load_cert_chain(globopts['AuthenticationHostCert'.lower()],
-                                   globopts['AuthenticationHostKey'.lower()])
+        sslcontext = ssl.create_default_context(cafile=confopts['authentication']['cafile'])
 
         return sslcontext
 
@@ -26,27 +23,26 @@ def build_ssl_settings(globopts):
         return None
 
 
-def build_connection_retry_settings(globopts):
-    retry = int(globopts['ConnectionRetry'.lower()])
-    timeout = int(globopts['ConnectionTimeout'.lower()])
+def build_connection_retry_settings(confopts):
+    retry = int(confopts['connection']['retry'])
+    timeout = int(confopts['connection']['timeout'])
     return (retry, timeout)
 
 
 class SessionWithRetry(object):
-    def __init__(self, logger, msgprefix, globopts, token=None, custauth=None,
+    def __init__(self, logger, confopts, token=None, custauth=None,
                  verbose_ret=False, handle_session_close=False):
-        self.ssl_context = build_ssl_settings(globopts)
-        n_try, client_timeout = build_connection_retry_settings(globopts)
+        self.ssl_context = build_ssl_settings(confopts)
+        n_try, client_timeout = build_connection_retry_settings(confopts)
         client_timeout = aiohttp.ClientTimeout(total=client_timeout,
                                                connect=client_timeout, sock_connect=client_timeout,
                                                sock_read=client_timeout)
-        self.session = ClientSession(timeout=client_timeout)
+        self.session = aiohttp.ClientSession(timeout=client_timeout)
         self.n_try = n_try
         self.logger = logger
         self.token = token
         self.verbose_ret = verbose_ret
         self.handle_session_close = handle_session_close
-        self.globopts = globopts
         self.erroneous_statuses = [404]
 
     async def _http_method(self, method, url, data=None, headers=None):
