@@ -30,8 +30,7 @@ def build_connection_retry_settings(confopts):
 
 
 class SessionWithRetry(object):
-    def __init__(self, logger, confopts, token=None, verbose_ret=False,
-            handle_session_close=False):
+    def __init__(self, logger, confopts, handle_session_close=False):
         self.ssl_context = build_ssl_settings(confopts)
         n_try, client_timeout = build_connection_retry_settings(confopts)
         client_timeout = aiohttp.ClientTimeout(total=client_timeout,
@@ -41,8 +40,7 @@ class SessionWithRetry(object):
         self.confopts = confopts
         self.n_try = n_try
         self.logger = logger
-        self.token = token
-        self.verbose_ret = verbose_ret
+        self.token = confopts['authentication']['token']
         self.handle_session_close = handle_session_close
         self.erroneous_statuses = [404]
 
@@ -74,8 +72,6 @@ class SessionWithRetry(object):
                             break
                         content = await response.text()
                         if content:
-                            if self.verbose_ret:
-                                return (content, response.headers, response.status)
                             return content
 
                         self.logger.warn("{} : HTTP Empty response".format(module_class_name(self)))

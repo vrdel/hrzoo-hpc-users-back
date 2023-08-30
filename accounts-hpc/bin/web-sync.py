@@ -14,26 +14,39 @@ import asyncio
 from sqlalchemy import create_engine
 
 
-async def fetch_data(logger, confopts, feed, token):
-    session = SessionWithRetry(logger, confopts, token, handle_session_close=True)
+def contains_exception(list):
+    for a in list:
+        if isinstance(a, Exception):
+            return (True, a)
 
-    try:
-        res = await session.http_get(feed)
-
-        return res
-
-    except SyncHttpError as exc:
-        await session.close()
-        raise exc
+    return (False, None)
 
 
 async def run(logger, confopts):
-    res = await fetch_data(
-        logger, confopts,
-        confopts['hzsiapi']['users'],
-        confopts['authentication']['token']
-    )
-    logger.info(res)
+    session = SessionWithRetry(logger, confopts, handle_session_close=True)
+
+    coros = [
+        session.http_get(
+            confopts['hzsiapi']['users'],
+        ),
+        session.http_get(
+            confopts['hzsiapi']['projects'],
+        ),
+        session.http_get(
+            confopts['hzsiapi']['sshkeys'],
+        ),
+        session.http_get(
+            confopts['hzsiapi']['userproject'],
+        )
+    ]
+    fetched_data = await asyncio.gather(*coros, return_exceptions=True)
+    print(fetched_data)
+    await session.close()
+
+    exc_raised, exc = contains_exception(fetched_data)
+    if exc_raised:
+        logger.error('Data fetch did not succeed')
+        raise SystemExit(1)
 
 
 def main():
@@ -45,8 +58,13 @@ def main():
     # engine = create_engine("sqlite:///{}".format(confopts['db']['path']), echo=True)
 
     loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop.run_until_complete(run(logger, confopts))
+    # asyncio.set_event_loop(loop)
+
+    try:
+        loop.run_until_complete(run(logger, confopts))
+
+    except KeyboardInterrupt:
+        pass
 
 
 if __name__ == '__main__':
