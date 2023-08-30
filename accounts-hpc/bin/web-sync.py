@@ -10,6 +10,7 @@ from accounts_hpc.exceptions import SyncHttpError
 
 import asyncio
 import timeit
+import json
 
 
 from sqlalchemy import create_engine
@@ -51,8 +52,20 @@ async def run(logger, confopts):
     if exc_raised:
         logger.error('Data fetch did not succeed')
         raise SystemExit(1)
+
     else:
         logger.info(f"Fetched data in {format(end - start, '.2f')} seconds")
+
+        users, projects, sshkeys, userproject = fetched_data
+
+        users = json.loads(users)
+        projects = json.loads(projects)
+        sshkeys = json.loads(sshkeys)
+        userproject = json.loads(userproject)
+
+        for key in sshkeys:
+            import ipdb; ipdb.set_trace()
+
 
 
 def main():
