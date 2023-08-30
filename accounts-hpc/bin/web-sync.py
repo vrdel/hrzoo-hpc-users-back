@@ -9,6 +9,7 @@ from accounts_hpc.http import SessionWithRetry
 from accounts_hpc.exceptions import SyncHttpError
 
 import asyncio
+import timeit
 
 
 from sqlalchemy import create_engine
@@ -39,14 +40,19 @@ async def run(logger, confopts):
             confopts['hzsiapi']['userproject'],
         )
     ]
+
+    start = timeit.default_timer()
     fetched_data = await asyncio.gather(*coros, return_exceptions=True)
-    print(fetched_data)
+    end = timeit.default_timer()
+
     await session.close()
 
     exc_raised, exc = contains_exception(fetched_data)
     if exc_raised:
         logger.error('Data fetch did not succeed')
         raise SystemExit(1)
+    else:
+        logger.info(f"Fetched data in {format(end - start, '.2f')} seconds")
 
 
 def main():
@@ -58,7 +64,6 @@ def main():
     # engine = create_engine("sqlite:///{}".format(confopts['db']['path']), echo=True)
 
     loop = asyncio.new_event_loop()
-    # asyncio.set_event_loop(loop)
 
     try:
         loop.run_until_complete(run(logger, confopts))
