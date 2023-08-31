@@ -29,12 +29,6 @@ async def run(logger, confopts):
 
     coros = [
         session.http_get(
-            confopts['hzsiapi']['users'],
-        ),
-        session.http_get(
-            confopts['hzsiapi']['projects'],
-        ),
-        session.http_get(
             confopts['hzsiapi']['sshkeys'],
         ),
         session.http_get(
@@ -56,16 +50,14 @@ async def run(logger, confopts):
     else:
         logger.info(f"Fetched data in {format(end - start, '.2f')} seconds")
 
-        users, projects, sshkeys, userproject = fetched_data
+        sshkeys, userproject = fetched_data
 
-        users = json.loads(users)
-        projects = json.loads(projects)
         sshkeys = json.loads(sshkeys)
         userproject = json.loads(userproject)
 
         for key in sshkeys:
+            interested_projects = [up for up in userproject if up['user']['id'] == key['user']['id']]
             import ipdb; ipdb.set_trace()
-
 
 
 def main():

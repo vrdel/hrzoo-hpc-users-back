@@ -18,10 +18,8 @@ password = password
 basedn = dc=example,dc=example,dc=hr
 
 [hzsiapi]
-users = http://hzsidev.hr:8001/api/v1/users
-projects = http://hzsidev.hr:8001/api/v1/projects
 sshkeys = http://hzsidev.hr:8001/api/v1/sshkeys
-userproject = http://hzsidev.hr:8001/api/v1/userproject
+userproject = http://hzsidev.hr:8001/api/v1/usersprojects
 
 [db]
 path = %(VENV)s/var/lib/cache.db

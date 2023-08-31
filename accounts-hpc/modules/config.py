@@ -23,9 +23,7 @@ def parse_config(logger=None):
                     confopts['db'] = ({'path': config.get(section, 'path')})
 
                 if section.startswith('hzsiapi'):
-                    confopts['hzsiapi'] = ({'users': config.get(section, 'users')})
-                    confopts['hzsiapi'].update({'projects': config.get(section, 'projects')})
-                    confopts['hzsiapi'].update({'sshkeys': config.get(section, 'sshkeys')})
+                    confopts['hzsiapi'] = ({'sshkeys': config.get(section, 'sshkeys')})
                     confopts['hzsiapi'].update({'userproject': config.get(section, 'userproject')})
 
                 if section.startswith('connection'):
