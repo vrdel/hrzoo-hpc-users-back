@@ -28,6 +28,7 @@ services:
     env_file:
       - compose.env
     image: $IMAGE_CLIENT
+    cgroup: host
     command: /sbin/init
     container_name: hrzoo-ldapclient
     hostname: docker-hrzooldapclient
