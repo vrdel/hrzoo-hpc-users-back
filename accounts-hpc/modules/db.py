@@ -29,7 +29,7 @@ class User(Base):
     person_mail: Mapped[str] = mapped_column(String(60))
     status: Mapped[int] = mapped_column(Integer)
     project: Mapped[List[Project]] = \
-        relationship(secondary=user_projects_table, back_populates="projects")
+        relationship(secondary=user_projects_table, back_populates="user")
 
 
 class Project(Base):
@@ -39,5 +39,5 @@ class Project(Base):
     name: Mapped[str] = mapped_column(String(180))
     identifier: Mapped[str] = mapped_column(String(32))
     staff_resource_type: Mapped[JSON] = mapped_column(JSON())
-    project: Mapped[List[User]] = \
-        relationship(secondary=user_projects_table, back_populates="users")
+    user: Mapped[List[User]] = \
+        relationship(secondary=user_projects_table, back_populates="project")

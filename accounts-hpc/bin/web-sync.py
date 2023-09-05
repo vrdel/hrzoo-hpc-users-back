@@ -4,7 +4,7 @@ import sys
 
 from accounts_hpc.config import parse_config  # type: ignore
 from accounts_hpc.log import Logger  # type: ignore
-from accounts_hpc.db import Base  # type: ignore
+from accounts_hpc.db import Base, Project  # type: ignore
 from accounts_hpc.http import SessionWithRetry
 from accounts_hpc.exceptions import SyncHttpError
 
@@ -14,6 +14,7 @@ import json
 
 
 from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
 
 def contains_exception(list):
@@ -24,7 +25,7 @@ def contains_exception(list):
     return (False, None)
 
 
-async def run(logger, confopts):
+async def fetch_data(logger, confopts):
     session = SessionWithRetry(logger, confopts, handle_session_close=True)
 
     coros = [
@@ -49,15 +50,25 @@ async def run(logger, confopts):
 
     else:
         logger.info(f"Fetched data in {format(end - start, '.2f')} seconds")
-
         sshkeys, userproject = fetched_data
 
         sshkeys = json.loads(sshkeys)
         userproject = json.loads(userproject)
+        return sshkeys, userproject
 
-        for key in sshkeys:
-            interested_projects = [up for up in userproject if up['user']['id'] == key['user']['id']]
-            import ipdb; ipdb.set_trace()
+
+async def run(logger, confopts):
+    sshkeys, userproject = await fetch_data(logger, confopts)
+
+    projects_users = list()
+    for key in sshkeys:
+        projects_users.append([up for up in userproject if up['user']['id'] == key['user']['id']])
+
+    import ipdb; ipdb.set_trace()
+    engine = create_engine("sqlite:///{}".format(confopts['db']['path']), echo=True)
+    Session = sessionmaker(engine)
+    session = Session()
+    session.query(Project).all()
 
 
 def main():
@@ -66,7 +77,6 @@ def main():
 
     confopts = parse_config()
 
-    # engine = create_engine("sqlite:///{}".format(confopts['db']['path']), echo=True)
 
     loop = asyncio.new_event_loop()
 
