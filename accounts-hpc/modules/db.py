@@ -27,6 +27,8 @@ class User(Base):
     first_name: Mapped[str] = mapped_column(String(20))
     last_name: Mapped[str] = mapped_column(String(40))
     person_mail: Mapped[str] = mapped_column(String(60))
+    is_active: Mapped[str] = mapped_column(Boolean)
+    is_staff: Mapped[str] = mapped_column(Boolean)
     status: Mapped[int] = mapped_column(Integer)
     project: Mapped[List[Project]] = \
         relationship(secondary=user_projects_table, back_populates="user")
@@ -38,6 +40,6 @@ class Project(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(180))
     identifier: Mapped[str] = mapped_column(String(32))
-    staff_resource_type: Mapped[JSON] = mapped_column(JSON())
+    resources_type: Mapped[JSON] = mapped_column(JSON())
     user: Mapped[List[User]] = \
         relationship(secondary=user_projects_table, back_populates="project")
