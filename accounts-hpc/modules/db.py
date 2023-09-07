@@ -1,9 +1,10 @@
 from __future__ import annotations
-from typing import List
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
-from sqlalchemy import Table, Column, Integer, String, JSON, MetaData, ForeignKey, Date, DateTime, Boolean
 
-import datetime
+from typing import List
+
+from sqlalchemy import (JSON, Boolean, Column, Date, DateTime, ForeignKey,
+                        Integer, String, Table)
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
 class Base(DeclarativeBase):
@@ -25,7 +26,6 @@ class User(Base):
     username: Mapped[str] = mapped_column(String(8))
     first_name: Mapped[str] = mapped_column(String(20))
     last_name: Mapped[str] = mapped_column(String(40))
-    person_uniqueid: Mapped[str] = mapped_column(String(60))
     person_mail: Mapped[str] = mapped_column(String(60))
     status: Mapped[int] = mapped_column(Integer)
     project: Mapped[List[Project]] = \
