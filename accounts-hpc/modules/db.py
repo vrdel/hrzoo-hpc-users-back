@@ -23,7 +23,7 @@ class User(Base):
     __tablename__ = 'users'
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    person_unique: Mapped[str] = mapped_column(String(128))
+    person_uniqueid: Mapped[str] = mapped_column(String(128))
     first_name: Mapped[str] = mapped_column(String(20))
     last_name: Mapped[str] = mapped_column(String(40))
     person_mail: Mapped[str] = mapped_column(String(60))
