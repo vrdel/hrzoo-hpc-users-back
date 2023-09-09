@@ -42,7 +42,7 @@ class SessionWithRetry(object):
         self.logger = logger
         self.token = confopts['authentication']['token']
         self.handle_session_close = handle_session_close
-        self.erroneous_statuses = [404]
+        self.erroneous_statuses = [404, 403]
 
     async def _http_method(self, method, url, data=None, headers=None):
         method_obj = getattr(self.session, method)
@@ -63,6 +63,7 @@ class SessionWithRetry(object):
                 try:
                     async with method_obj(url, data=data, headers=headers,
                                           ssl=self.ssl_context) as response:
+
                         if response.status in self.erroneous_statuses:
                             self.logger.error('{}.http_{}({}) - Erroneous HTTP status: {} {}'.
                                               format(module_class_name(self),
