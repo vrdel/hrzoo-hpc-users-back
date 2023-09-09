@@ -1,5 +1,8 @@
 let $ALELINTPATH = $HOME . "/my_work/srce/git.hrzoo-hpc-users-back/hrzoo-hpc-users-back/accounts-hpc/lint"
 let b:ale_linters = ['mypy', 'flake8']
-let g:ale_fixers = {'python': ['autoflake', 'autoimport', 'autopep8', 'isort']}
+" let g:ale_fixers = {'python': ['autoflake', 'autoimport', 'autopep8']}
 let g:ale_python_mypy_executable = $ALELINTPATH .  '/ale-exe-mypy.sh'
 let g:ale_python_flake8_executable =  $ALELINTPATH . '/ale-exe-flake8.sh'
+let g:ale_python_autoflake_executable =  $ALELINTPATH . '/ale-exe-autoflake.sh'
+let g:ale_python_autoimport_executable =  $ALELINTPATH . '/ale-exe-autoimport.sh'
+let g:ale_python_autopep8_executable =  $ALELINTPATH . '/ale-exe-autopep8.sh'
