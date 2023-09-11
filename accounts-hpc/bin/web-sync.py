@@ -35,7 +35,8 @@ def update_projects_api(user, proj_id):
     projects_api = user.projects_api
     if not projects_api:
         projects_api = list()
-    projects_api.append(proj_id)
+    if proj_id not in projects_api:
+        projects_api.append(proj_id)
     user.projects_api = projects_api
 
 
@@ -100,11 +101,13 @@ async def run(logger, confopts):
         try:
             pr = session.query(Project).filter(
                 Project.identifier == uspr['project']['identifier']).one()
+            # update staff_resources_type with latest value
+            pr.staff_resources_type = uspr['project']['staff_resources_type']
         except NoResultFound:
 
             pr = Project(name=uspr['project']['name'],
                          identifier=uspr['project']['identifier'],
-                         resources_type=uspr['project']['resources_type'])
+                         resources_type=uspr['project']['staff_resources_type'])
 
         try:
             us = session.query(User).filter(
@@ -121,7 +124,8 @@ async def run(logger, confopts):
                       projects_api=[uspr['project']['identifier']],
                       is_active=uspr['user']['is_active'])
 
-        pr.user.append(us)
+        if us not in pr.user:
+            pr.user.append(us)
         session.add(pr)
 
     session.commit()

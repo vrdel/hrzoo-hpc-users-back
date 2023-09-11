@@ -5,6 +5,7 @@ from typing import List
 from sqlalchemy import (JSON, Boolean, Column, Date, DateTime, ForeignKey,
                         Integer, String, Table)
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+from sqlalchemy_json import MutableJson
 
 
 class Base(DeclarativeBase):
@@ -30,7 +31,7 @@ class User(Base):
     is_active: Mapped[bool] = mapped_column(Boolean)
     is_staff: Mapped[bool] = mapped_column(Boolean)
     is_opened: Mapped[bool] = mapped_column(Boolean)
-    projects_api: Mapped[JSON] = mapped_column(JSON())
+    projects_api: Mapped[List[str]] = mapped_column(MutableJson)
     project: Mapped[List[Project]] = \
         relationship(secondary=user_projects_table, back_populates="user", cascade="all")
 
@@ -41,6 +42,6 @@ class Project(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(180))
     identifier: Mapped[str] = mapped_column(String(32))
-    resources_type: Mapped[JSON] = mapped_column(JSON())
+    staff_resources_type: Mapped[List[str]] = mapped_column(MutableJson)
     user: Mapped[List[User]] = \
-        relationship(secondary=user_projects_table, back_populates="project", cascade="all")
+        relationship(secondary=user_projects_table, back_populates="project")
