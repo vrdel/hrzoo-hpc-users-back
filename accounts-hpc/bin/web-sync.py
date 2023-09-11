@@ -31,6 +31,14 @@ def all_none(list):
         return True
 
 
+def update_projects_api(user, proj_id):
+    projects_api = user.projects_api
+    if not projects_api:
+        projects_api = list()
+    projects_api.append(proj_id)
+    user.projects_api = projects_api
+
+
 async def fetch_data(logger, confopts):
     session = SessionWithRetry(logger, confopts, handle_session_close=True)
 
@@ -101,6 +109,7 @@ async def run(logger, confopts):
         try:
             us = session.query(User).filter(
                 User.person_uniqueid == uspr['user']['username']).one()
+            update_projects_api(us, uspr['project']['identifier'])
 
         except NoResultFound:
             us = User(person_uniqueid=uspr['user']['username'],
@@ -108,6 +117,8 @@ async def run(logger, confopts):
                       last_name=uspr['user']['last_name'],
                       person_mail=uspr['user']['person_mail'],
                       is_staff=uspr['user']['is_staff'],
+                      is_opened=True,
+                      projects_api=[uspr['project']['identifier']],
                       is_active=uspr['user']['is_active'])
 
         pr.user.append(us)

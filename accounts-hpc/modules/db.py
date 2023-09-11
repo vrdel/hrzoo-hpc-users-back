@@ -27,10 +27,12 @@ class User(Base):
     first_name: Mapped[str] = mapped_column(String(20))
     last_name: Mapped[str] = mapped_column(String(40))
     person_mail: Mapped[str] = mapped_column(String(60))
-    is_active: Mapped[str] = mapped_column(Boolean)
-    is_staff: Mapped[str] = mapped_column(Boolean)
+    is_active: Mapped[bool] = mapped_column(Boolean)
+    is_staff: Mapped[bool] = mapped_column(Boolean)
+    is_opened: Mapped[bool] = mapped_column(Boolean)
+    projects_api: Mapped[JSON] = mapped_column(JSON())
     project: Mapped[List[Project]] = \
-        relationship(secondary=user_projects_table, back_populates="user")
+        relationship(secondary=user_projects_table, back_populates="user", cascade="all")
 
 
 class Project(Base):
@@ -41,4 +43,4 @@ class Project(Base):
     identifier: Mapped[str] = mapped_column(String(32))
     resources_type: Mapped[JSON] = mapped_column(JSON())
     user: Mapped[List[User]] = \
-        relationship(secondary=user_projects_table, back_populates="project")
+        relationship(secondary=user_projects_table, back_populates="project", cascade="all")

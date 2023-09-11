@@ -14,7 +14,7 @@ from sqlalchemy import create_engine
 def main():
     parser = argparse.ArgumentParser(description='DB tool that help with initial create and evolution of database')
     parser.add_argument('--init', dest='init', action='store_true',
-            help='Create database with table structure')
+                        help='Create database with table structure')
 
     args = parser.parse_args()
 
@@ -27,6 +27,7 @@ def main():
 
     if args.init:
         Base.metadata.create_all(engine)
+
 
 if __name__ == '__main__':
     main()
