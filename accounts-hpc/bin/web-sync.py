@@ -88,7 +88,7 @@ async def run(logger, confopts):
     Session = sessionmaker(engine)
     session = Session()
 
-    for uspr in userproject:
+    for uspr in projects_users:
         try:
             pr = session.query(Project).filter(
                 Project.identifier == uspr['project']['identifier']).one()
@@ -98,16 +98,23 @@ async def run(logger, confopts):
                          identifier=uspr['project']['identifier'],
                          resources_type=uspr['project']['resources_type'])
 
-            try:
-                us = session.query(User).filter(
-                    User.person_uniqueid == uspr['user']['username']).one()
+        try:
+            us = session.query(User).filter(
+                User.person_uniqueid == uspr['user']['username']).one()
 
-            except NoResultFound:
-                us = User(person_uniqueid=uspr['user']['username'],
-                          first_name=uspr['user']['first_name'],
-                          last_name=uspr['user']['last_name'],
-                          person_mail=uspr['user']['person_mail'],
-                          status=uspr['user']['is_active'])
+        except NoResultFound:
+            us = User(person_uniqueid=uspr['user']['username'],
+                      first_name=uspr['user']['first_name'],
+                      last_name=uspr['user']['last_name'],
+                      person_mail=uspr['user']['person_mail'],
+                      is_staff=uspr['user']['is_staff'],
+                      is_active=uspr['user']['is_active'])
+
+        pr.user.append(us)
+        session.add(pr)
+
+    session.commit()
+    session.close()
 
 
 def main():
