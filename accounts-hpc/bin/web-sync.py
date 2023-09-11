@@ -89,8 +89,6 @@ async def run(logger, confopts):
     session = Session()
 
     for uspr in userproject:
-        import ipdb; ipdb.set_trace()
-
         try:
             pr = session.query(Project).filter(
                 Project.identifier == uspr['project']['identifier']).one()

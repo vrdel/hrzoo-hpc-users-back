@@ -29,7 +29,6 @@ class User(Base):
     person_mail: Mapped[str] = mapped_column(String(60))
     is_active: Mapped[str] = mapped_column(Boolean)
     is_staff: Mapped[str] = mapped_column(Boolean)
-    status: Mapped[int] = mapped_column(Integer)
     project: Mapped[List[Project]] = \
         relationship(secondary=user_projects_table, back_populates="user")
 
