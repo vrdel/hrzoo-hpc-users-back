@@ -75,15 +75,22 @@ async def run(logger, confopts):
         raise SystemExit(1)
 
     projects_users = list()
+    visited_users = set()
     for key in sshkeys:
-        projects_users.append(
-            [up for up in userproject if up['user']['id'] == key['user']['id']])
+        for up in userproject:
+            if up['user']['id'] in visited_users:
+                continue
+            if up['user']['id'] == key['user']['id']:
+                projects_users.append(up)
+        visited_users.update([key['user']['id']])
 
     engine = create_engine("sqlite:///{}".format(confopts['db']['path']))
     Session = sessionmaker(engine)
     session = Session()
 
     for uspr in userproject:
+        import ipdb; ipdb.set_trace()
+
         try:
             pr = session.query(Project).filter(
                 Project.identifier == uspr['project']['identifier']).one()
