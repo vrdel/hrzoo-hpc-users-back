@@ -47,6 +47,20 @@ def users_projects_del(args, session, projects_users):
             hzsi_api_user_projects[uspr['user']['username']].\
                 append(uspr['project']['identifier'])
 
+    for uspr in projects_users:
+        us = session.query(User).filter(User.person_uniqueid == uspr['user']['username']).one()
+
+        if len(us.projects_api) > len(hzsi_api_user_projects[uspr['user']['username']]):
+            us.projects_api = hzsi_api_user_projects[uspr['user']['username']]
+            if args.initset:
+                prjs_diff = list(
+                    set(us.projects_api)
+                    .difference(
+                        set(hzsi_api_user_projects[uspr['user']['username']])
+                    ))
+                prjs_diff_db = session.query(Project).filter(Project.identifier.in_(prjs_diff)).all()
+                for pr in prjs_diff_db:
+                    us.project.remove(pr)
 
 
 def users_projects_add(args, session, projects_users):
