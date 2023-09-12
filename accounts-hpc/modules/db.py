@@ -13,7 +13,7 @@ class Base(DeclarativeBase):
 
 
 user_projects_table = Table(
-    "user_projects_table",
+    "users_projects",
     Base.metadata,
     Column("user_id", ForeignKey("users.id"), primary_key=True),
     Column("project_id", ForeignKey("projects.id"), primary_key=True),
