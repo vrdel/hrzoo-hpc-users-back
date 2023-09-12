@@ -33,13 +33,46 @@ def all_none(list):
         return True
 
 
-def update_projects_api(user, proj_id):
-    projects_api = user.projects_api
-    if not projects_api:
-        projects_api = list()
-    if proj_id not in projects_api:
-        projects_api.append(proj_id)
-    user.projects_api = projects_api
+def users_projects_add(args, session, projects_users):
+    for uspr in projects_users:
+        try:
+            pr = session.query(Project).filter(
+                Project.identifier == uspr['project']['identifier']).one()
+            # update staff_resources_type with latest value
+            pr.staff_resources_type = uspr['project']['staff_resources_type']
+        except NoResultFound:
+            pr = Project(name=uspr['project']['name'],
+                         identifier=uspr['project']['identifier'],
+                         staff_resources_type=uspr['project']['staff_resources_type'])
+
+        try:
+            us = session.query(User).filter(
+                User.person_uniqueid == uspr['user']['username']).one()
+            projects_api = us.projects_api
+            if not projects_api:
+                projects_api = list()
+            if uspr['project']['identifier'] not in projects_api:
+                projects_api.append(uspr['project']['identifier'])
+            us.projects_api = projects_api
+
+        except NoResultFound:
+            us = User(person_uniqueid=uspr['user']['username'],
+                      first_name=uspr['user']['first_name'],
+                      last_name=uspr['user']['last_name'],
+                      person_mail=uspr['user']['person_mail'],
+                      is_staff=uspr['user']['is_staff'],
+                      is_opened=True if args.initset else False,
+                      projects_api=[uspr['project']['identifier']],
+                      is_active=uspr['user']['is_active'])
+
+        # sync (user, project) relations to cache
+        # only if --init-set
+        if us not in pr.user and args.initset:
+            pr.user.append(us)
+            session.add(pr)
+        elif not args.initset:
+            session.add(pr)
+            session.add(us)
 
 
 async def fetch_data(logger, confopts):
@@ -87,6 +120,7 @@ async def run(logger, args, confopts):
 
     projects_users = list()
     visited_users = set()
+    # user has at least one key added - enough at this point
     for key in sshkeys:
         for up in userproject:
             if up['user']['id'] in visited_users:
@@ -99,38 +133,7 @@ async def run(logger, args, confopts):
     Session = sessionmaker(engine)
     session = Session()
 
-    for uspr in projects_users:
-        try:
-            pr = session.query(Project).filter(
-                Project.identifier == uspr['project']['identifier']).one()
-            # update staff_resources_type with latest value
-            pr.staff_resources_type = uspr['project']['staff_resources_type']
-        except NoResultFound:
-            pr = Project(name=uspr['project']['name'],
-                         identifier=uspr['project']['identifier'],
-                         staff_resources_type=uspr['project']['staff_resources_type'])
-
-        try:
-            us = session.query(User).filter(
-                User.person_uniqueid == uspr['user']['username']).one()
-            update_projects_api(us, uspr['project']['identifier'])
-
-        except NoResultFound:
-            us = User(person_uniqueid=uspr['user']['username'],
-                      first_name=uspr['user']['first_name'],
-                      last_name=uspr['user']['last_name'],
-                      person_mail=uspr['user']['person_mail'],
-                      is_staff=uspr['user']['is_staff'],
-                      is_opened=True,
-                      projects_api=[uspr['project']['identifier']],
-                      is_active=uspr['user']['is_active'])
-
-        if us not in pr.user and args.initset:
-            pr.user.append(us)
-            session.add(pr)
-        elif not args.initset:
-            session.add(pr)
-            session.add(us)
+    users_projects_add(args, session, projects_users)
 
     session.commit()
     session.close()
