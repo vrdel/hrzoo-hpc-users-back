@@ -33,6 +33,21 @@ def all_none(list):
         return True
 
 
+def users_projects_del(args, session, projects_users):
+    hzsi_api_user_projects = dict()
+
+    for uspr in projects_users:
+        if uspr['user']['username'] not in hzsi_api_user_projects:
+            hzsi_api_user_projects.update({
+                uspr['user']['username']: set()
+            })
+            hzsi_api_user_projects[uspr['user']['username']].\
+                add(uspr['project']['identifier'])
+        else:
+            hzsi_api_user_projects[uspr['user']['username']].\
+                add(uspr['project']['identifier'])
+
+
 def users_projects_add(args, session, projects_users):
     for uspr in projects_users:
         try:
@@ -134,6 +149,7 @@ async def run(logger, args, confopts):
     session = Session()
 
     users_projects_add(args, session, projects_users)
+    users_projects_del(args, session, projects_users)
 
     session.commit()
     session.close()
@@ -143,7 +159,7 @@ def main():
     lobj = Logger(sys.argv[0])
     logger = lobj.get()
 
-    parser = argparse.ArgumentParser(description="""Sync projects and users from HRZOO-FRONT-API to SQLite cache""")
+    parser = argparse.ArgumentParser(description="""Sync projects and users from HRZOO-WEB-SIGNUP-API to SQLite cache""")
     parser.add_argument('--init-set', dest='initset', action='store_true', help='initial sync with all associations and flags set so no further tools in the pipeline will be triggered')
     args = parser.parse_args()
 
