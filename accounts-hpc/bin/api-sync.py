@@ -106,10 +106,9 @@ async def run(logger, args, confopts):
             # update staff_resources_type with latest value
             pr.staff_resources_type = uspr['project']['staff_resources_type']
         except NoResultFound:
-
             pr = Project(name=uspr['project']['name'],
                          identifier=uspr['project']['identifier'],
-                         resources_type=uspr['project']['staff_resources_type'])
+                         staff_resources_type=uspr['project']['staff_resources_type'])
 
         try:
             us = session.query(User).filter(
@@ -128,7 +127,10 @@ async def run(logger, args, confopts):
 
         if us not in pr.user and args.initset:
             pr.user.append(us)
-        session.add(pr)
+            session.add(pr)
+        elif not args.initset:
+            session.add(pr)
+            session.add(us)
 
     session.commit()
     session.close()
