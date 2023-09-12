@@ -47,7 +47,11 @@ def users_projects_del(args, session, projects_users):
             hzsi_api_user_projects[uspr['user']['username']].\
                 append(uspr['project']['identifier'])
 
+    visited_users = set()
     for uspr in projects_users:
+        if uspr['user']['id'] in visited_users:
+            continue
+
         us = session.query(User).filter(User.person_uniqueid == uspr['user']['username']).one()
 
         if len(us.projects_api) > len(hzsi_api_user_projects[uspr['user']['username']]):
@@ -62,6 +66,8 @@ def users_projects_del(args, session, projects_users):
                 for pr in prjs_diff_db:
                     us.project.remove(pr)
 
+        visited_users.update([uspr['user']['id']])
+
 
 def users_projects_add(args, session, projects_users):
     for uspr in projects_users:
@@ -69,11 +75,11 @@ def users_projects_add(args, session, projects_users):
             pr = session.query(Project).filter(
                 Project.identifier == uspr['project']['identifier']).one()
             # update staff_resources_type with latest value
-            pr.staff_resources_type = uspr['project']['staff_resources_type']
+            pr.staff_resources_type_api = uspr['project']['staff_resources_type']
         except NoResultFound:
             pr = Project(name=uspr['project']['name'],
                          identifier=uspr['project']['identifier'],
-                         staff_resources_type=uspr['project']['staff_resources_type'])
+                         staff_resources_type_api=uspr['project']['staff_resources_type'])
 
         try:
             us = session.query(User).filter(
