@@ -42,6 +42,6 @@ class Project(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(180))
     identifier: Mapped[str] = mapped_column(String(32))
-    staff_resources_type: Mapped[List[str]] = mapped_column(MutableJson)
+    staff_resources_type_api: Mapped[List[str]] = mapped_column(MutableJson)
     user: Mapped[List[User]] = \
         relationship(secondary=user_projects_table, back_populates="project")
