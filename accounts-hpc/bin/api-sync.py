@@ -15,6 +15,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import NoResultFound
 
+import argparse
+
 
 def contains_exception(list):
     for a in list:
@@ -75,7 +77,7 @@ async def fetch_data(logger, confopts):
         return sshkeys, userproject
 
 
-async def run(logger, confopts):
+async def run(logger, args, confopts):
     try:
         sshkeys, userproject = await fetch_data(logger, confopts)
 
@@ -124,7 +126,7 @@ async def run(logger, confopts):
                       projects_api=[uspr['project']['identifier']],
                       is_active=uspr['user']['is_active'])
 
-        if us not in pr.user:
+        if us not in pr.user and args.initset:
             pr.user.append(us)
         session.add(pr)
 
@@ -136,12 +138,16 @@ def main():
     lobj = Logger(sys.argv[0])
     logger = lobj.get()
 
+    parser = argparse.ArgumentParser(description="""Sync projects and users from HRZOO-FRONT-API to SQLite cache""")
+    parser.add_argument('--init-set', dest='initset', action='store_true', help='initial sync with all associations and flags set so no further tools in the pipeline will be triggered')
+    args = parser.parse_args()
+
     confopts = parse_config()
 
     loop = asyncio.new_event_loop()
 
     try:
-        loop.run_until_complete(run(logger, confopts))
+        loop.run_until_complete(run(logger, args, confopts))
 
     except KeyboardInterrupt:
         pass
