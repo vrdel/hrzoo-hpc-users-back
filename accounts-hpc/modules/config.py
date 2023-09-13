@@ -25,6 +25,8 @@ def parse_config(logger=None):
                 if section.startswith('hzsiapi'):
                     confopts['hzsiapi'] = ({'sshkeys': config.get(section, 'sshkeys')})
                     confopts['hzsiapi'].update({'userproject': config.get(section, 'userproject')})
+                    confopts['hzsiapi'].update({'project_state': config.get(section, 'project_state')})
+                    confopts['hzsiapi'].update({'project_resources': config.get(section, 'project_resources')})
 
                 if section.startswith('connection'):
                     confopts['connection'] = ({'timeout': config.get(section, 'timeout')})

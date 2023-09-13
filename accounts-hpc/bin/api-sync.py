@@ -156,6 +156,7 @@ async def run(logger, args, confopts):
 
     projects_users = list()
     visited_users = set()
+    # build of projects_users association list
     # user has at least one key added - enough at this point
     for key in sshkeys:
         for up in userproject:

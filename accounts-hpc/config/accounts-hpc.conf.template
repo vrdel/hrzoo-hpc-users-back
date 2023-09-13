@@ -20,6 +20,8 @@ basedn = dc=example,dc=example,dc=hr
 [hzsiapi]
 sshkeys = http://hzsidev.hr:8001/api/v1/sshkeys
 userproject = http://hzsidev.hr:8001/api/v1/usersprojects
+project_state = approve
+project_resources = GPU, CPU, BIGMEM
 
 [db]
 path = %(VENV)s/var/lib/cache.db
