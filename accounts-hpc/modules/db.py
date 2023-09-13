@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List, Dict
+from typing import List, Dict, Optional
 
 from sqlalchemy import (JSON, Boolean, Column, Date, DateTime, ForeignKey,
                         Integer, String, Table)
@@ -32,7 +32,7 @@ class User(Base):
     is_staff: Mapped[bool] = mapped_column(Boolean)
     is_opened: Mapped[bool] = mapped_column(Boolean)
     projects_api: Mapped[List[str]] = mapped_column(MutableJson)
-    sshkeys_api: Mapped[Dict[str, str]] = mapped_column(MutableJson)
+    sshkeys_api: Mapped[Optional[Dict[str, str]]] = mapped_column(MutableJson)
     project: Mapped[List[Project]] = \
         relationship(secondary=user_projects_table, back_populates="user", cascade="all")
 
