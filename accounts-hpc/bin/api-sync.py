@@ -57,7 +57,6 @@ def sshkeys_add(args, session, projects_users, sshkeys):
         us = session.query(User).filter(User.person_uniqueid == key['user']['username']).one()
         if key['fingerprint'] not in us.sshkeys_api:
             us.sshkeys_api.append(key['fingerprint'])
-            us.sshkeys_num_api += 1
             session.add(us)
 
         try:
@@ -139,7 +138,6 @@ def users_projects_add(args, session, projects_users):
                       is_opened=True if args.initset else False,
                       projects_api=[uspr['project']['identifier']],
                       sshkeys_api=list(),
-                      sshkeys_num_api=0,
                       is_active=uspr['user']['is_active'])
 
         # sync (user, project) relations to cache

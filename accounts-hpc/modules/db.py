@@ -34,7 +34,6 @@ class User(Base):
     projects_api: Mapped[List[str]] = mapped_column(MutableJson)
     sshkey: Mapped[List["SshKey"]] = relationship(back_populates="user")
     sshkeys_api: Mapped[List[str]] = mapped_column(MutableJson)
-    sshkeys_num_api: Mapped[int] = mapped_column(Integer)
     project: Mapped[List[Project]] = \
         relationship(secondary=user_projects_table, back_populates="user", cascade="all")
 
