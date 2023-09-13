@@ -33,6 +33,20 @@ def all_none(list):
         return True
 
 
+def sshkeys_del(args, sessoin, projects_users, sshkeys):
+    interested_users = [up['user']['id'] for up in projects_users]
+    hzsi_api_user_keys = dict()
+
+    for key in sshkeys:
+        if key['user']['id'] not in interested_users:
+            continue
+
+        if key['user']['username'] not in hzsi_api_user_keys:
+            hzsi_api_user_keys[key['user']['username']] = list()
+
+        hzsi_api_user_keys[key['user']['username']].append(key['fingerprint'])
+
+
 def sshkeys_add(args, session, projects_users, sshkeys):
     interested_users = [up['user']['id'] for up in projects_users]
 
@@ -195,6 +209,7 @@ async def run(logger, args, confopts):
     users_projects_add(args, session, projects_users)
     users_projects_del(args, session, projects_users)
     sshkeys_add(args, session, projects_users, sshkeys)
+    sshkeys_del(args, session, projects_users, sshkeys)
 
     session.commit()
     session.close()
