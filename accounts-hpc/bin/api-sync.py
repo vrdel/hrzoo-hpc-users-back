@@ -45,6 +45,7 @@ def sshkeys_add(args, session, projects_users, sshkeys):
             us.sshkeys_api = dict()
         if key['fingerprint'] not in us.sshkeys_api:
             us.sshkeys_api[key['fingerprint']] = key['public_key']
+            us.sshkeys_num_api += 1
 
 
 def users_projects_del(args, session, projects_users):
@@ -55,11 +56,8 @@ def users_projects_del(args, session, projects_users):
             hzsi_api_user_projects.update({
                 uspr['user']['username']: list()
             })
-            hzsi_api_user_projects[uspr['user']['username']].\
-                append(uspr['project']['identifier'])
-        else:
-            hzsi_api_user_projects[uspr['user']['username']].\
-                append(uspr['project']['identifier'])
+        hzsi_api_user_projects[uspr['user']['username']].\
+            append(uspr['project']['identifier'])
 
     visited_users = set()
     for uspr in projects_users:
@@ -113,6 +111,7 @@ def users_projects_add(args, session, projects_users):
                       is_staff=uspr['user']['is_staff'],
                       is_opened=True if args.initset else False,
                       projects_api=[uspr['project']['identifier']],
+                      sshkeys_num_api=0,
                       is_active=uspr['user']['is_active'])
 
         # sync (user, project) relations to cache

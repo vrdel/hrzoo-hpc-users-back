@@ -33,6 +33,7 @@ class User(Base):
     is_opened: Mapped[bool] = mapped_column(Boolean)
     projects_api: Mapped[List[str]] = mapped_column(MutableJson)
     sshkeys_api: Mapped[Optional[Dict[str, str]]] = mapped_column(MutableJson)
+    sshkeys_num_api: Mapped[int] = mapped_column(Integer)
     project: Mapped[List[Project]] = \
         relationship(secondary=user_projects_table, back_populates="user", cascade="all")
 
