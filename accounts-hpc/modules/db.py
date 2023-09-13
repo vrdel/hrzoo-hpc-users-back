@@ -32,7 +32,8 @@ class User(Base):
     is_staff: Mapped[bool] = mapped_column(Boolean)
     is_opened: Mapped[bool] = mapped_column(Boolean)
     projects_api: Mapped[List[str]] = mapped_column(MutableJson)
-    sshkeys_api: Mapped[Optional[Dict[str, str]]] = mapped_column(MutableJson)
+    sshkey: Mapped[List["SshKey"]] = relationship(back_populates="user")
+    sshkeys_api: Mapped[List[str]] = mapped_column(MutableJson)
     sshkeys_num_api: Mapped[int] = mapped_column(Integer)
     project: Mapped[List[Project]] = \
         relationship(secondary=user_projects_table, back_populates="user", cascade="all")
@@ -47,3 +48,15 @@ class Project(Base):
     staff_resources_type_api: Mapped[List[str]] = mapped_column(MutableJson)
     user: Mapped[List[User]] = \
         relationship(secondary=user_projects_table, back_populates="project")
+
+
+class SshKey(Base):
+    __tablename__ = 'sshkeys'
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(128))
+    fingerprint: Mapped[str] = mapped_column(String(47))
+    public_key: Mapped[str] = mapped_column(String(2000))
+    user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"))
+    user: Mapped["User"] = relationship(back_populates="sshkey")
+

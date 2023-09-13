@@ -7,7 +7,7 @@ import timeit
 
 from accounts_hpc.config import parse_config  # type: ignore
 from accounts_hpc.log import Logger  # type: ignore
-from accounts_hpc.db import Base, Project, User  # type: ignore
+from accounts_hpc.db import Base, Project, User, SshKey  # type: ignore
 from accounts_hpc.http import SessionWithRetry
 from accounts_hpc.exceptions import SyncHttpError
 
@@ -55,11 +55,24 @@ def sshkeys_add(args, session, projects_users, sshkeys):
             continue
 
         us = session.query(User).filter(User.person_uniqueid == key['user']['username']).one()
-        if not us.sshkeys_api:
-            us.sshkeys_api = dict()
         if key['fingerprint'] not in us.sshkeys_api:
-            us.sshkeys_api[key['fingerprint']] = key['public_key']
+            us.sshkeys_api.append(key['fingerprint'])
             us.sshkeys_num_api += 1
+            session.add(us)
+
+        try:
+            new_key = session.query(SshKey).filter(
+                SshKey.fingerprint == key['fingerprint']).one()
+        except NoResultFound:
+            new_key = SshKey(name=key['name'],
+                             fingerprint=key['fingerprint'],
+                             public_key=key['public_key'])
+
+        if args.initset:
+            us.sshkey.append(new_key)
+            session.add(us)
+        else:
+            session.add(new_key)
 
 
 def users_projects_del(args, session, projects_users):
@@ -125,6 +138,7 @@ def users_projects_add(args, session, projects_users):
                       is_staff=uspr['user']['is_staff'],
                       is_opened=True if args.initset else False,
                       projects_api=[uspr['project']['identifier']],
+                      sshkeys_api=list(),
                       sshkeys_num_api=0,
                       is_active=uspr['user']['is_active'])
 
@@ -209,7 +223,7 @@ async def run(logger, args, confopts):
     users_projects_add(args, session, projects_users)
     users_projects_del(args, session, projects_users)
     sshkeys_add(args, session, projects_users, sshkeys)
-    sshkeys_del(args, session, projects_users, sshkeys)
+    # sshkeys_del(args, session, projects_users, sshkeys)
 
     session.commit()
     session.close()
