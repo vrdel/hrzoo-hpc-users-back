@@ -33,6 +33,20 @@ def all_none(list):
         return True
 
 
+def sshkeys_add(args, session, projects_users, sshkeys):
+    interested_users = [up['user']['id'] for up in projects_users]
+
+    for key in sshkeys:
+        if key['user']['id'] not in interested_users:
+            continue
+
+        us = session.query(User).filter(User.person_uniqueid == key['user']['username']).one()
+        if not us.sshkeys_api:
+            us.sshkeys_api = dict()
+        if key['fingerprint'] not in us.sshkeys_api:
+            us.sshkeys_api[key['fingerprint']] = key['public_key']
+
+
 def users_projects_del(args, session, projects_users):
     hzsi_api_user_projects = dict()
 
@@ -181,6 +195,7 @@ async def run(logger, args, confopts):
 
     users_projects_add(args, session, projects_users)
     users_projects_del(args, session, projects_users)
+    sshkeys_add(args, session, projects_users, sshkeys)
 
     session.commit()
     session.close()
