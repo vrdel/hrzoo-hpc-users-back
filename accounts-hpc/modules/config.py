@@ -27,6 +27,8 @@ def parse_config(logger=None):
                     confopts['hzsiapi'].update({'userproject': config.get(section, 'userproject')})
                     confopts['hzsiapi'].update({'project_state': config.get(section, 'project_state')})
                     confopts['hzsiapi'].update({'project_resources': config.get(section, 'project_resources')})
+                    confopts['hzsiapi']['project_resources'] = \
+                            [rt.strip() for rt in confopts['hzsiapi']['project_resources'].split(',')]
 
                 if section.startswith('connection'):
                     confopts['connection'] = ({'timeout': config.get(section, 'timeout')})
