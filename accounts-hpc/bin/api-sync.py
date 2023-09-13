@@ -158,9 +158,18 @@ async def run(logger, args, confopts):
     visited_users = set()
     # build of projects_users association list
     # user has at least one key added - enough at this point
+    # filter project according to interested state and approved
+    # resources
     for key in sshkeys:
         for up in userproject:
-            if up['user']['id'] in visited_users:
+            if (up['project']['state']
+                    not in confopts['hzsiapi']['project_state']):
+                continue
+            rt_found = False
+            for rt in up['project']['staff_resources_type']:
+                if rt in confopts['hzsiapi']['project_resources']:
+                    rt_found = True
+            if not rt_found:
                 continue
             if up['user']['id'] == key['user']['id']:
                 projects_users.append(up)
