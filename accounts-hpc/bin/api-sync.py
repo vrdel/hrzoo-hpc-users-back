@@ -146,6 +146,7 @@ def users_projects_add(args, session, projects_users):
         except NoResultFound:
             pr = Project(name=uspr['project']['name'],
                          identifier=uspr['project']['identifier'],
+                         prjid_api=uspr['project']['id'],
                          staff_resources_type_api=uspr['project']['staff_resources_type'])
 
         try:
@@ -159,15 +160,16 @@ def users_projects_add(args, session, projects_users):
             us.projects_api = projects_api
 
         except NoResultFound:
-            us = User(person_uniqueid=uspr['user']['username'],
-                      first_name=uspr['user']['first_name'],
+            us = User(first_name=uspr['user']['first_name'],
+                      is_active=uspr['user']['is_active'],
+                      is_opened=True if args.initset else False,
+                      is_staff=uspr['user']['is_staff'],
                       last_name=uspr['user']['last_name'],
                       person_mail=uspr['user']['person_mail'],
-                      is_staff=uspr['user']['is_staff'],
-                      is_opened=True if args.initset else False,
                       projects_api=[uspr['project']['identifier']],
                       sshkeys_api=list(),
-                      is_active=uspr['user']['is_active'])
+                      person_uniqueid=uspr['user']['username'],
+                      uid_api=uspr['user']['id'])
 
         # sync (user, project) relations to cache
         # only if --init-set

@@ -24,16 +24,17 @@ class User(Base):
     __tablename__ = 'users'
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    person_uniqueid: Mapped[str] = mapped_column(String(128))
     first_name: Mapped[str] = mapped_column(String(20))
+    is_active: Mapped[bool] = mapped_column(Boolean)
+    is_opened: Mapped[bool] = mapped_column(Boolean)
+    is_staff: Mapped[bool] = mapped_column(Boolean)
     last_name: Mapped[str] = mapped_column(String(40))
     person_mail: Mapped[str] = mapped_column(String(60))
-    is_active: Mapped[bool] = mapped_column(Boolean)
-    is_staff: Mapped[bool] = mapped_column(Boolean)
-    is_opened: Mapped[bool] = mapped_column(Boolean)
+    person_uniqueid: Mapped[str] = mapped_column(String(128))
     projects_api: Mapped[List[str]] = mapped_column(MutableJson)
     sshkey: Mapped[List["SshKey"]] = relationship(back_populates="user")
     sshkeys_api: Mapped[List[str]] = mapped_column(MutableJson)
+    uid_api: Mapped[int] = mapped_column(Integer)
     project: Mapped[List[Project]] = \
         relationship(secondary=user_projects_table, back_populates="user", cascade="all")
 
@@ -42,8 +43,9 @@ class Project(Base):
     __tablename__ = 'projects'
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column(String(180))
     identifier: Mapped[str] = mapped_column(String(32))
+    name: Mapped[str] = mapped_column(String(180))
+    prjid_api: Mapped[int] = mapped_column(Integer)
     staff_resources_type_api: Mapped[List[str]] = mapped_column(MutableJson)
     user: Mapped[List[User]] = \
         relationship(secondary=user_projects_table, back_populates="project")
@@ -53,10 +55,9 @@ class SshKey(Base):
     __tablename__ = 'sshkeys'
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column(String(128))
     fingerprint: Mapped[str] = mapped_column(String(47))
+    name: Mapped[str] = mapped_column(String(128))
     public_key: Mapped[str] = mapped_column(String(2000))
     uid_api: Mapped[int] = mapped_column(Integer)
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"))
     user: Mapped["User"] = relationship(back_populates="sshkey")
-
