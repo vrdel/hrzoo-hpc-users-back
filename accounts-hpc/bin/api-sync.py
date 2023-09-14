@@ -50,8 +50,23 @@ def sshkeys_del(args, session, projects_users, sshkeys):
     users = session.query(User).all()
 
     for us in users:
-        if len(hzsi_api_user_keys[us.person_uniqueid]) > len(us.sshkey):
-            import ipdb; ipdb.set_trace()
+        if us.person_uniqueid not in hzsi_api_user_keys.keys():
+            hzsi_api_user_keys[us.person_uniqueid] = list()
+
+        if len(us.sshkey) > len(hzsi_api_user_keys[us.person_uniqueid]):
+            rem_keys = list(
+                set(us.sshkeys_api)
+                .difference(hzsi_api_user_keys[us.person_uniqueid]))
+            us.sshkeys_api = hzsi_api_user_keys[us.person_uniqueid]
+            if args.initset:
+                rem_keys_db = session.query(SshKey).filter(
+                    and_(
+                        SshKey.fingerprint.in_(rem_keys),
+                        SshKey.user_id == us.id
+                    ))
+                for key in rem_keys_db:
+                    us.sshkey.remove(key)
+                    session.delete(key)
 
 
 def sshkeys_add(args, session, projects_users, sshkeys):
@@ -69,22 +84,22 @@ def sshkeys_add(args, session, projects_users, sshkeys):
         # same key unfortunately can be added from two
         # different users, that's why we require uid_api as well
         try:
-            new_key = session.query(SshKey).filter(
+            dbkey = session.query(SshKey).filter(
                 and_(
                     SshKey.fingerprint == key['fingerprint'],
                     SshKey.uid_api == key['user']['id']
                 )).one()
         except NoResultFound:
-            new_key = SshKey(name=key['name'],
-                             fingerprint=key['fingerprint'],
-                             public_key=key['public_key'],
-                             uid_api=key['user']['id'])
+            dbkey = SshKey(name=key['name'],
+                           fingerprint=key['fingerprint'],
+                           public_key=key['public_key'],
+                           uid_api=key['user']['id'])
 
-        if args.initset:
-            us.sshkey.append(new_key)
+        if dbkey not in us.sshkey and args.initset:
+            us.sshkey.append(dbkey)
             session.add(us)
         else:
-            session.add(new_key)
+            session.add(dbkey)
             session.add(us)
 
 
@@ -235,7 +250,7 @@ async def run(logger, args, confopts):
     users_projects_add(args, session, projects_users)
     users_projects_del(args, session, projects_users)
     sshkeys_add(args, session, projects_users, sshkeys)
-    # sshkeys_del(args, session, projects_users, sshkeys)
+    sshkeys_del(args, session, projects_users, sshkeys)
 
     session.commit()
     session.close()
