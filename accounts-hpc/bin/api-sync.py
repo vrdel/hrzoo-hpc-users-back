@@ -12,6 +12,7 @@ from accounts_hpc.http import SessionWithRetry
 from accounts_hpc.exceptions import SyncHttpError
 
 from sqlalchemy import create_engine
+from sqlalchemy import and_
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import NoResultFound
 
@@ -33,7 +34,7 @@ def all_none(list):
         return True
 
 
-def sshkeys_del(args, sessoin, projects_users, sshkeys):
+def sshkeys_del(args, session, projects_users, sshkeys):
     interested_users = [up['user']['id'] for up in projects_users]
     hzsi_api_user_keys = dict()
 
@@ -46,32 +47,45 @@ def sshkeys_del(args, sessoin, projects_users, sshkeys):
 
         hzsi_api_user_keys[key['user']['username']].append(key['fingerprint'])
 
+    users = session.query(User).all()
+
+    for us in users:
+        if len(hzsi_api_user_keys[us.person_uniqueid]) > len(us.sshkey):
+            import ipdb; ipdb.set_trace()
+
 
 def sshkeys_add(args, session, projects_users, sshkeys):
-    interested_users = [up['user']['id'] for up in projects_users]
+    interested_users = set([up['user']['id'] for up in projects_users])
 
     for key in sshkeys:
         if key['user']['id'] not in interested_users:
             continue
 
         us = session.query(User).filter(User.person_uniqueid == key['user']['username']).one()
+
         if key['fingerprint'] not in us.sshkeys_api:
             us.sshkeys_api.append(key['fingerprint'])
-            session.add(us)
 
+        # same key unfortunately can be added from two
+        # different users, that's why we require uid_api as well
         try:
             new_key = session.query(SshKey).filter(
-                SshKey.fingerprint == key['fingerprint']).one()
+                and_(
+                    SshKey.fingerprint == key['fingerprint'],
+                    SshKey.uid_api == key['user']['id']
+                )).one()
         except NoResultFound:
             new_key = SshKey(name=key['name'],
                              fingerprint=key['fingerprint'],
-                             public_key=key['public_key'])
+                             public_key=key['public_key'],
+                             uid_api=key['user']['id'])
 
         if args.initset:
             us.sshkey.append(new_key)
             session.add(us)
         else:
             session.add(new_key)
+            session.add(us)
 
 
 def users_projects_del(args, session, projects_users):

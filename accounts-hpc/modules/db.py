@@ -56,6 +56,7 @@ class SshKey(Base):
     name: Mapped[str] = mapped_column(String(128))
     fingerprint: Mapped[str] = mapped_column(String(47))
     public_key: Mapped[str] = mapped_column(String(2000))
+    uid_api: Mapped[int] = mapped_column(Integer)
     user_id: Mapped[Optional[int]] = mapped_column(ForeignKey("users.id"))
     user: Mapped["User"] = relationship(back_populates="sshkey")
 
