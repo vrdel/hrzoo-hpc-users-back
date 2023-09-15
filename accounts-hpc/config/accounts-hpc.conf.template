@@ -2,9 +2,9 @@
 VENV = /opt/hrzoo-accounts-hpc
 
 [connection]
-Timeout = 180
-Retry = 3
-SleepRetry = 60
+timeout = 180
+retry = 3
+sleepretry = 60
 
 [authentication]
 verifyservercert = False
@@ -22,6 +22,12 @@ sshkeys = http://hzsidev.hr:8001/api/v1/sshkeys
 userproject = http://hzsidev.hr:8001/api/v1/usersprojects
 project_state = approve
 project_resources = GPU, CPU, BIGMEM
+
+[usersetup]
+uid_offset = 2994
+gid_offset = 2993
+uid_ops_offset = 2009
+gid_ops_offset = 2002
 
 [db]
 path = %(VENV)s/var/lib/cache.db
