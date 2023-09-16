@@ -48,8 +48,8 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - ./ldap-client/ldap-conf/:/home/user/ldap-conf
       - ../accounts-hpc/bin/empty:$VENV_HPC/bin/empty
-      - ../accounts-hpc/bin/ldap-sync.py:$VENV_HPC/bin/ldap-sync.py
-      - ../accounts-hpc/bin/web-sync.py:$VENV_HPC/bin/web-sync.py
+      - ../accounts-hpc/bin/ldap-cud.py:$VENV_HPC/bin/ldap-cud.py
+      - ../accounts-hpc/bin/api-sync.py:$VENV_HPC/bin/api-sync.py
       - ../accounts-hpc/config/:$VENV_HPC/etc/accounts-hpc
       - ../accounts-hpc/cron/:$VENV_HPC/cron
       - ../accounts-hpc/var/:$VENV_HPC/var
