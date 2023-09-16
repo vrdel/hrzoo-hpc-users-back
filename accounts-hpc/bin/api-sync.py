@@ -152,7 +152,7 @@ def users_projects_add(args, session, projects_users):
         except NoResultFound:
             us = User(first_name=only_alnum(unidecode(uspr['user']['first_name'])),
                       is_active=uspr['user']['is_active'],
-                      is_opened=True if args.initset else False,
+                      is_opened=False if args.initset else True,
                       is_staff=uspr['user']['is_staff'],
                       last_name=only_alnum(unidecode(uspr['user']['last_name'])),
                       person_mail=uspr['user']['person_mail'],
