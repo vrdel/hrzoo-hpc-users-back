@@ -8,7 +8,7 @@ import timeit
 from accounts_hpc.config import parse_config  # type: ignore
 from accounts_hpc.log import Logger  # type: ignore
 from accounts_hpc.db import Base, Project, User, SshKey  # type: ignore
-from accounts_hpc.http import SessionWithRetry
+from accounts_hpc.httpconn import SessionWithRetry
 from accounts_hpc.exceptions import SyncHttpError
 from accounts_hpc.utils import only_alnum, all_none, contains_exception
 
