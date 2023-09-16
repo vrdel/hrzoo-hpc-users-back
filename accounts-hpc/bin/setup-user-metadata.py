@@ -54,6 +54,10 @@ def main():
         if not user.ldap_username:
             user.ldap_username = gen_username(user.first_name, user.last_name, all_usernames)
             all_usernames.append(user.ldap_username)
+        if not user.ldap_uid and not user.is_staff:
+            user.ldap_uid = confopts['usersetup']['uid_offset'] + user.uid_api
+        if not user.ldap_gid and not user.is_staff and user.project:
+            user.ldap_gid = confopts['usersetup']['gid_offset'] + user.project[-1].prjid_api
 
     session.commit()
     session.close()
