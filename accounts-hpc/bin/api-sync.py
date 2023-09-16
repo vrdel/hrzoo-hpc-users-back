@@ -10,6 +10,8 @@ from accounts_hpc.log import Logger  # type: ignore
 from accounts_hpc.db import Base, Project, User, SshKey  # type: ignore
 from accounts_hpc.http import SessionWithRetry
 from accounts_hpc.exceptions import SyncHttpError
+from accounts_hpc.utils import only_alnum, all_none, contains_exception
+
 
 from sqlalchemy import create_engine
 from sqlalchemy import and_
@@ -19,21 +21,6 @@ from sqlalchemy.exc import NoResultFound
 from unidecode import unidecode
 
 import argparse
-
-
-def contains_exception(list):
-    for a in list:
-        if isinstance(a, Exception):
-            return (True, a)
-
-    return (False, None)
-
-
-def all_none(list):
-    if all(list):
-        return False
-    else:
-        return True
 
 
 def sshkeys_del(args, session, projects_users, sshkeys):
@@ -163,11 +150,11 @@ def users_projects_add(args, session, projects_users):
             us.projects_api = projects_api
 
         except NoResultFound:
-            us = User(first_name=unidecode(uspr['user']['first_name']),
+            us = User(first_name=only_alnum(unidecode(uspr['user']['first_name'])),
                       is_active=uspr['user']['is_active'],
                       is_opened=True if args.initset else False,
                       is_staff=uspr['user']['is_staff'],
-                      last_name=unidecode(uspr['user']['last_name']),
+                      last_name=only_alnum(unidecode(uspr['user']['last_name'])),
                       person_mail=uspr['user']['person_mail'],
                       projects_api=[uspr['project']['identifier']],
                       sshkeys_api=list(),
