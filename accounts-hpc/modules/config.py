@@ -41,10 +41,10 @@ def parse_config(logger=None):
                     confopts['authentication'].update({'token': config.get(section, 'token')})
 
                 if section.startswith('usersetup'):
-                    confopts['usersetup'] = ({'uid_offset': config.get(section, 'uid_offset')})
-                    confopts['usersetup'].update({'gid_offset': config.get(section, 'gid_offset')})
-                    confopts['usersetup'].update({'uid_ops_offset': config.get(section, 'uid_ops_offset')})
-                    confopts['usersetup'].update({'gid_ops_offset': config.get(section, 'gid_ops_offset')})
+                    confopts['usersetup'] = ({'uid_offset': config.getint(section, 'uid_offset')})
+                    confopts['usersetup'].update({'gid_offset': config.getint(section, 'gid_offset')})
+                    confopts['usersetup'].update({'uid_ops_offset': config.getint(section, 'uid_ops_offset')})
+                    confopts['usersetup'].update({'gid_ops_offset': config.getint(section, 'gid_ops_offset')})
 
             if 'DEFAULT' in config:
                 confopts['DEFAULT'] = ({'VENV': config.get('DEFAULT', 'VENV')})
