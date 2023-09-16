@@ -14,17 +14,14 @@ from sqlalchemy.exc import NoResultFound
 import argparse
 
 
-def gen_username(first, last, existusers):
+def gen_username(first: str, last: str, existusers: list[str]) -> str:
     # ASCII convert
     name = first.lower()
     surname = last.lower()
     # take first char of name and first seven from surname
     username = name[0] + surname[:7]
 
-    if username not in existusers:
-        return username
-
-    elif username in existusers:
+    if username in existusers:
         match = list()
         if len(username) < 8:
             match = list(filter(lambda u: u.startswith(username), existusers))
@@ -32,6 +29,9 @@ def gen_username(first, last, existusers):
             match = list(filter(lambda u: u.startswith(username[:-1]), existusers))
 
         return username + str(len(match))
+
+    else:
+        return username
 
 
 def main():
@@ -49,7 +49,7 @@ def main():
     session = Session()
 
     users = session.query(User).all()
-    all_usernames = [user.ldap_username for user in users]
+    all_usernames = [user.ldap_username for user in users if user.ldap_username]
     for user in users:
         if not user.ldap_username:
             user.ldap_username = gen_username(user.first_name, user.last_name, all_usernames)

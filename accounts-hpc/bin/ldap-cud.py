@@ -16,10 +16,10 @@ def main():
     try:
         client = bonsai.LDAPClient(confopts['ldap']['server'])
         client.set_credentials(
-                "SIMPLE",
-                user=confopts['ldap']['user'],
-                password=confopts['ldap']['password']
-            )
+            "SIMPLE",
+            user=confopts['ldap']['user'],
+            password=confopts['ldap']['password']
+        )
         conn = client.connect()
     except bonsai.errors.AuthenticationError as exc:
         logger.error(exc)
