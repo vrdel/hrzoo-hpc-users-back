@@ -40,7 +40,7 @@ def main():
     for user in users:
         if not user.ldap_username:
             continue
-        ldap_user = conn.search(f"cn={user.ldap_username},ou=People,{confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.ONE)
+        ldap_user = conn.search(f"cn={user.ldap_username},ou=People,{confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
         if not ldap_user:
             ldap_user = bonsai.LDAPEntry(f"cn={user.ldap_username},ou=People,{confopts['ldap']['basedn']}")
             ldap_user['objectClass'] = ['top', 'account', 'posixAccount', 'shadowAccount']
@@ -56,7 +56,7 @@ def main():
 
     projects = session.query(Project).all()
     for project in projects:
-        ldap_project = conn.search(f"cn={project.identifier},ou=Group,{confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.ONE)
+        ldap_project = conn.search(f"cn={project.identifier},ou=Group,{confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
         if not ldap_project:
             ldap_project = bonsai.LDAPEntry(f"cn={project.identifier},ou=Group,{confopts['ldap']['basedn']}")
             ldap_project['cn'] = [project.identifier]
