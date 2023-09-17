@@ -82,6 +82,24 @@ def main():
                 ldap_user[0].modify()
                 logger.info(f"User {user.person_uniqueid} gidNumber updated to {target_gid}")
 
+            # check if sshkeys are added or removed
+            keys_diff_add, keys_diff_del = set(), set()
+            keys_db = [key.fingerprint for key in user.sshkey]
+            keys_diff_add = set(user.sshkeys_api).difference(set(keys_db))
+            if keys_diff_add:
+                for key in keys_diff_add:
+                    target_key = session.query(SshKey).filter(SshKey.fingerprint == key).one()
+                    user.sshkey.append(target_key)
+                    session.add(user)
+                    logger.info(f"Added key {target_key.name} for user {user.person_uniqueid}")
+            keys_diff_del = set(keys_db).difference(set(user.sshkeys_api))
+            if keys_diff_del:
+                for key in keys_diff_del:
+                    target_key = session.query(SshKey).filter(SshKey.fingerprint == key).one()
+                    user.sshkey.remove(target_key)
+                    session.add(user)
+                    logger.info(f"Removed key {target_key.name} for user {user.person_uniqueid}")
+
     projects = session.query(Project).all()
     for project in projects:
         ldap_project = conn.search(f"cn={project.identifier},ou=Group,{confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
