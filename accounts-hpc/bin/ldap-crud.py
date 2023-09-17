@@ -90,15 +90,19 @@ def main():
                 for key in keys_diff_add:
                     target_key = session.query(SshKey).filter(SshKey.fingerprint == key).one()
                     user.sshkey.append(target_key)
-                    session.add(user)
                     logger.info(f"Added key {target_key.name} for user {user.person_uniqueid}")
             keys_diff_del = set(keys_db).difference(set(user.sshkeys_api))
             if keys_diff_del:
                 for key in keys_diff_del:
                     target_key = session.query(SshKey).filter(SshKey.fingerprint == key).one()
                     user.sshkey.remove(target_key)
-                    session.add(user)
                     logger.info(f"Removed key {target_key.name} for user {user.person_uniqueid}")
+            if keys_diff_add or keys_diff_del:
+                updated_keys = [sshkey.public_key for sshkey in user.sshkey]
+                ldap_user[0].change_attribute('sshPublicKey', bonsai.LDAPModOp.REPLACE, *updated_keys)
+                ldap_user[0].modify()
+                session.add(user)
+                logger.info(f"User {user.person_uniqueid} LDAP SSH keys updated")
 
     projects = session.query(Project).all()
     for project in projects:
