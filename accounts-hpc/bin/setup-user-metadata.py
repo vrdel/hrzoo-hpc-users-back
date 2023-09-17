@@ -59,6 +59,11 @@ def main():
         if not user.ldap_gid and not user.is_staff and user.project:
             user.ldap_gid = confopts['usersetup']['gid_offset'] + user.project[-1].prjid_api
 
+    projects = session.query(Project).all()
+    for project in projects:
+        if not project.ldap_gid:
+            project.ldap_gid = confopts['usersetup']['gid_offset'] + project.prjid_api
+
     session.commit()
     session.close()
 
