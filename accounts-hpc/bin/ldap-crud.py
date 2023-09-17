@@ -5,6 +5,12 @@ import sys
 
 from accounts_hpc.config import parse_config
 from accounts_hpc.log import Logger
+from accounts_hpc.db import Base, Project, User, SshKey  # type: ignore
+
+from sqlalchemy import create_engine
+from sqlalchemy import and_
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.exc import NoResultFound
 
 
 def main():
@@ -25,9 +31,30 @@ def main():
         logger.error(exc)
         raise SystemExit(1)
 
-    print(conn.whoami())
+    engine = create_engine("sqlite:///{}".format(confopts['db']['path']))
+    Session = sessionmaker(engine)
+    session = Session()
 
-    print(conn.search(f"ou=People,{confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.ONE))
+    users = session.query(User).all()
+    for user in users:
+        if not user.ldap_username:
+            continue
+        ldap_user = conn.search(f"cn={user.ldap_username},ou=People,{confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.ONE)
+        if not ldap_user:
+            ldap_user = bonsai.LDAPEntry(f"cn={user.ldap_username},ou=People,{confopts['ldap']['basedn']}")
+            ldap_user['objectClass'] = ['top', 'account', 'posixAccount', 'shadowAccount']
+            ldap_user['cn'] = [user.ldap_username]
+            ldap_user['uid'] = [user.ldap_username]
+            ldap_user['uidNumber'] = [user.ldap_uid]
+            ldap_user['gidNumber'] = [user.ldap_gid]
+            ldap_user['homeDirectory'] = ['/lustre/home/{user.ldap_username}']
+            ldap_user['loginShell'] = ['/bin/bash']
+            ldap_user['gecos'] = ['{user.first_name} {user.last_name}']
+            ldap_user['userPassword'] = ['']
+
+    session.commit()
+    session.close()
+
 
 
 
