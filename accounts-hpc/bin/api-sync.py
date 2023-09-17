@@ -100,8 +100,9 @@ def users_projects_del(args, session, projects_users):
             hzsi_api_user_projects.update({
                 uspr['user']['username']: list()
             })
-        hzsi_api_user_projects[uspr['user']['username']].\
-            append(uspr['project']['identifier'])
+        if uspr['project']['identifier'] not in hzsi_api_user_projects[uspr['user']['username']]:
+            hzsi_api_user_projects[uspr['user']['username']].\
+                append(uspr['project']['identifier'])
 
     visited_users = set()
     for uspr in projects_users:
