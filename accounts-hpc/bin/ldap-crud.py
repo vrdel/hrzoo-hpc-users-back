@@ -57,27 +57,29 @@ def main():
         else:
             # check if there are differencies between user's project just
             # synced from API and ones already registered in cache
-            projects_diff = set()
+            projects_diff_add, projects_diff_del = set(), set()
             projects_db = [pr.identifier for pr in user.project]
-            projects_diff = set(user.projects_api).difference(set(projects_db))
+            projects_diff_add = set(user.projects_api).difference(set(projects_db))
             # add user to project
-            if projects_diff:
-                for project in projects_diff:
+            if projects_diff_add:
+                for project in projects_diff_add:
                     target_project = session.query(Project).filter(Project.identifier == project).one()
-                    target_project.user.add(user)
+                    target_project.user.append(user)
                     session.add(target_project)
-                    logger.info(f"User {user.username} added to project {project}")
+                    logger.info(f"User {user.person_uniqueid} added to project {project}")
             # remove user from project
-            projects_diff = set(projects_db).difference(set(user.projects_api))
-            if projects_diff:
-                for project in projects_diff:
+            projects_diff_del = set(projects_db).difference(set(user.projects_api))
+            if projects_diff_del:
+                for project in projects_diff_del:
                     target_project = session.query(Project).filter(Project.identifier == project).one()
                     target_project.user.remove(user)
                     session.add(target_project)
                     logger.info(f"User {user.person_uniqueid} removed from project {project}")
-            if projects_diff:
-                ldap_user[0].change_attribute('gidNumber', bonsai.LDAPModOp.REPLACE, confopts['usersetup']['gid_offset'] + user.project[-1].prjid_api)
+            if projects_diff_add or projects_diff_del:
+                target_gid = confopts['usersetup']['gid_offset'] + user.project[-1].prjid_api
+                ldap_user[0].change_attribute('gidNumber', bonsai.LDAPModOp.REPLACE, target_gid)
                 ldap_user[0].modify()
+                logger.info(f"User {user.person_uniqueid} gidNumber updated to {target_gid}")
 
     projects = session.query(Project).all()
     for project in projects:
@@ -100,11 +102,11 @@ def main():
             elif set([user.ldap_username for user in project.user]).difference(set(users_project_ldap)):
                 project_members_changed = True
             if project_members_changed:
-                project_new_members = [user.person_uniqueid for user in project.user]
+                project_new_members = [user.ldap_username for user in project.user]
                 if len(project_new_members) == 0:
                     del ldap_project[0]['memberUid']
                 else:
-                    ldap_project[0].change_attribute('memberUid', bonsai.LDAPModOp.REPLACE, project_new_members)
+                    ldap_project[0].change_attribute('memberUid', bonsai.LDAPModOp.REPLACE, *project_new_members)
                 ldap_project[0].modify()
                 logger.info(f"Updating memberUid for LDAP cn={project.identifier},ou=Group")
 
