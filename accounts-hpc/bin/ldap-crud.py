@@ -43,7 +43,7 @@ def main():
         ldap_user = conn.search(f"cn={user.ldap_username},ou=People,{confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
         if not ldap_user:
             ldap_user = bonsai.LDAPEntry(f"cn={user.ldap_username},ou=People,{confopts['ldap']['basedn']}")
-            ldap_user['objectClass'] = ['top', 'account', 'posixAccount', 'shadowAccount']
+            ldap_user['objectClass'] = ['top', 'account', 'posixAccount', 'shadowAccount', 'ldapPublicKey']
             ldap_user['cn'] = [user.ldap_username]
             ldap_user['uid'] = [user.ldap_username]
             ldap_user['uidNumber'] = [user.ldap_uid]
@@ -52,6 +52,7 @@ def main():
             ldap_user['loginShell'] = ['/bin/bash']
             ldap_user['gecos'] = [f"{user.first_name} {user.last_name}"]
             ldap_user['userPassword'] = ['']
+            ldap_user['sshPublicKey'] = [sshkey.public_key for sshkey in user.sshkey]
             conn.add(ldap_user)
 
         else:
