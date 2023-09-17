@@ -52,10 +52,18 @@ def main():
             ldap_user['gecos'] = ['{user.first_name} {user.last_name}']
             ldap_user['userPassword'] = ['']
 
+    projects = session.query(Project).all()
+    for project in projects:
+        ldap_project = conn.search(f"cn={project.identifier},ou=Group,{confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.ONE)
+        if not ldap_project:
+            ldap_project = bonsai.LDAPEntry(f"cn={project.identifier},ou=Group,{confopts['ldap']['basedn']}")
+            ldap_project['cn'] = [project.identifier]
+            ldap_project['objectClass'] = ['top', 'posixGroup']
+            ldap_project['gidNumber'] = [project.ldap_gid]
+            ldap_project['memberUid'] = [user.ldap_username for user in project.user]
+
     session.commit()
     session.close()
-
-
 
 
 if __name__ == '__main__':
