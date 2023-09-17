@@ -36,6 +36,7 @@ def main():
     session = Session()
 
     users = session.query(User).all()
+
     for user in users:
         if not user.ldap_username:
             continue
@@ -47,10 +48,11 @@ def main():
             ldap_user['uid'] = [user.ldap_username]
             ldap_user['uidNumber'] = [user.ldap_uid]
             ldap_user['gidNumber'] = [user.ldap_gid]
-            ldap_user['homeDirectory'] = ['/lustre/home/{user.ldap_username}']
+            ldap_user['homeDirectory'] = [f"/lustre/home/{user.ldap_username}"]
             ldap_user['loginShell'] = ['/bin/bash']
-            ldap_user['gecos'] = ['{user.first_name} {user.last_name}']
+            ldap_user['gecos'] = [f"{user.first_name} {user.last_name}"]
             ldap_user['userPassword'] = ['']
+            conn.add(ldap_user)
 
     projects = session.query(Project).all()
     for project in projects:
@@ -61,6 +63,7 @@ def main():
             ldap_project['objectClass'] = ['top', 'posixGroup']
             ldap_project['gidNumber'] = [project.ldap_gid]
             ldap_project['memberUid'] = [user.ldap_username for user in project.user]
+            conn.add(ldap_project)
 
     session.commit()
     session.close()
