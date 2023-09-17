@@ -54,6 +54,31 @@ def main():
             ldap_user['userPassword'] = ['']
             conn.add(ldap_user)
 
+        else:
+            # check if there are differencies between user's project just
+            # synced from API and ones already registered in cache
+            projects_diff = set()
+            projects_db = [pr.identifier for pr in user.project]
+            projects_diff = set(user.projects_api).difference(set(projects_db))
+            # add user to project
+            if projects_diff:
+                for project in projects_diff:
+                    target_project = session.query(Project).filter(Project.identifier == project).one()
+                    target_project.user.add(user)
+                    session.add(target_project)
+                    logger.info(f"User {user.username} added to project {project}")
+            # remove user from project
+            projects_diff = set(user.projects_db).difference(set(user.projects_api))
+            if projects_diff:
+                for project in projects_diff:
+                    target_project = session.query(Project).filter(Project.identifier == project).one()
+                    target_project.user.remove(user)
+                    session.add(target_project)
+                    logger.info(f"User {user.username} removed from project {project}")
+            if projects_diff:
+                ldap_user.change_attribute('gidNumber', bonsai.LDAPModOp.REPLACE, confopts['usersetup']['gid_offset'] + user.project[-1].prjid_api)
+                ldap_user.modify()
+
     projects = session.query(Project).all()
     for project in projects:
         ldap_project = conn.search(f"cn={project.identifier},ou=Group,{confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)

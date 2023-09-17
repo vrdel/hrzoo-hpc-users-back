@@ -57,6 +57,7 @@ def main():
         if not user.ldap_uid and not user.is_staff:
             user.ldap_uid = confopts['usersetup']['uid_offset'] + user.uid_api
         if not user.ldap_gid and not user.is_staff and user.project:
+            # user GID is always set to GID of last assigned project
             user.ldap_gid = confopts['usersetup']['gid_offset'] + user.project[-1].prjid_api
 
     projects = session.query(Project).all()
