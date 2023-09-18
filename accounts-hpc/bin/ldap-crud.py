@@ -28,6 +28,19 @@ def new_user_ldap_add(confopts, conn, user):
     conn.add(ldap_user)
 
 
+def user_addto_group(confopts, conn, logger, user, group):
+    ldap_group = conn.search(f"cn={group},ou=Group,{confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
+    try:
+        existing_members = ldap_group[0]['memberUid']
+    except KeyError:
+        existing_members = []
+    if user.ldap_uid not in existing_members:
+        existing_members.append(user.ldap_username)
+        ldap_group[0].change_attribute('memberUid', bonsai.LDAPModOp.REPLACE, *existing_members)
+        ldap_group[0].modify()
+        # logger.info(f"Added user {user.person_uniqueid} to default group {group}")
+
+
 def user_ldap_update(confopts, session, logger, user, ldap_user):
     # check if there are differencies between user's project just
     # synced from API and ones already registered in cache
@@ -155,7 +168,7 @@ def main():
         ldap_user = conn.search(f"cn={user.ldap_username},ou=People,{confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
         if not ldap_user:
             new_user_ldap_add(confopts, conn, user)
-
+            user_addto_group(confopts, conn, logger, user, "hpc-users")
         else:
             user_ldap_update(confopts, session, logger, user, ldap_user)
 
@@ -163,8 +176,7 @@ def main():
     for project in projects:
         ldap_project = conn.search(f"cn={project.identifier},ou=Group,{confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
         if not ldap_project:
-            new_group_ldap_add(conn)
-
+            new_group_ldap_add(confopts, conn, project)
         else:
             group_ldap_update(confopts, session, logger, project, ldap_project)
 
