@@ -78,6 +78,35 @@ def user_ldap_update(confopts, session, logger, user, ldap_user):
         logger.info(f"User {user.person_uniqueid} LDAP SSH keys updated")
 
 
+def new_group_ldap_add(confopts, conn, project):
+    ldap_project = bonsai.LDAPEntry(f"cn={project.identifier},ou=Group,{confopts['ldap']['basedn']}")
+    ldap_project['cn'] = [project.identifier]
+    ldap_project['objectClass'] = ['top', 'posixGroup']
+    ldap_project['gidNumber'] = [project.ldap_gid]
+    ldap_project['memberUid'] = [user.ldap_username for user in project.user]
+    conn.add(ldap_project)
+
+
+def group_ldap_update(confopts, session, logger, project, ldap_project):
+    project_members_changed = False
+    try:
+        users_project_ldap = ldap_project[0]['memberUid']
+    except KeyError:
+        users_project_ldap = []
+    if set(users_project_ldap).difference(set([user.ldap_username for user in project.user])):
+        project_members_changed = True
+    elif set([user.ldap_username for user in project.user]).difference(set(users_project_ldap)):
+        project_members_changed = True
+    if project_members_changed:
+        project_new_members = [user.ldap_username for user in project.user]
+        if len(project_new_members) == 0:
+            del ldap_project[0]['memberUid']
+        else:
+            ldap_project[0].change_attribute('memberUid', bonsai.LDAPModOp.REPLACE, *project_new_members)
+        ldap_project[0].modify()
+        logger.info(f"Updating memberUid for LDAP cn={project.identifier},ou=Group")
+
+
 def main():
     lobj = Logger(sys.argv[0])
     logger = lobj.get()
@@ -116,30 +145,10 @@ def main():
     for project in projects:
         ldap_project = conn.search(f"cn={project.identifier},ou=Group,{confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
         if not ldap_project:
-            ldap_project = bonsai.LDAPEntry(f"cn={project.identifier},ou=Group,{confopts['ldap']['basedn']}")
-            ldap_project['cn'] = [project.identifier]
-            ldap_project['objectClass'] = ['top', 'posixGroup']
-            ldap_project['gidNumber'] = [project.ldap_gid]
-            ldap_project['memberUid'] = [user.ldap_username for user in project.user]
-            conn.add(ldap_project)
+            new_group_ldap_add(conn)
+
         else:
-            project_members_changed = False
-            try:
-                users_project_ldap = ldap_project[0]['memberUid']
-            except KeyError:
-                users_project_ldap = []
-            if set(users_project_ldap).difference(set([user.ldap_username for user in project.user])):
-                project_members_changed = True
-            elif set([user.ldap_username for user in project.user]).difference(set(users_project_ldap)):
-                project_members_changed = True
-            if project_members_changed:
-                project_new_members = [user.ldap_username for user in project.user]
-                if len(project_new_members) == 0:
-                    del ldap_project[0]['memberUid']
-                else:
-                    ldap_project[0].change_attribute('memberUid', bonsai.LDAPModOp.REPLACE, *project_new_members)
-                ldap_project[0].modify()
-                logger.info(f"Updating memberUid for LDAP cn={project.identifier},ou=Group")
+            group_ldap_update(confopts, session, logger, project, ldap_project)
 
     session.commit()
     session.close()
