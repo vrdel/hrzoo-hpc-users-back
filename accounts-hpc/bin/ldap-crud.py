@@ -107,6 +107,21 @@ def group_ldap_update(confopts, session, logger, project, ldap_project):
         logger.info(f"Updating memberUid for LDAP cn={project.identifier},ou=Group")
 
 
+def create_default_groups(confopts, conn, logger):
+    numgroup = 1
+    for gr in confopts['usersetup']['default_groups']:
+        group_ldap = conn.search(f"cn={gr},ou=Group,{confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
+        if not group_ldap:
+            ldap_gid = confopts['usersetup']['gid_ops_offset'] + numgroup
+            ldap_project = bonsai.LDAPEntry(f"cn={gr},ou=Group,{confopts['ldap']['basedn']}")
+            ldap_project['cn'] = [gr]
+            ldap_project['objectClass'] = ['top', 'posixGroup']
+            ldap_project['gidNumber'] = [ldap_gid]
+            conn.add(ldap_project)
+            logger.info(f"Created default group {gr} with gid={ldap_gid}")
+            numgroup += 1
+
+
 def main():
     lobj = Logger(sys.argv[0])
     logger = lobj.get()
@@ -121,6 +136,9 @@ def main():
             password=confopts['ldap']['password']
         )
         conn = client.connect()
+
+        create_default_groups(confopts, conn, logger)
+
     except bonsai.errors.AuthenticationError as exc:
         logger.error(exc)
         raise SystemExit(1)
