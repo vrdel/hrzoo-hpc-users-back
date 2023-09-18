@@ -45,6 +45,10 @@ def parse_config(logger=None):
                     confopts['usersetup'].update({'gid_offset': config.getint(section, 'gid_offset')})
                     confopts['usersetup'].update({'uid_ops_offset': config.getint(section, 'uid_ops_offset')})
                     confopts['usersetup'].update({'gid_ops_offset': config.getint(section, 'gid_ops_offset')})
+                    confopts['usersetup'].update({'default_groups': config.get(section, 'default_groups')})
+                    confopts['usersetup']['default_groups'] = \
+                            [gr.strip() for gr in confopts['usersetup']['default_groups'].split(',')]
+                    confopts['usersetup'].update({'homeprefix': config.get(section, 'homeprefix')})
 
             if 'DEFAULT' in config:
                 confopts['DEFAULT'] = ({'VENV': config.get('DEFAULT', 'VENV')})

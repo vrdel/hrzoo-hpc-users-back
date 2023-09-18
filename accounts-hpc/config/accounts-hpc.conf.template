@@ -27,7 +27,9 @@ project_resources = GPU, CPU, BIGMEM
 uid_offset = 2994
 gid_offset = 2993
 uid_ops_offset = 2009
-gid_ops_offset = 2002
+gid_ops_offset = 2000
+default_groups = hpc, hpc-users, hpc-gpu, hpc-bigmem
+homeprefix = /lustre/home/
 
 [db]
 path = %(VENV)s/var/lib/cache.db
