@@ -141,9 +141,11 @@ def users_projects_add(args, session, projects_users):
                          ldap_gid=0)
 
         try:
+            # TODO: OIB
             us = session.query(User).filter(
                 User.person_uniqueid == uspr['user']['username']).one()
             projects_api = us.projects_api
+            # always up-to-date projects_api field with project associations
             if not projects_api:
                 projects_api = list()
             if uspr['project']['identifier'] not in projects_api:

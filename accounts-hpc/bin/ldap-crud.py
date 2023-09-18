@@ -13,6 +13,71 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import NoResultFound
 
 
+def new_user_ldap_add(confopts, conn, user):
+    ldap_user = bonsai.LDAPEntry(f"cn={user.ldap_username},ou=People,{confopts['ldap']['basedn']}")
+    ldap_user['objectClass'] = ['top', 'account', 'posixAccount', 'shadowAccount', 'ldapPublicKey']
+    ldap_user['cn'] = [user.ldap_username]
+    ldap_user['uid'] = [user.ldap_username]
+    ldap_user['uidNumber'] = [user.ldap_uid]
+    ldap_user['gidNumber'] = [user.ldap_gid]
+    ldap_user['homeDirectory'] = [f"/lustre/home/{user.ldap_username}"]
+    ldap_user['loginShell'] = ['/bin/bash']
+    ldap_user['gecos'] = [f"{user.first_name} {user.last_name}"]
+    ldap_user['userPassword'] = ['']
+    ldap_user['sshPublicKey'] = [sshkey.public_key for sshkey in user.sshkey]
+    conn.add(ldap_user)
+
+
+def user_ldap_update(confopts, session, logger, user, ldap_user):
+    # check if there are differencies between user's project just
+    # synced from API and ones already registered in cache
+    projects_diff_add, projects_diff_del = set(), set()
+    projects_db = [pr.identifier for pr in user.project]
+    projects_diff_add = set(user.projects_api).difference(set(projects_db))
+    # add user to project
+    if projects_diff_add:
+        for project in projects_diff_add:
+            target_project = session.query(Project).filter(Project.identifier == project).one()
+            target_project.user.append(user)
+            session.add(target_project)
+            logger.info(f"User {user.person_uniqueid} added to project {project}")
+    # remove user from project
+    projects_diff_del = set(projects_db).difference(set(user.projects_api))
+    if projects_diff_del:
+        for project in projects_diff_del:
+            target_project = session.query(Project).filter(Project.identifier == project).one()
+            target_project.user.remove(user)
+            session.add(target_project)
+            logger.info(f"User {user.person_uniqueid} removed from project {project}")
+    if projects_diff_add or projects_diff_del:
+        target_gid = confopts['usersetup']['gid_offset'] + user.project[-1].prjid_api
+        ldap_user[0].change_attribute('gidNumber', bonsai.LDAPModOp.REPLACE, target_gid)
+        ldap_user[0].modify()
+        logger.info(f"User {user.person_uniqueid} gidNumber updated to {target_gid}")
+
+    # check if sshkeys are added or removed
+    keys_diff_add, keys_diff_del = set(), set()
+    keys_db = [key.fingerprint for key in user.sshkey]
+    keys_diff_add = set(user.sshkeys_api).difference(set(keys_db))
+    if keys_diff_add:
+        for key in keys_diff_add:
+            target_key = session.query(SshKey).filter(SshKey.fingerprint == key).one()
+            user.sshkey.append(target_key)
+            logger.info(f"Added key {target_key.name} for user {user.person_uniqueid}")
+    keys_diff_del = set(keys_db).difference(set(user.sshkeys_api))
+    if keys_diff_del:
+        for key in keys_diff_del:
+            target_key = session.query(SshKey).filter(SshKey.fingerprint == key).one()
+            user.sshkey.remove(target_key)
+            logger.info(f"Removed key {target_key.name} for user {user.person_uniqueid}")
+    if keys_diff_add or keys_diff_del:
+        updated_keys = [sshkey.public_key for sshkey in user.sshkey]
+        ldap_user[0].change_attribute('sshPublicKey', bonsai.LDAPModOp.REPLACE, *updated_keys)
+        ldap_user[0].modify()
+        session.add(user)
+        logger.info(f"User {user.person_uniqueid} LDAP SSH keys updated")
+
+
 def main():
     lobj = Logger(sys.argv[0])
     logger = lobj.get()
@@ -42,67 +107,10 @@ def main():
             continue
         ldap_user = conn.search(f"cn={user.ldap_username},ou=People,{confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
         if not ldap_user:
-            ldap_user = bonsai.LDAPEntry(f"cn={user.ldap_username},ou=People,{confopts['ldap']['basedn']}")
-            ldap_user['objectClass'] = ['top', 'account', 'posixAccount', 'shadowAccount', 'ldapPublicKey']
-            ldap_user['cn'] = [user.ldap_username]
-            ldap_user['uid'] = [user.ldap_username]
-            ldap_user['uidNumber'] = [user.ldap_uid]
-            ldap_user['gidNumber'] = [user.ldap_gid]
-            ldap_user['homeDirectory'] = [f"/lustre/home/{user.ldap_username}"]
-            ldap_user['loginShell'] = ['/bin/bash']
-            ldap_user['gecos'] = [f"{user.first_name} {user.last_name}"]
-            ldap_user['userPassword'] = ['']
-            ldap_user['sshPublicKey'] = [sshkey.public_key for sshkey in user.sshkey]
-            conn.add(ldap_user)
+            new_user_ldap_add(confopts, conn, user)
 
         else:
-            # check if there are differencies between user's project just
-            # synced from API and ones already registered in cache
-            projects_diff_add, projects_diff_del = set(), set()
-            projects_db = [pr.identifier for pr in user.project]
-            projects_diff_add = set(user.projects_api).difference(set(projects_db))
-            # add user to project
-            if projects_diff_add:
-                for project in projects_diff_add:
-                    target_project = session.query(Project).filter(Project.identifier == project).one()
-                    target_project.user.append(user)
-                    session.add(target_project)
-                    logger.info(f"User {user.person_uniqueid} added to project {project}")
-            # remove user from project
-            projects_diff_del = set(projects_db).difference(set(user.projects_api))
-            if projects_diff_del:
-                for project in projects_diff_del:
-                    target_project = session.query(Project).filter(Project.identifier == project).one()
-                    target_project.user.remove(user)
-                    session.add(target_project)
-                    logger.info(f"User {user.person_uniqueid} removed from project {project}")
-            if projects_diff_add or projects_diff_del:
-                target_gid = confopts['usersetup']['gid_offset'] + user.project[-1].prjid_api
-                ldap_user[0].change_attribute('gidNumber', bonsai.LDAPModOp.REPLACE, target_gid)
-                ldap_user[0].modify()
-                logger.info(f"User {user.person_uniqueid} gidNumber updated to {target_gid}")
-
-            # check if sshkeys are added or removed
-            keys_diff_add, keys_diff_del = set(), set()
-            keys_db = [key.fingerprint for key in user.sshkey]
-            keys_diff_add = set(user.sshkeys_api).difference(set(keys_db))
-            if keys_diff_add:
-                for key in keys_diff_add:
-                    target_key = session.query(SshKey).filter(SshKey.fingerprint == key).one()
-                    user.sshkey.append(target_key)
-                    logger.info(f"Added key {target_key.name} for user {user.person_uniqueid}")
-            keys_diff_del = set(keys_db).difference(set(user.sshkeys_api))
-            if keys_diff_del:
-                for key in keys_diff_del:
-                    target_key = session.query(SshKey).filter(SshKey.fingerprint == key).one()
-                    user.sshkey.remove(target_key)
-                    logger.info(f"Removed key {target_key.name} for user {user.person_uniqueid}")
-            if keys_diff_add or keys_diff_del:
-                updated_keys = [sshkey.public_key for sshkey in user.sshkey]
-                ldap_user[0].change_attribute('sshPublicKey', bonsai.LDAPModOp.REPLACE, *updated_keys)
-                ldap_user[0].modify()
-                session.add(user)
-                logger.info(f"User {user.person_uniqueid} LDAP SSH keys updated")
+            user_ldap_update(confopts, session, logger, user, ldap_user)
 
     projects = session.query(Project).all()
     for project in projects:
