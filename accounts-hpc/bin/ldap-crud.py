@@ -35,7 +35,10 @@ def update_defgroups(confopts, conn, logger, users, group, onlyops=False):
     except KeyError:
         existing_members = []
     # TODO: check also is_active
-    all_usernames = [user.ldap_username for user in users]
+    if onlyops:
+        all_usernames = [user.ldap_username for user in users if user.is_staff]
+    else:
+        all_usernames = [user.ldap_username for user in users]
     if set(all_usernames) != set(existing_members):
         ldap_group[0].change_attribute('memberUid', bonsai.LDAPModOp.REPLACE, *all_usernames)
         ldap_group[0].modify()
@@ -185,7 +188,7 @@ def main():
 
     # handle default groups associations
     update_defgroups(confopts, conn, logger, users, "hpc-users")
-    # update_defgroups(confopts, conn, logger, users, "hpc", onlyops=True)
+    update_defgroups(confopts, conn, logger, users, "hpc", onlyops=True)
 
     session.commit()
     session.close()
