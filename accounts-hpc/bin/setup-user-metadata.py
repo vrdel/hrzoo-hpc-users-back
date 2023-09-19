@@ -12,6 +12,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import NoResultFound
 
 import argparse
+import json
 
 
 def gen_username(first: str, last: str, existusers: list[str]) -> str:
@@ -48,6 +49,12 @@ def main():
     Session = sessionmaker(engine)
     session = Session()
 
+    mapuser = list()
+
+    if confopts['usersetup']['usermap']:
+        with open(confopts['usersetup']['usermap'], mode='r') as fp:
+            mapuser = json.loads(fp.read())
+
     users = session.query(User).all()
     all_usernames = [user.ldap_username for user in users if user.ldap_username]
     for user in users:
@@ -59,11 +66,23 @@ def main():
         if not user.ldap_gid and not user.is_staff and user.project:
             # user GID is always set to GID of last assigned project
             user.ldap_gid = confopts['usersetup']['gid_offset'] + user.project[-1].prjid_api
+        if user.is_staff and not user.ldap_uid:
+            target_user = [tu for tu in mapuser if tu['username'] == user.ldap_username]
+            if target_user:
+                user.ldap_uid = target_user[0]['uid']
+            else:
+                user.ldap_uid = confopts['usersetup']['uid_ops_offset'] + user.uid_api
+        if user.is_staff and not user.ldap_gid:
+            target_user = [tu for tu in mapuser if tu['username'] == user.ldap_username]
+            if target_user:
+                user.ldap_gid = target_user[0]['gid']
+            else:
+                user.ldap_gid = confopts['usersetup']['gid_ops_offset'] + user.project[-1].prjid_api
 
     projects = session.query(Project).all()
     for project in projects:
         if not project.ldap_gid:
-            project.ldap_gid = confopts['usersetup']['gid_offset'] + project.prjid_api
+            project.ldap_gid = confopts['usersetup']['gid_offset'] + user.project[-1].prjid_api
 
     session.commit()
     session.close()
