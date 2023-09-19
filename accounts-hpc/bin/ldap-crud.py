@@ -142,6 +142,22 @@ def create_default_groups(confopts, conn, logger):
             numgroup += 1
 
 
+def create_resource_groups(confopts, conn, logger):
+    numgroup = 1
+    num_defgroups = len(confopts['usersetup']['default_groups'])
+    for gr in confopts['usersetup']['resource_groups']:
+        group_ldap = conn.search(f"cn={gr},ou=Group,{confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
+        if not group_ldap:
+            ldap_gid = confopts['usersetup']['gid_ops_offset'] + numgroup + num_defgroups
+            ldap_project = bonsai.LDAPEntry(f"cn={gr},ou=Group,{confopts['ldap']['basedn']}")
+            ldap_project['cn'] = [gr]
+            ldap_project['objectClass'] = ['top', 'posixGroup']
+            ldap_project['gidNumber'] = [ldap_gid]
+            conn.add(ldap_project)
+            logger.info(f"Created resource group {gr} with gid={ldap_gid}")
+            numgroup += 1
+
+
 def main():
     lobj = Logger(sys.argv[0])
     logger = lobj.get()
@@ -158,6 +174,7 @@ def main():
         conn = client.connect()
 
         create_default_groups(confopts, conn, logger)
+        create_resource_groups(confopts, conn, logger)
 
     except bonsai.errors.AuthenticationError as exc:
         logger.error(exc)
