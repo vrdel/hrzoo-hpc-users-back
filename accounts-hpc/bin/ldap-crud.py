@@ -28,17 +28,21 @@ def new_user_ldap_add(confopts, conn, user):
     conn.add(ldap_user)
 
 
-def user_addto_group(confopts, conn, logger, user, group):
+def update_defgroups(confopts, conn, logger, users, group, onlyops=False):
     ldap_group = conn.search(f"cn={group},ou=Group,{confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
     try:
         existing_members = ldap_group[0]['memberUid']
     except KeyError:
         existing_members = []
-    if user.ldap_uid not in existing_members:
-        existing_members.append(user.ldap_username)
-        ldap_group[0].change_attribute('memberUid', bonsai.LDAPModOp.REPLACE, *existing_members)
+    # TODO: check also is_active
+    all_usernames = [user.ldap_username for user in users]
+    if set(all_usernames) != set(existing_members):
+        ldap_group[0].change_attribute('memberUid', bonsai.LDAPModOp.REPLACE, *all_usernames)
         ldap_group[0].modify()
-        # logger.info(f"Added user {user.person_uniqueid} to default group {group}")
+        diff_res = set(all_usernames).difference(set(existing_members))
+        if not diff_res:
+            diff_res = set(existing_members).difference(set(all_usernames))
+        logger.info(f"Updated default group {group} because of difference: {diff_res}")
 
 
 def user_ldap_update(confopts, session, logger, user, ldap_user):
@@ -168,7 +172,6 @@ def main():
         ldap_user = conn.search(f"cn={user.ldap_username},ou=People,{confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
         if not ldap_user:
             new_user_ldap_add(confopts, conn, user)
-            user_addto_group(confopts, conn, logger, user, "hpc-users")
         else:
             user_ldap_update(confopts, session, logger, user, ldap_user)
 
@@ -179,6 +182,10 @@ def main():
             new_group_ldap_add(confopts, conn, project)
         else:
             group_ldap_update(confopts, session, logger, project, ldap_project)
+
+    # handle default groups associations
+    update_defgroups(confopts, conn, logger, users, "hpc-users")
+    # update_defgroups(confopts, conn, logger, users, "hpc", onlyops=True)
 
     session.commit()
     session.close()
