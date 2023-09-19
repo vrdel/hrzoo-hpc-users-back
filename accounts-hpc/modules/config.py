@@ -48,7 +48,11 @@ def parse_config(logger=None):
                     confopts['usersetup'].update({'default_groups': config.get(section, 'default_groups')})
                     confopts['usersetup']['default_groups'] = \
                             [gr.strip() for gr in confopts['usersetup']['default_groups'].split(',')]
+                    confopts['usersetup'].update({'resource_groups': config.get(section, 'resource_groups')})
+                    confopts['usersetup']['resource_groups'] = \
+                            [gr.strip() for gr in confopts['usersetup']['resource_groups'].split(',')]
                     confopts['usersetup'].update({'homeprefix': config.get(section, 'homeprefix')})
+                    confopts['usersetup'].update({'usersmap': config.get(section, 'usersmap')})
 
             if 'DEFAULT' in config:
                 confopts['DEFAULT'] = ({'VENV': config.get('DEFAULT', 'VENV')})
