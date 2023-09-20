@@ -12,6 +12,8 @@ from sqlalchemy import and_
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import NoResultFound
 
+import argparse
+
 
 def new_user_ldap_add(confopts, conn, user):
     ldap_user = bonsai.LDAPEntry(f"cn={user.ldap_username},ou=People,{confopts['ldap']['basedn']}")
@@ -188,6 +190,9 @@ def create_resource_groups(confopts, conn, logger):
 def main():
     lobj = Logger(sys.argv[0])
     logger = lobj.get()
+
+    parser = argparse.ArgumentParser(description="""Create, read and update ou=People and ou=Group entries in LDAP""")
+    args = parser.parse_args()
 
     confopts = parse_config()
 
