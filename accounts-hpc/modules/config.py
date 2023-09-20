@@ -49,10 +49,19 @@ def parse_config(logger=None):
                     confopts['usersetup']['default_groups'] = \
                             [gr.strip() for gr in confopts['usersetup']['default_groups'].split(',')]
                     confopts['usersetup'].update({'resource_groups': config.get(section, 'resource_groups')})
-                    confopts['usersetup']['resource_groups'] = \
-                            [gr.strip() for gr in confopts['usersetup']['resource_groups'].split(',')]
+                    if confopts['usersetup']['resource_groups']:
+                        confopts['usersetup']['resource_groups'] = \
+                                [gr.strip() for gr in confopts['usersetup']['resource_groups'].split(',')]
                     confopts['usersetup'].update({'homeprefix': config.get(section, 'homeprefix')})
                     confopts['usersetup'].update({'usermap': config.get(section, 'usermap')})
+                    confopts['usersetup'].update({'userdirs_in': config.get(section, 'userdirs_in')})
+                    if confopts['usersetup']['userdirs_in']:
+                        confopts['usersetup']['userdirs_in'] = \
+                                [dir.strip() for dir in confopts['usersetup']['userdirs_in'].split(',')]
+                    confopts['usersetup'].update({'groupdirs_in': config.get(section, 'groupdirs_in')})
+                    if confopts['usersetup']['groupdirs_in']:
+                        confopts['usersetup']['groupdirs_in'] = \
+                                [dir.strip() for dir in confopts['usersetup']['groupdirs_in'].split(',')]
 
             if 'DEFAULT' in config:
                 confopts['DEFAULT'] = ({'VENV': config.get('DEFAULT', 'VENV')})

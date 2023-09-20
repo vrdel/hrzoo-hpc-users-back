@@ -32,6 +32,8 @@ default_groups = hpc, hpc-users
 resource_groups = hpc-gpu, hpc-bigmem
 homeprefix = /lustre/home/
 usermap = /opt/hrzoo-accounts-hpc/etc/accounts-hpc/users_map.json
+userdirs_in = /storage/home
+groupdirs_in = /lustre/group/, /storage/group/
 
 [db]
 path = %(VENV)s/var/lib/cache.db
