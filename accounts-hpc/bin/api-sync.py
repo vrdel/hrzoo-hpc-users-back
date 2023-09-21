@@ -137,7 +137,7 @@ def users_projects_add(args, session, projects_users):
             pr = Project(name=uspr['project']['name'],
                          identifier=uspr['project']['identifier'],
                          prjid_api=uspr['project']['id'],
-                         is_dir_created=False if args.initset else True,
+                         is_dir_created=True if args.initset else False,
                          staff_resources_type_api=uspr['project']['staff_resources_type'],
                          ldap_gid=0)
 
@@ -158,7 +158,7 @@ def users_projects_add(args, session, projects_users):
             us = User(first_name=only_alnum(unidecode(uspr['user']['first_name'])),
                       is_active=uspr['user']['is_active'],
                       is_opened=False if args.initset else True,
-                      is_dir_created=False if args.initset else True,
+                      is_dir_created=True if args.initset else False,
                       is_staff=uspr['user']['is_staff'],
                       last_name=only_alnum(unidecode(uspr['user']['last_name'])),
                       person_mail=uspr['user']['person_mail'],
