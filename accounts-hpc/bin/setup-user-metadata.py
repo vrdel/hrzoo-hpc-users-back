@@ -70,7 +70,12 @@ def main():
             user.ldap_uid = confopts['usersetup']['uid_offset'] + user.uid_api
         if not user.ldap_gid and not user.is_staff and user.project:
             # user GID is always set to GID of last assigned project
+            # we assume here that --init-set is run and relation between user,project is set
             user.ldap_gid = confopts['usersetup']['gid_offset'] + user.project[-1].prjid_api
+        if not user.ldap_gid and not user.is_staff and not user.project:
+            # set ldap_gid based on user.projects_api last project
+            target_project = [pr for pr in projects if pr.identifier == user.projects_api[-1]]
+            user.ldap_gid = confopts['usersetup']['gid_offset'] + target_project[0].prjid_api
         if user.is_staff and not user.ldap_uid:
             target_user = [tu for tu in mapuser if tu['username'] == user.ldap_username]
             if target_user:
