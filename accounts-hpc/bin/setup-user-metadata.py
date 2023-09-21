@@ -89,7 +89,6 @@ def main():
             else:
                 user.ldap_gid = confopts['usersetup']['gid_ops_offset'] + user.project[-1].prjid_api
 
-
     session.commit()
     session.close()
 

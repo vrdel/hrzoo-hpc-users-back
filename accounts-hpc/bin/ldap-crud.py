@@ -116,7 +116,10 @@ def user_ldap_update(confopts, session, logger, user, ldap_user):
     keys_diff_add = set(user.sshkeys_api).difference(set(keys_db))
     if keys_diff_add:
         for key in keys_diff_add:
-            target_key = session.query(SshKey).filter(SshKey.fingerprint == key).one()
+            target_key = session.query(SshKey).filter(and_(
+                SshKey.fingerprint == key,
+                SshKey.uid_api == user.uid_api,
+            )).one()
             user.sshkey.append(target_key)
             logger.info(f"Added key {target_key.name} for user {user.person_uniqueid}")
     keys_diff_del = set(keys_db).difference(set(user.sshkeys_api))
