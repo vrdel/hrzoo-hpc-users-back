@@ -55,6 +55,11 @@ def main():
         with open(confopts['usersetup']['usermap'], mode='r') as fp:
             mapuser = json.loads(fp.read())
 
+    projects = session.query(Project).all()
+    for project in projects:
+        if not project.ldap_gid:
+            project.ldap_gid = confopts['usersetup']['gid_offset'] + project.prjid_api
+
     users = session.query(User).all()
     all_usernames = [user.ldap_username for user in users if user.ldap_username]
     for user in users:
@@ -79,10 +84,6 @@ def main():
             else:
                 user.ldap_gid = confopts['usersetup']['gid_ops_offset'] + user.project[-1].prjid_api
 
-    projects = session.query(Project).all()
-    for project in projects:
-        if not project.ldap_gid:
-            project.ldap_gid = confopts['usersetup']['gid_offset'] + project.prjid_api
 
     session.commit()
     session.close()
