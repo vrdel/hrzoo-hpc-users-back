@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import sys
+import os
 
 from accounts_hpc.config import parse_config  # type: ignore
 from accounts_hpc.log import Logger  # type: ignore
@@ -28,12 +29,31 @@ def main():
     Session = sessionmaker(engine)
     session = Session()
 
-
-    import ipdb; ipdb.set_trace()
-
     users = session.query(User).all()
     for user in users:
-        pass
+        if not user.is_dir_created:
+            completed = 0
+
+            for dir in confopts['usersetup']['userdirs_in']:
+                try:
+                    os.mkdir(dir + user.ldap_username, 0o700)
+
+                except FileExistsError:
+                    pass
+                except (PermissionError, FileNotFoundError) as exc:
+                    logger.error(exc)
+                    break
+
+                try:
+                    os.chown(dir + user.ldap_username, user.ldap_uid, user.ldap_gid)
+                    completed += 1
+
+                except (PermissionError, OSError, FileNotFoundError) as exc:
+                    logger.error(exc)
+
+            if completed == len(confopts['usersetup']['userdirs_in']):
+                user.is_dir_created = True
+                logger.info(f"Created {dir + user.ldap_username} with perm {user.ldap_uid}:{user.ldap_gid}")
 
     projects = session.query(Project).all()
     for project in projects:
