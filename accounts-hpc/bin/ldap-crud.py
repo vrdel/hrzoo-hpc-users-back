@@ -59,28 +59,29 @@ def update_default_groups(confopts, conn, logger, users, group, onlyops=False):
 def update_resource_groups(confopts, conn, logger, users, group):
     all_usernames = list()
     ldap_group = conn.search(f"cn={group},ou=Group,{confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
-    try:
-        existing_members = ldap_group[0]['memberUid']
-    except KeyError:
-        existing_members = []
+    if ldap_group:
+        try:
+            existing_members = ldap_group[0]['memberUid']
+        except KeyError:
+            existing_members = []
 
-    for user in users:
-        resource_match = False
-        for project in user.project:
-            for rt in project.staff_resources_type_api:
-                if rt in group.upper():
-                    resource_match = True
-                    break
-        if resource_match:
-            all_usernames.append(user.ldap_username)
+        for user in users:
+            resource_match = False
+            for project in user.project:
+                for rt in project.staff_resources_type_api:
+                    if rt in group.upper():
+                        resource_match = True
+                        break
+            if resource_match:
+                all_usernames.append(user.ldap_username)
 
-    if set(all_usernames) != set(existing_members):
-        ldap_group[0].change_attribute('memberUid', bonsai.LDAPModOp.REPLACE, *all_usernames)
-        ldap_group[0].modify()
-        diff_res = set(all_usernames).difference(set(existing_members))
-        if not diff_res:
-            diff_res = set(existing_members).difference(set(all_usernames))
-        logger.info(f"Updated resource group {group} because of difference: {diff_res}")
+        if set(all_usernames) != set(existing_members):
+            ldap_group[0].change_attribute('memberUid', bonsai.LDAPModOp.REPLACE, *all_usernames)
+            ldap_group[0].modify()
+            diff_res = set(all_usernames).difference(set(existing_members))
+            if not diff_res:
+                diff_res = set(existing_members).difference(set(all_usernames))
+            logger.info(f"Updated resource group {group} because of difference: {diff_res}")
 
 
 def user_ldap_update(confopts, session, logger, user, ldap_user):
