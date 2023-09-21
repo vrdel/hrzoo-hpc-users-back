@@ -16,6 +16,7 @@ import argparse
 
 
 def new_user_ldap_add(confopts, conn, user):
+
     ldap_user = bonsai.LDAPEntry(f"cn={user.ldap_username},ou=People,{confopts['ldap']['basedn']}")
     ldap_user['objectClass'] = ['top', 'account', 'posixAccount', 'shadowAccount', 'ldapPublicKey']
     ldap_user['cn'] = [user.ldap_username]
@@ -26,7 +27,12 @@ def new_user_ldap_add(confopts, conn, user):
     ldap_user['loginShell'] = ['/bin/bash']
     ldap_user['gecos'] = [f"{user.first_name} {user.last_name}"]
     ldap_user['userPassword'] = ['']
-    ldap_user['sshPublicKey'] = [sshkey.public_key for sshkey in user.sshkey]
+    # ssh keys relations are set if we synced with --init-set
+    keys = [sshkey.public_key for sshkey in user.sshkey]
+    if keys:
+        ldap_user['sshPublicKey'] = keys
+    else:
+        ldap_user['sshPublicKey'] = ''
     conn.add(ldap_user)
 
 
