@@ -28,6 +28,7 @@ class User(Base):
     is_active: Mapped[bool] = mapped_column(Boolean)
     is_opened: Mapped[bool] = mapped_column(Boolean)
     is_staff: Mapped[bool] = mapped_column(Boolean)
+    is_dir_created: Mapped[bool] = mapped_column(Boolean)
     last_name: Mapped[str] = mapped_column(String(40))
     person_mail: Mapped[str] = mapped_column(String(60))
     person_uniqueid: Mapped[str] = mapped_column(String(128))
@@ -51,6 +52,7 @@ class Project(Base):
     prjid_api: Mapped[int] = mapped_column(Integer)
     ldap_gid: Mapped[int] = mapped_column(Integer)
     staff_resources_type_api: Mapped[List[str]] = mapped_column(MutableJson)
+    is_dir_created: Mapped[bool] = mapped_column(Boolean)
     user: Mapped[List[User]] = \
         relationship(secondary=user_projects_table, back_populates="project")
 
