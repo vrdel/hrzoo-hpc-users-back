@@ -23,6 +23,17 @@ from unidecode import unidecode
 import argparse
 
 
+def replace_projects_fields(session, fields):
+    projects = session.query(Project).all()
+
+    for project in projects:
+        for field in fields:
+            which = field.get('field').split('.')[1]
+            value = getattr(project, which)
+            if field['from'] in value:
+                value = value.replace(field['from'], field['to'])
+                setattr(project, which, value)
+
 def sshkeys_del(args, session, projects_users, sshkeys):
     interested_users = [up['user']['id'] for up in projects_users]
     hzsi_api_user_keys = dict()
@@ -252,6 +263,13 @@ async def run(logger, args, confopts):
     users_projects_del(args, session, projects_users)
     sshkeys_add(args, session, projects_users, sshkeys)
     sshkeys_del(args, session, projects_users, sshkeys)
+
+    if confopts['hzsiapi']['replacestring_map']:
+        with open(confopts['hzsiapi']['replacestring_map'], mode='r') as fp:
+            fieldsreplace = json.loads(fp.read())
+    projectsfields = [field for field in fieldsreplace if field.get('field').startswith('project.')]
+    if projectsfields:
+        replace_projects_fields(session, projectsfields)
 
     session.commit()
     session.close()
