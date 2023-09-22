@@ -25,6 +25,7 @@ import argparse
 
 def replace_projects_fields(session, fields):
     projects = session.query(Project).all()
+    users = session.query(User).all()
 
     for project in projects:
         for field in fields:
@@ -33,6 +34,21 @@ def replace_projects_fields(session, fields):
             if field['from'] in value:
                 value = value.replace(field['from'], field['to'])
                 setattr(project, which, value)
+                # specifically for project identifier replace also
+                # user.projects_api
+                if which == 'identifier':
+                    for user in users:
+                        newp = list()
+                        change = False
+                        for pr in user.projects_api:
+                            if field['from'] in pr:
+                                newp.append(pr.replace(field['from'], field['to']))
+                                change = True
+                            else:
+                                newp.append(pr)
+                        if change:
+                            user.projects_api = newp
+
 
 def sshkeys_del(args, session, projects_users, sshkeys):
     interested_users = [up['user']['id'] for up in projects_users]
