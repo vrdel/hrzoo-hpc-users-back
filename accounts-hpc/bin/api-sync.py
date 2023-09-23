@@ -172,7 +172,7 @@ def users_projects_add(args, session, projects_users):
             # TODO: OIB
             # and update first_name, last_name, unique_person_id
             us = session.query(User).filter(
-                User.person_uniqueid == uspr['user']['username']).one()
+                User.person_oib == uspr['user']['person_oib']).one()
             projects_api = us.projects_api
             # always up-to-date projects_api field with project associations
             if not projects_api:
@@ -180,6 +180,9 @@ def users_projects_add(args, session, projects_users):
             if uspr['project']['identifier'] not in projects_api:
                 projects_api.append(uspr['project']['identifier'])
             us.projects_api = projects_api
+            # always up to date fields
+            us.person_mail = uspr['user']['person_mail']
+            us.person_uniqueid = uspr['user']['username']
 
         except NoResultFound:
             us = User(first_name=only_alnum(unidecode(uspr['user']['first_name'])),
@@ -192,6 +195,7 @@ def users_projects_add(args, session, projects_users):
                       projects_api=[uspr['project']['identifier']],
                       sshkeys_api=list(),
                       person_uniqueid=uspr['user']['username'],
+                      person_oib=uspr['user']['person_oib'],
                       uid_api=uspr['user']['id'],
                       ldap_uid=0,
                       ldap_gid=0,

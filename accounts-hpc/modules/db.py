@@ -32,6 +32,7 @@ class User(Base):
     last_name: Mapped[str] = mapped_column(String(40))
     person_mail: Mapped[str] = mapped_column(String(60))
     person_uniqueid: Mapped[str] = mapped_column(String(128))
+    person_oib: Mapped[str] = mapped_column(String(11))
     projects_api: Mapped[List[str]] = mapped_column(MutableJson)
     sshkey: Mapped[List["SshKey"]] = relationship(back_populates="user")
     sshkeys_api: Mapped[List[str]] = mapped_column(MutableJson)
