@@ -283,9 +283,9 @@ async def run(logger, args, confopts):
     if confopts['hzsiapi']['replacestring_map']:
         with open(confopts['hzsiapi']['replacestring_map'], mode='r') as fp:
             fieldsreplace = json.loads(fp.read())
-    projectsfields = [field for field in fieldsreplace if field.get('field').startswith('project.')]
-    if projectsfields:
-        replace_projects_fields(session, projectsfields)
+        projectsfields = [field for field in fieldsreplace if field.get('field').startswith('project.')]
+        if projectsfields:
+            replace_projects_fields(session, projectsfields)
 
     session.commit()
     session.close()
