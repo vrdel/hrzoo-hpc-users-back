@@ -170,8 +170,7 @@ def users_projects_add(args, session, projects_users):
                          ldap_gid=0)
 
         try:
-            # TODO: OIB
-            # and update first_name, last_name, unique_person_id
+            # use person_oib as unique identifier of user
             us = session.query(User).filter(
                 User.person_oib == uspr['user']['person_oib']).one()
             projects_api = us.projects_api
