@@ -64,6 +64,7 @@ def parse_config(logger=None):
                         confopts['usersetup']['groupdirs_in'] = \
                                 [dir.strip() for dir in confopts['usersetup']['groupdirs_in'].split(',')]
                     confopts['usersetup'].update({'pbsfairshare_path': config.get(section, 'pbsfairshare_path')})
+                    confopts['usersetup'].update({'pbsprocname': config.get(section, 'pbsprocname')})
 
             if 'DEFAULT' in config:
                 confopts['DEFAULT'] = ({'VENV': config.get('DEFAULT', 'VENV')})

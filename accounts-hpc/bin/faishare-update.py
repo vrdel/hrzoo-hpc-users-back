@@ -74,7 +74,7 @@ def main():
         fsobj.close()
 
         if is_updated:
-            logger.info("fairshare updated, sending SIGHUP")
+            logger.info("PBS fairshare updated, sending SIGHUP")
 
     session.commit()
     session.close()
