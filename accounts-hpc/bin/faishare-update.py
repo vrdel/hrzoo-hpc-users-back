@@ -20,8 +20,14 @@ import signal
 
 def send_sighup(process_name):
     for proc in psutil.process_iter(['pid', 'name']):
-        if proc.info['cmdline'] == process_name:
+        if proc.info['name'] == process_name:
             os.kill(proc.info['pid'], signal.SIGHUP)
+
+
+def update_cacheflag(projectsdb):
+    for project in projectsdb:
+        if not project.is_pbsfairshare_added:
+            project.is_pbsfairshare_added = True
 
 
 def update_file(fsobj, projids):
@@ -71,12 +77,14 @@ def main():
 
         if args.new:
             update_file(fsobj, all_projids)
+            update_cacheflag(projects)
             is_updated = True
         else:
             fs_lines = fsobj.readlines()
             all_projids_infile = [line.split(' ')[0] for line in fs_lines]
             if set(all_projids).difference(set(all_projids_infile)):
                 update_file(fsobj, all_projids)
+                update_cacheflag(projects)
                 is_updated = True
 
         fsobj.close()
