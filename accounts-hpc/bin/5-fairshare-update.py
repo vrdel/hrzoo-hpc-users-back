@@ -34,6 +34,7 @@ def update_file(fsobj, projids):
     fs_lines_write = list()
     nline = 1
     for ident in projids:
+        # TODO: first internal hpc
         line_to_write = '{0:<32} {1:03} root 100\n'.format(ident, nline)
         nline += 1
         fs_lines_write.append(line_to_write)
