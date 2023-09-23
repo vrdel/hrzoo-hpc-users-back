@@ -35,7 +35,7 @@ usermap = /opt/hrzoo-accounts-hpc/etc/accounts-hpc/users_map.json
 userdirs_in = /storage/home
 groupdirs_in = /lustre/group/, /storage/group/
 pbsfairshare_path = /var/spool/pbs/sched_priv/resource_group
-pbsprocname = /opt/pbs/sbin/pbs_sched
+pbsprocname = pbs_sched
 
 [db]
 path = %(VENV)s/var/lib/cache.db

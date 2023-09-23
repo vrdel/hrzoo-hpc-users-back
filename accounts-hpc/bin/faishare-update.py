@@ -14,6 +14,14 @@ from sqlalchemy.exc import NoResultFound
 
 import argparse
 import json
+import psutil
+import signal
+
+
+def send_sighup(process_name):
+    for proc in psutil.process_iter(['pid', 'name']):
+        if proc.info['cmdline'] == process_name:
+            os.kill(proc.info['pid'], signal.SIGHUP)
 
 
 def update_file(fsobj, projids):
@@ -75,6 +83,7 @@ def main():
 
         if is_updated:
             logger.info("PBS fairshare updated, sending SIGHUP")
+            send_sighup(pbsprocname)
 
     session.commit()
     session.close()
