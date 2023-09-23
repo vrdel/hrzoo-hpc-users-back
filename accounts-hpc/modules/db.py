@@ -29,6 +29,10 @@ class User(Base):
     is_opened: Mapped[bool] = mapped_column(Boolean)
     is_staff: Mapped[bool] = mapped_column(Boolean)
     is_dir_created: Mapped[bool] = mapped_column(Boolean)
+    mail_is_subscribed: Mapped[bool] = mapped_column(Boolean)
+    mail_is_opensend: Mapped[bool] = mapped_column(Boolean)
+    mail_is_sshkeyadded: Mapped[bool] = mapped_column(Boolean)
+    mail_name_sshkey: Mapped[bool] = mapped_column(MutableJson)
     last_name: Mapped[str] = mapped_column(String(40))
     person_mail: Mapped[str] = mapped_column(String(60))
     person_uniqueid: Mapped[str] = mapped_column(String(128))
@@ -55,6 +59,7 @@ class Project(Base):
     staff_resources_type_api: Mapped[List[str]] = mapped_column(MutableJson)
     is_dir_created: Mapped[bool] = mapped_column(Boolean)
     is_pbsfairshare_added: Mapped[bool] = mapped_column(Boolean)
+    type: Mapped[str] = mapped_column(String(32))
     user: Mapped[List[User]] = \
         relationship(secondary=user_projects_table, back_populates="project")
 
