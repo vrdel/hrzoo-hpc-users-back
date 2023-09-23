@@ -16,7 +16,6 @@ import argparse
 
 
 def new_user_ldap_add(confopts, conn, user):
-
     ldap_user = bonsai.LDAPEntry(f"cn={user.ldap_username},ou=People,{confopts['ldap']['basedn']}")
     ldap_user['objectClass'] = ['top', 'account', 'posixAccount', 'shadowAccount', 'ldapPublicKey']
     ldap_user['cn'] = [user.ldap_username]
@@ -38,6 +37,7 @@ def new_user_ldap_add(confopts, conn, user):
 
 def update_default_groups(confopts, conn, logger, users, group, onlyops=False):
     ldap_group = conn.search(f"cn={group},ou=Group,{confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
+
     try:
         existing_members = ldap_group[0]['memberUid']
     except KeyError:
@@ -232,18 +232,28 @@ def main():
         if not user.ldap_username:
             continue
         ldap_user = conn.search(f"cn={user.ldap_username},ou=People,{confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
-        if not ldap_user:
-            new_user_ldap_add(confopts, conn, user)
-        else:
-            user_ldap_update(confopts, session, logger, user, ldap_user)
+        try:
+            if not ldap_user or not user.is_opened:
+                new_user_ldap_add(confopts, conn, user)
+            else:
+                user_ldap_update(confopts, session, logger, user, ldap_user)
+            user.is_opened = True
+        except bonsai.errors.AlreadyExists as exc:
+            logger.warning(f'LDAP user {user.ldap_username} - {repr(exc)}')
+            user.is_opened = True
+        except bonsai.errors.LDAPError as exc:
+            logger.error(f'Error adding LDAP user {user.ldap_username} - {repr(exc)}')
 
     projects = session.query(Project).all()
     for project in projects:
         ldap_project = conn.search(f"cn={project.identifier},ou=Group,{confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
-        if not ldap_project:
-            new_group_ldap_add(confopts, conn, project)
-        else:
-            group_ldap_update(confopts, session, logger, project, ldap_project)
+        try:
+            if not ldap_project:
+                new_group_ldap_add(confopts, conn, project)
+            else:
+                group_ldap_update(confopts, session, logger, project, ldap_project)
+        except bonsai.errors.LDAPError as exc:
+            logger.error(f'Error adding LDAP group {project.identifier} - {repr(exc)}')
 
     # handle default groups associations
     update_default_groups(confopts, conn, logger, users, "hpc-users")
