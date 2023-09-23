@@ -54,6 +54,7 @@ class Project(Base):
     ldap_gid: Mapped[int] = mapped_column(Integer)
     staff_resources_type_api: Mapped[List[str]] = mapped_column(MutableJson)
     is_dir_created: Mapped[bool] = mapped_column(Boolean)
+    is_pbsfairshare_added: Mapped[bool] = mapped_column(Boolean)
     user: Mapped[List[User]] = \
         relationship(secondary=user_projects_table, back_populates="project")
 

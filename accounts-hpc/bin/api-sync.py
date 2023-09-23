@@ -165,6 +165,7 @@ def users_projects_add(args, session, projects_users):
                          identifier=uspr['project']['identifier'],
                          prjid_api=uspr['project']['id'],
                          is_dir_created=True if args.initset else False,
+                         is_pbsfairshare_added=True if args.initset else False,
                          staff_resources_type_api=uspr['project']['staff_resources_type'],
                          ldap_gid=0)
 
