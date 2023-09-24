@@ -1,43 +1,65 @@
+# -*- coding: utf-8 -*-
+
+from email.message import EmailMessage
+from email.header import Header
+from email.headerregistry import Address
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from email.header import Header
+
 import datetime
+import re
 import smtplib
 import socket
-import re
+import ssl
 
 
 class EmailSend(object):
-    def __init__(self, template, smtpserver, emailfrom,
-                 emailto, username, password, logger):
+    def __init__(self, logger, confopts, emailto, username=None):
         self.username = username
-        self.password = password
-        self.template = template
-        self.smtpserver = smtpserver
-        self.emailfrom = emailfrom
-        self.emailto = emailto
+        if username:
+            self.template = confopts['email']['template_newuser']
+        else:
+            self.template = confopts['email']['template_newkey']
+        self.smtpserver = confopts['email']['smtp']
+        self.port = confopts['email']['port']
+        self.tls = confopts['email']['tls']
+        self.ssl = confopts['email']['ssl']
+        self.user = confopts['email']['user']
+        self.password = confopts['email']['password']
+        self.timeout = confopts['email']['timeout']
+        self.emailfrom = confopts['email']['from']
+        # self.emailbcc = confopts['email']['bcc']
+        self.emailbcc = "daniel.vrcic@gmail.com"
+        # self.emailto = emailto
+        self.emailto = "daniel.vrcic@srce.hr"
         self.logger = logger
 
     def _construct_email(self):
         text = None
 
-        with open(self.templatecontent) as fp:
+        with open(self.template, encoding='utf-8') as fp:
             text = fp.readlines()
             self.subject = text[0].strip()
 
-        # only plain text emails for now
-        multipart_email = MIMEMultipart('alternative')
-        multipart_email['From'] = self.emailfrom
-        multipart_email['Cc'] = self.emailfrom
-        multipart_email['To'] = self.emailto
-        multipart_email['Subject'] = Header(self.subject, 'utf-8')
+        # first line - subject
+        # second line - separator
+        # skip these
+        del text[0:2]
         text = ''.join(text)
-        text = text.replace('__USERNAME__', str(self.username))
+        if self.username:
+            text = text.replace('__USERNAME__', str(self.username))
 
         if text:
-            mailplain = MIMEText(text, 'plain', 'utf-8')
-            multipart_email.attach(mailplain)
-            return multipart_email.as_string()
+            email = EmailMessage()
+            displayname = f"{self.emailfrom.split(' ')[0]} {self.emailfrom.split(' ')[1]}"
+            addr_spec = self.emailfrom.split(' ')[-1].replace('>', '').replace('<', '')
+            email['From'] = Address(display_name=displayname, addr_spec=addr_spec)
+            email['To'] = self.emailto
+            email['Subject'] = self.subject
+            email['Bcc'] = self.emailbcc
+            email.set_content(text)
+            # multipart_email.attach(mailplain)
+            return email.as_string()
 
         else:
             return None
@@ -55,9 +77,15 @@ class EmailSend(object):
 
         else:
             try:
-                s = smtplib.SMTP(self.smtpserver, 25, timeout=120)
+                if self.port == 25:
+                    s = smtplib.SMTP(self.smtpserver, self.port, timeout=self.timeout)
+                else:
+                    s = smtplib.SMTP(self.smtpserver, self.port, timeout=self.timeout)
+                    context = ssl.create_default_context()
+                    s.starttls(context=context)
+                    s.login(self.user, self.password)
                 s.ehlo()
-                s.sendmail(self.emailfrom, [self.emailto, self.emailfrom], email_text)
+                s.sendmail(self.emailfrom, [self.emailbcc, self.emailto], email_text)
                 s.quit()
 
                 return True
