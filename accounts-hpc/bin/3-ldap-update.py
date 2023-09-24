@@ -22,7 +22,7 @@ def new_user_ldap_add(confopts, conn, user):
     ldap_user['uid'] = [user.ldap_username]
     ldap_user['uidNumber'] = [user.ldap_uid]
     ldap_user['gidNumber'] = [user.ldap_gid]
-    ldap_user['homeDirectory'] = [f"/lustre/home/{user.ldap_username}"]
+    ldap_user['homeDirectory'] = [f"{confopts['usersetup']['homeprefix']}{user.ldap_username}"]
     ldap_user['loginShell'] = ['/bin/bash']
     ldap_user['gecos'] = [f"{user.first_name} {user.last_name}"]
     ldap_user['userPassword'] = ['']
