@@ -12,7 +12,6 @@ from accounts_hpc.httpconn import SessionWithRetry
 from accounts_hpc.exceptions import SyncHttpError
 from accounts_hpc.utils import only_alnum, all_none, contains_exception
 
-
 from sqlalchemy import create_engine
 from sqlalchemy import and_
 from sqlalchemy.orm import sessionmaker
@@ -36,6 +35,8 @@ def replace_projects_fields(session, fields):
                 setattr(project, which, value)
                 # specifically for project identifier replace also
                 # user.projects_api
+                # TODO: fix this as for the second run is back to original
+                # and this clause is not called
                 if which == 'identifier':
                     for user in users:
                         newp = list()
@@ -48,6 +49,7 @@ def replace_projects_fields(session, fields):
                                 newp.append(pr)
                         if change:
                             user.projects_api = newp
+                        print(user.projects_api)
 
 
 def sshkeys_del(args, session, projects_users, sshkeys):
@@ -156,8 +158,10 @@ def users_projects_del(args, session, projects_users):
 def users_projects_add(args, session, projects_users):
     for uspr in projects_users:
         try:
+            # lookup by API project id as identifier maybe
+            # replaced later in replace_projects_fields()
             pr = session.query(Project).filter(
-                Project.identifier == uspr['project']['identifier']).one()
+                Project.prjid_api == uspr['project']['id']).one()
             # update staff_resources_type with latest value
             pr.staff_resources_type_api = uspr['project']['staff_resources_type']
         except NoResultFound:
@@ -192,7 +196,7 @@ def users_projects_add(args, session, projects_users):
                       is_dir_created=True if args.initset else False,
                       mail_is_opensend=True if args.initset else False,
                       mail_is_subscribed=True if args.initset else False,
-                      mail_is_sshkeyadded=False,
+                      mail_is_sshkeyadded=True if args.initset else False,
                       mail_name_sshkey=list(),
                       is_staff=uspr['user']['is_staff'],
                       last_name=only_alnum(unidecode(uspr['user']['last_name'])),
@@ -293,8 +297,8 @@ async def run(logger, args, confopts):
         with open(confopts['hzsiapi']['replacestring_map'], mode='r') as fp:
             fieldsreplace = json.loads(fp.read())
         projectsfields = [field for field in fieldsreplace if field.get('field').startswith('project.')]
-        if projectsfields:
-            replace_projects_fields(session, projectsfields)
+    if projectsfields:
+        replace_projects_fields(session, projectsfields)
 
     session.commit()
     session.close()
