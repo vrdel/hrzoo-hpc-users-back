@@ -14,8 +14,9 @@ import ssl
 
 
 class EmailSend(object):
-    def __init__(self, logger, confopts, emailto, username=None):
+    def __init__(self, logger, confopts, emailto, username=None, sshkeyname=None):
         self.username = username
+        self.sshkeyname = sshkeyname
         if username:
             self.template = confopts['email']['template_newuser']
         else:
@@ -48,8 +49,11 @@ class EmailSend(object):
         # skip these
         del text[0:2]
         text = ''.join(text)
+
         if self.username:
             text = text.replace('__USERNAME__', str(self.username))
+        if self.sshkeyname:
+            text = text.replace('__KEYNAME__', str(self.sshkeyname))
 
         if text:
             email = EmailMessage()
