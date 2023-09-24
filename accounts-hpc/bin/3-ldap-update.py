@@ -165,7 +165,7 @@ def group_ldap_update(confopts, session, logger, project, ldap_project):
         else:
             ldap_project[0].change_attribute('memberUid', bonsai.LDAPModOp.REPLACE, *project_new_members)
         ldap_project[0].modify()
-        logger.info(f"Updating memberUid for LDAP cn={project.identifier},ou=Group")
+        logger.info(f"Updating memberUid for LDAP cn={project.identifier},ou=Group - new members {project_new_members}")
 
 
 
