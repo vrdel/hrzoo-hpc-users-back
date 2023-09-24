@@ -50,5 +50,11 @@ timeout = 15
 template_newuser = /opt/hrzoo-accounts-hpc/etc/accounts-hpc/email-template-new-user.txt
 template_newkey = /opt/hrzoo-accounts-hpc/etc/accounts-hpc/email-template-new-key.txt
 
+[mailinglist]
+name = computing-users@srce.hr
+server = http://list.srce.hr:8001/3.0
+credentials = xxxx:xxxx
+timeout = 15
+
 [db]
 path = %(VENV)s/var/lib/cache.db

@@ -168,7 +168,6 @@ def group_ldap_update(confopts, session, logger, project, ldap_project):
         logger.info(f"Updating memberUid for LDAP cn={project.identifier},ou=Group - new members {project_new_members}")
 
 
-
 def create_default_groups(confopts, conn, logger):
     numgroup = 1
     for gr in confopts['usersetup']['default_groups']:

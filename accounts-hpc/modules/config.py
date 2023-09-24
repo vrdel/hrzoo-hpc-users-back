@@ -54,6 +54,12 @@ def parse_config(logger=None):
                     confopts['email'].update({'ssl': config.getboolean(section, 'ssl')})
                     confopts['email'].update({'timeout': config.getint(section, 'timeout')})
 
+                if section.startswith('mailinglist'):
+                    confopts['mailinglist'] = ({'name': config.get(section, 'name')})
+                    confopts['mailinglist'].update({'server': config.get(section, 'server')})
+                    confopts['mailinglist'].update({'credentials': config.get(section, 'credentials')})
+                    confopts['mailinglist'].update({'timeout': config.getint(section, 'timeout')})
+
                 if section.startswith('usersetup'):
                     confopts['usersetup'] = ({'uid_offset': config.getint(section, 'uid_offset')})
                     confopts['usersetup'].update({'gid_offset': config.getint(section, 'gid_offset')})
