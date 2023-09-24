@@ -30,11 +30,11 @@ class EmailSend(object):
         self.timeout = confopts['email']['timeout']
         self.emailfrom = confopts['email']['from']
         # TODO: uncomment
-        # self.emailbcc = confopts['email']['bcc']
-        self.emailbcc = "daniel.vrcic@gmail.com"
+        # self.emailbcc = "daniel.vrcic@gmail.com"
+        self.emailbcc = confopts['email']['bcc']
         # TODO: uncomment
-        # self.emailto = emailto
-        self.emailto = "daniel.vrcic@srce.hr"
+        # self.emailto = "daniel.vrcic@srce.hr"
+        self.emailto = emailto
         self.logger = logger
 
     def _construct_email(self):
