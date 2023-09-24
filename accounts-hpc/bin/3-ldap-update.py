@@ -122,6 +122,8 @@ def user_ldap_update(confopts, session, logger, user, ldap_user):
                 SshKey.uid_api == user.uid_api,
             )).one()
             user.sshkey.append(target_key)
+            user.mail_name_sshkey.append(target_key.name)
+            user.mail_is_sshkeyadded = False
             logger.info(f"Added key {target_key.name} for user {user.person_uniqueid}")
     keys_diff_del = set(keys_db).difference(set(user.sshkeys_api))
     if keys_diff_del:
@@ -162,8 +164,9 @@ def group_ldap_update(confopts, session, logger, project, ldap_project):
             del ldap_project[0]['memberUid']
         else:
             ldap_project[0].change_attribute('memberUid', bonsai.LDAPModOp.REPLACE, *project_new_members)
-        ldap_project[0].modify()
+            ldap_project[0].modify()
         logger.info(f"Updating memberUid for LDAP cn={project.identifier},ou=Group")
+
 
 
 def create_default_groups(confopts, conn, logger):
