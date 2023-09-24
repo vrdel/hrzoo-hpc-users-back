@@ -22,37 +22,11 @@ from unidecode import unidecode
 import argparse
 
 
-def replace_projects_fields(session, fields):
-    projects = session.query(Project).all()
-
-    for project in projects:
-        for field in fields:
-            which = field.get('field').split('.')[1]
-            value = getattr(project, which)
-            if field['from'] in value:
-                value = value.replace(field['from'], field['to'])
-                setattr(project, which, value)
-
-
-def replace_users_fields(session, fields):
-    users = session.query(User).all()
-
-    # specifically for project identifier replace also
-    # user.projects_api
-    for field in fields:
+def replace_projectsapi_fields(projectsfields, userproject):
+    for field in projectsfields:
         which = field.get('field').split('.')[1]
-        if which == 'identifier':
-            for user in users:
-                newp = list()
-                change = False
-                for pr in user.projects_api:
-                    if field['from'] in pr:
-                        newp.append(pr.replace(field['from'], field['to']))
-                        change = True
-                    else:
-                        newp.append(pr)
-                if change:
-                    user.projects_api = newp
+        if field['from'] in userproject['project'][which]:
+            userproject['project'][which] = userproject['project'][which].replace(field['from'], field['to'])
 
 
 def sshkeys_del(args, session, projects_users, sshkeys):
@@ -161,10 +135,8 @@ def users_projects_del(args, session, projects_users):
 def users_projects_add(args, session, projects_users):
     for uspr in projects_users:
         try:
-            # lookup by API project id as identifier maybe
-            # replaced later in replace_projects_fields()
             pr = session.query(Project).filter(
-                Project.prjid_api == uspr['project']['id']).one()
+                Project.identifier == uspr['project']['identifier']).one()
             # update staff_resources_type with latest value
             pr.staff_resources_type_api = uspr['project']['staff_resources_type']
         except NoResultFound:
@@ -266,6 +238,11 @@ async def run(logger, args, confopts):
         logger.error('Data fetch did not succeed')
         raise SystemExit(1)
 
+    if confopts['hzsiapi']['replacestring_map']:
+        with open(confopts['hzsiapi']['replacestring_map'], mode='r') as fp:
+            fieldsreplace = json.loads(fp.read())
+        projectsfields = [field for field in fieldsreplace if field.get('field').startswith('project.')]
+
     projects_users = list()
     visited_users = set()
     # build of projects_users association list
@@ -277,6 +254,8 @@ async def run(logger, args, confopts):
             if (up['project']['state']
                     not in confopts['hzsiapi']['project_state']):
                 continue
+            if projectsfields:
+                replace_projectsapi_fields(projectsfields, up)
             rt_found = False
             for rt in up['project']['staff_resources_type']:
                 if rt in confopts['hzsiapi']['project_resources']:
@@ -295,14 +274,6 @@ async def run(logger, args, confopts):
     users_projects_del(args, session, projects_users)
     sshkeys_add(args, session, projects_users, sshkeys)
     sshkeys_del(args, session, projects_users, sshkeys)
-
-    if confopts['hzsiapi']['replacestring_map']:
-        with open(confopts['hzsiapi']['replacestring_map'], mode='r') as fp:
-            fieldsreplace = json.loads(fp.read())
-        projectsfields = [field for field in fieldsreplace if field.get('field').startswith('project.')]
-    if projectsfields:
-        replace_projects_fields(session, projectsfields)
-        replace_users_fields(session, projectsfields)
 
     session.commit()
     session.close()
