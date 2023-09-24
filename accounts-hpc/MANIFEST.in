@@ -1,0 +1,11 @@
+include README.md
+include LICENSE
+include setup.py
+include requirements.txt
+
+include etc/*
+include cron/*
+include bin/*
+include modules/*
+
+exclude etc/*.conf

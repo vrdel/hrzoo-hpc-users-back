@@ -1,4 +1,4 @@
-from setuptools import setup, find_packages
+from setuptools import setup
 import os
 import glob
 import sys
@@ -51,6 +51,7 @@ setup(
         ('var/lib/', ['helpers/empty']),
         ('', ['requirements.txt']),
     ],
-    packages=find_packages(),
+    include_package_data=True,
+    packages=['accounts_hpc'],
     package_dir={'accounts_hpc': 'modules/'}
 )
