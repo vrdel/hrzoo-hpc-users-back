@@ -2,10 +2,13 @@ include README.md
 include LICENSE
 include setup.py
 include requirements.txt
+include alembic.ini
 
 include etc/*
 include cron/*
 include bin/*
 include modules/*
+include alembic/versions/*
+include alembic/*
 
 exclude etc/*.conf

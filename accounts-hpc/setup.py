@@ -49,9 +49,13 @@ setup(
         ('etc/cron.d/', ['cron/empty']),
         ('var/log/', ['helpers/empty']),
         ('var/lib/', ['helpers/empty']),
-        ('', ['requirements.txt']),
+        ('alembic/', ['alembic/README', 'alembic/env.py', 'alembic/script.py.mako']),
+        ('alembic/versions', glob.glob('alembic/versions/*')),
+        ('', ['requirements.txt', 'alembic.ini']),
     ],
     include_package_data=True,
     packages=['accounts_hpc'],
-    package_dir={'accounts_hpc': 'modules/'}
+    package_dir={
+        'accounts_hpc': 'modules/',
+    }
 )
