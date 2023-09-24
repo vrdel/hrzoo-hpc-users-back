@@ -3,7 +3,7 @@ import os
 import sys
 
 
-conf = '/opt/hrzoo-accounts-hpc/etc/accounts-hpc/accounts-hpc.conf'
+conf = f"{os.environ['VIRTUAL_ENV']}/etc/accounts-hpc/accounts-hpc.conf"
 
 
 def parse_config(logger=None):

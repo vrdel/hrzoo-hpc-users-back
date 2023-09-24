@@ -9,7 +9,7 @@ class Logger(object):
        Logger objects with initialized File and Syslog logger.
     """
     logger = None
-    logfile = '/opt/hrzoo-accounts-hpc/var/log/accounts-hpc.log'
+    logfile = f"{os.environ['VIRTUAL_ENV']}/var/log/accounts-hpc.log"
 
     def _init_stdout(self):
         lfs = '%(levelname)s ' + self._caller + ' - %(message)s'
