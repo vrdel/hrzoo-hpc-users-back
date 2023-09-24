@@ -5,15 +5,12 @@ import os
 
 from accounts_hpc.config import parse_config  # type: ignore
 from accounts_hpc.log import Logger  # type: ignore
-from accounts_hpc.db import Base, Project, User, SshKey  # type: ignore
+from accounts_hpc.db import Project  # type: ignore
 
 from sqlalchemy import create_engine
-from sqlalchemy import and_
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.exc import NoResultFound
 
 import argparse
-import json
 import psutil
 import signal
 
