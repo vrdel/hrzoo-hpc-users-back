@@ -24,7 +24,6 @@ import argparse
 
 def replace_projects_fields(session, fields):
     projects = session.query(Project).all()
-    users = session.query(User).all()
 
     for project in projects:
         for field in fields:
@@ -33,23 +32,27 @@ def replace_projects_fields(session, fields):
             if field['from'] in value:
                 value = value.replace(field['from'], field['to'])
                 setattr(project, which, value)
-                # specifically for project identifier replace also
-                # user.projects_api
-                # TODO: fix this as for the second run is back to original
-                # and this clause is not called
-                if which == 'identifier':
-                    for user in users:
-                        newp = list()
-                        change = False
-                        for pr in user.projects_api:
-                            if field['from'] in pr:
-                                newp.append(pr.replace(field['from'], field['to']))
-                                change = True
-                            else:
-                                newp.append(pr)
-                        if change:
-                            user.projects_api = newp
-                        print(user.projects_api)
+
+
+def replace_users_fields(session, fields):
+    users = session.query(User).all()
+
+    # specifically for project identifier replace also
+    # user.projects_api
+    for field in fields:
+        which = field.get('field').split('.')[1]
+        if which == 'identifier':
+            for user in users:
+                newp = list()
+                change = False
+                for pr in user.projects_api:
+                    if field['from'] in pr:
+                        newp.append(pr.replace(field['from'], field['to']))
+                        change = True
+                    else:
+                        newp.append(pr)
+                if change:
+                    user.projects_api = newp
 
 
 def sshkeys_del(args, session, projects_users, sshkeys):
@@ -299,6 +302,7 @@ async def run(logger, args, confopts):
         projectsfields = [field for field in fieldsreplace if field.get('field').startswith('project.')]
     if projectsfields:
         replace_projects_fields(session, projectsfields)
+        replace_users_fields(session, projectsfields)
 
     session.commit()
     session.close()
