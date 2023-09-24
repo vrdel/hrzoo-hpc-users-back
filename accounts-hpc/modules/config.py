@@ -41,6 +41,19 @@ def parse_config(logger=None):
                     confopts['authentication'].update({'cafile': config.get(section, 'cafile')})
                     confopts['authentication'].update({'token': config.get(section, 'token')})
 
+                if section.startswith('email'):
+                    confopts['email'] = ({'from': config.get(section, 'from')})
+                    confopts['email'].update({'bcc': config.get(section, 'bcc')})
+                    confopts['email'].update({'smtp': config.get(section, 'smtp')})
+                    confopts['email'].update({'template_newuser': config.get(section, 'template_newuser')})
+                    confopts['email'].update({'template_newkey': config.get(section, 'template_newkey')})
+                    confopts['email'].update({'port': config.getint(section, 'port')})
+                    confopts['email'].update({'user': config.get(section, 'user')})
+                    confopts['email'].update({'password': config.get(section, 'password')})
+                    confopts['email'].update({'tls': config.getboolean(section, 'tls')})
+                    confopts['email'].update({'ssl': config.getboolean(section, 'ssl')})
+                    confopts['email'].update({'timeout': config.getint(section, 'timeout')})
+
                 if section.startswith('usersetup'):
                     confopts['usersetup'] = ({'uid_offset': config.getint(section, 'uid_offset')})
                     confopts['usersetup'].update({'gid_offset': config.getint(section, 'gid_offset')})
