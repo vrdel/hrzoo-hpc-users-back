@@ -22,6 +22,7 @@ sshkeys = http://hzsidev.hr:8001/api/v1/sshkeys
 userproject = http://hzsidev.hr:8001/api/v1/usersprojects
 project_state = approve
 project_resources = GPU, CPU, BIGMEM
+replacestring_map = %(VENV)s/etc/accounts-hpc/replacestring_map.json
 
 [usersetup]
 uid_offset = 2994
@@ -31,7 +32,7 @@ gid_ops_offset = 2000
 default_groups = hpc, hpc-users
 resource_groups = hpc-gpu, hpc-bigmem
 homeprefix = /lustre/home/
-usermap = /opt/hrzoo-accounts-hpc/etc/accounts-hpc/users_map.json
+usermap = %(VENV)s/etc/accounts-hpc/users_map.json
 userdirs_in = /storage/home
 groupdirs_in = /lustre/group/, /storage/group/
 pbsfairshare_path = /var/spool/pbs/sched_priv/resource_group
@@ -47,8 +48,8 @@ password = some-secret
 tls = True
 ssl = False
 timeout = 15
-template_newuser = /opt/hrzoo-accounts-hpc/etc/accounts-hpc/email-template-new-user.txt
-template_newkey = /opt/hrzoo-accounts-hpc/etc/accounts-hpc/email-template-new-key.txt
+template_newuser = %(VENV)s/etc/accounts-hpc/email-template-new-user.txt
+template_newkey = %(VENV)s/etc/accounts-hpc/email-template-new-key.txt
 
 [mailinglist]
 name = computing-users@srce.hr
