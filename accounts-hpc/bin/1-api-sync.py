@@ -243,6 +243,7 @@ async def run(logger, args, confopts):
             fieldsreplace = json.loads(fp.read())
         projectsfields = [field for field in fieldsreplace if field.get('field').startswith('project.')]
 
+    stats = dict({'users': set(), 'fullusers': set(), 'fullprojects': set(), 'projects': set(), 'keys': set()})
     projects_users = list()
     visited_users = set()
     # build of projects_users association list
@@ -250,10 +251,13 @@ async def run(logger, args, confopts):
     # filter project according to interested state and approved
     # resources
     for key in sshkeys:
+        stats['keys'].add('{}{}'.format(key['fingerprint'], key['user']['id']))
+        stats['fullusers'].add(key['user']['id'])
         for up in userproject:
             if (up['project']['state']
                     not in confopts['hzsiapi']['project_state']):
                 continue
+            stats['fullprojects'].add(up['project']['id'])
             if projectsfields:
                 replace_projectsapi_fields(projectsfields, up)
             rt_found = False
@@ -264,7 +268,11 @@ async def run(logger, args, confopts):
                 continue
             if up['user']['id'] == key['user']['id']:
                 projects_users.append(up)
+                stats['users'].add(key['user']['id'])
+            stats['projects'].add(up['project']['id'])
         visited_users.update([key['user']['id']])
+
+    logger.info(f"Interested in projects={len(stats['projects'])}/{len(stats['fullprojects'])} users={len(stats['users'])}/{len(stats['fullusers'])} keys={len(stats['keys'])}")
 
     engine = create_engine("sqlite:///{}".format(confopts['db']['path']))
     Session = sessionmaker(engine)
