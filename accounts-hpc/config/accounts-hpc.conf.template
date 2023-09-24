@@ -37,5 +37,18 @@ groupdirs_in = /lustre/group/, /storage/group/
 pbsfairshare_path = /var/spool/pbs/sched_priv/resource_group
 pbsprocname = pbs_sched
 
+[email]
+from = Napredno računanje <computing@srce.hr>
+bcc = isabella-dezurni@srce.hr
+smtp = smtp.srce.hr
+port = 25
+user = dvrcic
+password = some-secret
+tls = True
+ssl = False
+timeout = 15
+template_newuser = /opt/hrzoo-accounts-hpc/etc/accounts-hpc/email-template-new-user.txt
+template_newkey = /opt/hrzoo-accounts-hpc/etc/accounts-hpc/email-template-new-key.txt
+
 [db]
 path = %(VENV)s/var/lib/cache.db

@@ -28,8 +28,10 @@ class EmailSend(object):
         self.password = confopts['email']['password']
         self.timeout = confopts['email']['timeout']
         self.emailfrom = confopts['email']['from']
+        # TODO: uncomment
         # self.emailbcc = confopts['email']['bcc']
         self.emailbcc = "daniel.vrcic@gmail.com"
+        # TODO: uncomment
         # self.emailto = emailto
         self.emailto = "daniel.vrcic@srce.hr"
         self.logger = logger
