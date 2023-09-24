@@ -35,7 +35,7 @@ setup(
         "Operating System :: POSIX :: Linux",
     ),
     install_requires=['aiohttp', 'alembic', 'bonsai', 'psutil', 'requests',
-                      'SQLAlchemy', 'sqlalchemy-json', ],
+                      'SQLAlchemy', 'sqlalchemy-json', 'Unidecode'],
     scripts=['bin/1-api-sync.py', 'bin/2-user-metadata-setup.py', 'bin/3-ldap-update.py',
              'bin/4-directories-create.py', 'bin/5-fairshare-update.py', 'bin/6-email-send.py',
              'bin/7-mailinglist-subscribe.py', 'bin/db-tool.py'],
