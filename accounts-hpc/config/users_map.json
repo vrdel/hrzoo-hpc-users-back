@@ -1,0 +1,52 @@
+[
+    {
+        "username": "dvrcic",
+        "uid": 2001,
+        "gid": 2001
+    },
+    {
+        "username": "eimamagi",
+        "uid": 2002,
+        "gid": 2001
+    },
+    {
+        "username": "imitrovi",
+        "uid": 2003,
+        "gid": 2001
+    },
+    {
+        "username": "jspoljar",
+        "uid": 2004,
+        "gid": 2001
+    },
+    {
+        "username": "kmrkalj",
+        "uid": 2005,
+        "gid": 2001
+    },
+    {
+        "username": "kzailac",
+        "uid": 2006,
+        "gid": 2001
+    },
+    {
+        "username": "marnaut",
+        "uid": 2007,
+        "gid": 2001
+    },
+    {
+        "username": "mbelavic",
+        "uid": 2008,
+        "gid": 2001
+    },
+    {
+        "username": "mhrzenja",
+        "uid": 2009,
+        "gid": 2001
+    },
+    {
+        "username": "mkvakic",
+        "uid": 2010,
+        "gid": 2001
+    }
+]

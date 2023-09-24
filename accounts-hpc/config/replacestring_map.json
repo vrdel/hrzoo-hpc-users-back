@@ -1,0 +1,12 @@
+[
+    {
+        "field": "project.identifier",
+        "from": "Grant agreement ID: ",
+        "to": ""
+    },
+    {
+        "field": "project.identifier",
+        "from": "/",
+        "to": "-"
+    }
+]
