@@ -110,6 +110,9 @@ def user_ldap_update(confopts, session, logger, user, ldap_user):
         ldap_user[0].change_attribute('gidNumber', bonsai.LDAPModOp.REPLACE, target_gid)
         ldap_user[0].modify()
         logger.info(f"User {user.person_uniqueid} gidNumber updated to {target_gid}")
+        # trigger default gid update when associated projects remain same
+        if user.ldap_gid != target_gid:
+            user.ldap_gid = target_gid
 
     # check if sshkeys are added or removed
     keys_diff_add, keys_diff_del = set(), set()
