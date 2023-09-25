@@ -2,6 +2,7 @@
 
 import bonsai
 import sys
+import json
 
 from accounts_hpc.config import parse_config
 from accounts_hpc.log import Logger
@@ -35,9 +36,13 @@ def new_user_ldap_add(confopts, conn, user):
     conn.add(ldap_user)
 
 
-def update_default_groups(confopts, conn, logger, users, group, onlyops=False):
+def update_default_groups(confopts, conn, logger, users, group, mapuser=[], onlyops=False):
     ldap_group = conn.search(f"cn={group},ou=Group,{confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
 
+    # FIXME: skip updating for ops users as it's already set by ldifs
+    all_usernames_map = list()
+    if mapuser:
+        all_usernames_map = [user['username'] for user in mapuser]
     try:
         existing_members = ldap_group[0]['memberUid']
     except KeyError:
@@ -46,7 +51,9 @@ def update_default_groups(confopts, conn, logger, users, group, onlyops=False):
     if onlyops:
         all_usernames = [user.ldap_username for user in users if user.is_staff]
     else:
-        all_usernames = [user.ldap_username for user in users]
+        # FIXME: remove after fixing ops user initializing
+        # all_usernames = [user.ldap_username for user in users]
+        all_usernames = all_usernames_map + [user.ldap_username for user in users]
     if set(all_usernames) != set(existing_members):
         ldap_group[0].change_attribute('memberUid', bonsai.LDAPModOp.REPLACE, *all_usernames)
         ldap_group[0].modify()
@@ -105,14 +112,19 @@ def user_ldap_update(confopts, session, logger, user, ldap_user):
             target_project.user.remove(user)
             session.add(target_project)
             logger.info(f"User {user.person_uniqueid} removed from project {project}")
+    target_gid = confopts['usersetup']['gid_offset'] + user.project[-1].prjid_api
     if projects_diff_add or projects_diff_del:
-        target_gid = confopts['usersetup']['gid_offset'] + user.project[-1].prjid_api
+        if not user.is_staff:
+            ldap_user[0].change_attribute('gidNumber', bonsai.LDAPModOp.REPLACE, target_gid)
+            ldap_user[0].modify()
+            logger.info(f"User {user.person_uniqueid} gidNumber updated to {target_gid}")
+    # trigger default gid update when associated projects remain same
+    if not user.is_staff and user.ldap_gid != target_gid:
         ldap_user[0].change_attribute('gidNumber', bonsai.LDAPModOp.REPLACE, target_gid)
         ldap_user[0].modify()
-        logger.info(f"User {user.person_uniqueid} gidNumber updated to {target_gid}")
-        # trigger default gid update when associated projects remain same
-        if user.ldap_gid != target_gid:
-            user.ldap_gid = target_gid
+        logger.info(f"Enforce user {user.person_uniqueid} gidNumber update to {target_gid}")
+    if not user.is_staff:
+        user.ldap_gid = target_gid
 
     # check if sshkeys are added or removed
     keys_diff_add, keys_diff_del = set(), set()
@@ -260,9 +272,17 @@ def main():
         except bonsai.errors.LDAPError as exc:
             logger.error(f'Error adding LDAP group {project.identifier} - {repr(exc)}')
 
+    # FIXME: remove after fixing ops user initializing
+    if confopts['usersetup']['usermap']:
+        with open(confopts['usersetup']['usermap'], mode='r') as fp:
+            mapuser = json.loads(fp.read())
+
     # handle default groups associations
-    update_default_groups(confopts, conn, logger, users, "hpc-users")
-    update_default_groups(confopts, conn, logger, users, "hpc", onlyops=True)
+    update_default_groups(confopts, conn, logger, users, "hpc-users", mapuser)
+    # FIXME: skip for now updating of default group
+    # as it's reserved only for ops users that are already set
+    # in ldifs
+    # update_default_groups(confopts, conn, logger, users, "hpc", onlyops=True)
 
     # handle resource groups associations
     update_resource_groups(confopts, conn, logger, users, "hpc-bigmem")

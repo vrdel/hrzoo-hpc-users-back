@@ -4,7 +4,7 @@ import sys
 
 from accounts_hpc.config import parse_config  # type: ignore
 from accounts_hpc.log import Logger  # type: ignore
-from accounts_hpc.db import Base, Project, User, SshKey  # type: ignore
+from accounts_hpc.db import Project, User  # type: ignore
 
 from sqlalchemy import create_engine
 from sqlalchemy import and_
@@ -86,8 +86,6 @@ def main():
             target_user = [tu for tu in mapuser if tu['username'] == user.ldap_username]
             if target_user:
                 user.ldap_gid = target_user[0]['gid']
-            else:
-                user.ldap_gid = confopts['usersetup']['gid_ops_offset'] + user.project[-1].prjid_api
 
     session.commit()
     session.close()
