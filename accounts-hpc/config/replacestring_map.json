@@ -8,5 +8,10 @@
         "field": "project.identifier",
         "from": "/",
         "to": "-"
+    },
+    {
+        "field": "project.identifier",
+        "from": " ",
+        "to": "-"
     }
 ]
