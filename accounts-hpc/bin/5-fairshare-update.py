@@ -27,10 +27,12 @@ def update_cacheflag(projectsdb):
             project.is_pbsfairshare_added = True
 
 
-def update_file(fsobj, projids):
+def update_file(fsobj, projids, nlines):
+    nline = nlines + 1
     fs_lines_write = list()
-    fs_lines_write.append("{0:<32} {1:03} root 100\n".format("hpc", 1))
-    nline = 2
+    if nlines == 0:
+        fs_lines_write.append("{0:<32} {1:03} root 100\n".format("hpc", 1))
+        nline += 1
     for ident in projids:
         line_to_write = '{0:<32} {1:03} root 100\n'.format(ident, nline)
         nline += 1
@@ -74,21 +76,25 @@ def main():
             all_projids.append(project.identifier)
 
         if args.new:
-            update_file(fsobj, all_projids)
+            update_file(fsobj, all_projids, 0)
             update_cacheflag(projects)
             is_updated = True
         else:
             fs_lines = fsobj.readlines()
             all_projids_infile = [line.split(' ')[0] for line in fs_lines]
-            if set(all_projids).difference(set(all_projids_infile)):
-                update_file(fsobj, all_projids)
+            new_projids = set(all_projids).difference(set(all_projids_infile))
+            if new_projids:
+                update_file(fsobj, new_projids, len(fs_lines))
                 update_cacheflag(projects)
                 is_updated = True
 
         fsobj.close()
 
-        if is_updated:
-            logger.info("PBS fairshare updated, sending SIGHUP")
+        if is_updated and not args.new:
+            logger.info(f"PBS fairshare updated with {new_projids}, sending SIGHUP...")
+            send_sighup(pbsprocname)
+        elif is_updated and args.new:
+            logger.info("Created new PBS fairshare, sending SIGHUP...")
             send_sighup(pbsprocname)
 
     session.commit()
