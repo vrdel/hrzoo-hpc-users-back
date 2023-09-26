@@ -43,6 +43,7 @@ def main():
         # as they will receive previous email
         if user.ldap_username in users_opened:
             user.mail_is_sshkeyadded = True
+            user.mail_name_sshkey = list()
             continue
         nmail = 0
         for sshkeyname in user.mail_name_sshkey:
