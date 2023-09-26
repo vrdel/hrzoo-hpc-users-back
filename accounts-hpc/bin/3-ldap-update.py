@@ -52,8 +52,8 @@ def update_default_groups(confopts, conn, logger, users, group, mapuser=[], only
         all_usernames = [user.ldap_username for user in users if user.is_staff]
     else:
         # FIXME: remove after fixing ops user initializing
-        # all_usernames = [user.ldap_username for user in users]
-        all_usernames = all_usernames_map + [user.ldap_username for user in users]
+        # all_usernames = all_usernames_map + [user.ldap_username for user in users]
+        all_usernames = [user.ldap_username for user in users]
     if set(all_usernames) != set(existing_members):
         ldap_group[0].change_attribute('memberUid', bonsai.LDAPModOp.REPLACE, *all_usernames)
         ldap_group[0].modify()
