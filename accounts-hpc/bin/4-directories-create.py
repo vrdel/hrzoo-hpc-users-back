@@ -69,13 +69,14 @@ def main():
             for dir in confopts['usersetup']['groupdirs_in']:
                 try:
                     os.mkdir(dir + project.identifier)
-                    os.chmod(dir + project.identifier, 0o2770)
 
                 except FileExistsError:
                     pass
                 except (PermissionError, FileNotFoundError) as exc:
                     logger.error(exc)
                     break
+
+                os.chmod(dir + project.identifier, 0o2770)
 
                 try:
                     userown = project.user[0]
@@ -87,7 +88,8 @@ def main():
 
             if completed == len(confopts['usersetup']['groupdirs_in']):
                 project.is_dir_created = True
-                logger.info(f"Created {dir + project.identifier} with perm {userown.ldap_uid}:{project.ldap_gid} ({userown.ldap_username}:{project.identifier})")
+                for dir in confopts['usersetup']['groupdirs_in']:
+                    logger.info(f"Created {dir + project.identifier} with perm {userown.ldap_uid}:{project.ldap_gid} ({userown.ldap_username}:{project.identifier})")
 
     session.commit()
     session.close()
