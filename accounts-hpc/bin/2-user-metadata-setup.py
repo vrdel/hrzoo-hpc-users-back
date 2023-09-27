@@ -63,29 +63,40 @@ def main():
     users = session.query(User).all()
     all_usernames = [user.ldap_username for user in users if user.ldap_username]
     for user in users:
+        set_metadata = False
+
         if not user.ldap_username:
             user.ldap_username = gen_username(user.first_name, user.last_name, all_usernames)
             all_usernames.append(user.ldap_username)
+            set_metadata = True
         if not user.ldap_uid and not user.is_staff:
             user.ldap_uid = confopts['usersetup']['uid_offset'] + user.uid_api
+            set_metadata = True
         if not user.ldap_gid and not user.is_staff and user.project:
             # user GID is always set to GID of last assigned project
             # we assume here that --init-set is run and relation between user,project is set
             user.ldap_gid = confopts['usersetup']['gid_offset'] + user.project[-1].prjid_api
+            set_metadata = True
         if not user.ldap_gid and not user.is_staff and not user.project:
             # set ldap_gid based on user.projects_api last project
             target_project = [pr for pr in projects if pr.identifier == user.projects_api[-1]]
             user.ldap_gid = confopts['usersetup']['gid_offset'] + target_project[0].prjid_api
+            set_metadata = True
         if user.is_staff and not user.ldap_uid:
             target_user = [tu for tu in mapuser if tu['username'] == user.ldap_username]
             if target_user:
                 user.ldap_uid = target_user[0]['uid']
             else:
                 user.ldap_uid = confopts['usersetup']['uid_ops_offset'] + user.uid_api
+            set_metadata = True
         if user.is_staff and not user.ldap_gid:
             target_user = [tu for tu in mapuser if tu['username'] == user.ldap_username]
             if target_user:
                 user.ldap_gid = target_user[0]['gid']
+                set_metadata = True
+
+        if set_metadata:
+            logger.info(f"{user.first_name} {user.last_name} set username={user.ldap_username} UID={user.ldap_uid} GID={user.ldap_gid}")
 
     session.commit()
     session.close()
