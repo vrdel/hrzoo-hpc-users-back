@@ -36,13 +36,9 @@ def new_user_ldap_add(confopts, conn, user):
     conn.add(ldap_user)
 
 
-def update_default_groups(confopts, conn, logger, users, group, mapuser=[], onlyops=False):
+def update_default_groups(confopts, conn, logger, users, group, onlyops=False):
     ldap_group = conn.search(f"cn={group},ou=Group,{confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
 
-    # FIXME: skip updating for ops users as it's already set by ldifs
-    all_usernames_map = list()
-    if mapuser:
-        all_usernames_map = [user['username'] for user in mapuser]
     try:
         existing_members = ldap_group[0]['memberUid']
     except KeyError:
@@ -51,8 +47,6 @@ def update_default_groups(confopts, conn, logger, users, group, mapuser=[], only
     if onlyops:
         all_usernames = [user.ldap_username for user in users if user.is_staff]
     else:
-        # FIXME: remove after fixing ops user initializing
-        # all_usernames = all_usernames_map + [user.ldap_username for user in users]
         all_usernames = [user.ldap_username for user in users]
     if set(all_usernames) != set(existing_members):
         ldap_group[0].change_attribute('memberUid', bonsai.LDAPModOp.REPLACE, *all_usernames)
@@ -272,16 +266,8 @@ def main():
         except bonsai.errors.LDAPError as exc:
             logger.error(f'Error adding LDAP group {project.identifier} - {repr(exc)}')
 
-    # FIXME: remove after fixing ops user initializing
-    if confopts['usersetup']['usermap']:
-        with open(confopts['usersetup']['usermap'], mode='r') as fp:
-            mapuser = json.loads(fp.read())
-
     # handle default groups associations
-    update_default_groups(confopts, conn, logger, users, "hpc-users", mapuser)
-    # FIXME: skip for now updating of default group
-    # as it's reserved only for ops users that are already set
-    # in ldifs
+    update_default_groups(confopts, conn, logger, users, "hpc-users")
     # update_default_groups(confopts, conn, logger, users, "hpc", onlyops=True)
 
     # handle resource groups associations
