@@ -91,7 +91,7 @@ def main():
         fsobj.close()
 
         if is_updated and not args.new:
-            logger.info(f"PBS fairshare updated with {new_projids}, sending SIGHUP...")
+            logger.info(f"PBS fairshare updated with {', '.join(new_projids)}, sending SIGHUP...")
             send_sighup(pbsprocname)
         elif is_updated and args.new:
             logger.info("Created new PBS fairshare, sending SIGHUP...")

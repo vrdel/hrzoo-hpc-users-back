@@ -60,7 +60,7 @@ def update_default_groups(confopts, conn, logger, users, group, mapuser=[], only
         diff_res = set(all_usernames).difference(set(existing_members))
         if not diff_res:
             diff_res = set(existing_members).difference(set(all_usernames))
-        logger.info(f"Updated default group {group} because of difference: {diff_res}")
+        logger.info(f"Updated default group {group} because of difference: {', '.join(diff_res)}")
 
 
 def update_resource_groups(confopts, conn, logger, users, group):
@@ -88,7 +88,7 @@ def update_resource_groups(confopts, conn, logger, users, group):
             diff_res = set(all_usernames).difference(set(existing_members))
             if not diff_res:
                 diff_res = set(existing_members).difference(set(all_usernames))
-            logger.info(f"Updated resource group {group} because of difference: {diff_res}")
+            logger.info(f"Updated resource group {group} because of difference: {', '.join(diff_res)}")
 
 
 def user_ldap_update(confopts, session, logger, user, ldap_user):
@@ -180,7 +180,7 @@ def group_ldap_update(confopts, session, logger, project, ldap_project):
         else:
             ldap_project[0].change_attribute('memberUid', bonsai.LDAPModOp.REPLACE, *project_new_members)
         ldap_project[0].modify()
-        logger.info(f"Updating memberUid for LDAP cn={project.identifier},ou=Group - new members {project_new_members}")
+        logger.info(f"Updating memberUid for LDAP cn={project.identifier},ou=Group new members: {', '.join(project_new_members)}")
 
 
 def create_default_groups(confopts, conn, logger):
