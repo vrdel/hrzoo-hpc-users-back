@@ -40,7 +40,7 @@ class SessionWithRetry(object):
         self.confopts = confopts
         self.n_try = n_try
         self.logger = logger
-        self.token = confopts['authentication']['token']
+        self.token = confopts['hzsiapi']['token']
         self.handle_session_close = handle_session_close
         self.erroneous_statuses = [404, 403]
 

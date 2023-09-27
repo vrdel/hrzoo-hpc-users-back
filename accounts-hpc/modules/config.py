@@ -25,6 +25,7 @@ def parse_config(logger=None):
                 if section.startswith('hzsiapi'):
                     confopts['hzsiapi'] = ({'sshkeys': config.get(section, 'sshkeys')})
                     confopts['hzsiapi'].update({'userproject': config.get(section, 'userproject')})
+                    confopts['hzsiapi'].update({'token': config.get(section, 'token')})
                     confopts['hzsiapi'].update({'project_state': config.get(section, 'project_state')})
                     confopts['hzsiapi'].update({'project_resources': config.get(section, 'project_resources')})
                     confopts['hzsiapi'].update({'replacestring_map': config.get(section, 'replacestring_map')})
@@ -39,7 +40,6 @@ def parse_config(logger=None):
                 if section.startswith('authentication'):
                     confopts['authentication'] = ({'verifyservercert': config.get(section, 'verifyservercert')})
                     confopts['authentication'].update({'cafile': config.get(section, 'cafile')})
-                    confopts['authentication'].update({'token': config.get(section, 'token')})
 
                 if section.startswith('email'):
                     confopts['email'] = ({'from': config.get(section, 'from')})
