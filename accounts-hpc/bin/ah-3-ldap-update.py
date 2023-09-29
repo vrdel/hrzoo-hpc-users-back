@@ -142,7 +142,10 @@ def user_ldap_update(confopts, session, logger, user, ldap_user):
             logger.info(f"Removed key {target_key.name} for user {user.person_uniqueid}")
     if keys_diff_add or keys_diff_del:
         updated_keys = [sshkey.public_key for sshkey in user.sshkey]
-        ldap_user[0].change_attribute('sshPublicKey', bonsai.LDAPModOp.REPLACE, *updated_keys)
+        if len(updated_keys) == 0:
+            ldap_user[0].change_attribute('sshPublicKey', bonsai.LDAPModOp.REPLACE, '')
+        else:
+            ldap_user[0].change_attribute('sshPublicKey', bonsai.LDAPModOp.REPLACE, *updated_keys)
         ldap_user[0].modify()
         session.add(user)
         logger.info(f"User {user.person_uniqueid} LDAP SSH keys updated")
@@ -253,7 +256,7 @@ def main():
             logger.warning(f'LDAP user {user.ldap_username} - {repr(exc)}')
             user.is_opened = True
         except bonsai.errors.LDAPError as exc:
-            logger.error(f'Error adding LDAP user {user.ldap_username} - {repr(exc)}')
+            logger.error(f'Error adding/updating LDAP user {user.ldap_username} - {repr(exc)}')
 
     projects = session.query(Project).all()
     for project in projects:
@@ -264,7 +267,7 @@ def main():
             else:
                 group_ldap_update(confopts, session, logger, project, ldap_project)
         except bonsai.errors.LDAPError as exc:
-            logger.error(f'Error adding LDAP group {project.identifier} - {repr(exc)}')
+            logger.error(f'Error adding/updating LDAP group {project.identifier} - {repr(exc)}')
 
     # handle default groups associations
     update_default_groups(confopts, conn, logger, users, "hpc-users")
