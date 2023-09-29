@@ -106,7 +106,10 @@ def user_ldap_update(confopts, session, logger, user, ldap_user):
             target_project.user.remove(user)
             session.add(target_project)
             logger.info(f"User {user.person_uniqueid} removed from project {project}")
-    target_gid = confopts['usersetup']['gid_offset'] + user.project[-1].prjid_api
+    try:
+        target_gid = confopts['usersetup']['gid_offset'] + user.project[-1].prjid_api
+    except IndexError:
+        target_gid = 0
     if projects_diff_add or projects_diff_del:
         if not user.is_staff:
             ldap_user[0].change_attribute('gidNumber', bonsai.LDAPModOp.REPLACE, target_gid)
@@ -119,6 +122,18 @@ def user_ldap_update(confopts, session, logger, user, ldap_user):
         logger.info(f"Enforce user {user.person_uniqueid} gidNumber update to {target_gid}")
     if not user.is_staff:
         user.ldap_gid = target_gid
+
+    if user.is_active == 0 and user.is_deactivated == 0:
+        ldap_user[0].change_attribute('loginShell', bonsai.LDAPModOp.REPLACE, confopts['usersetup']['noshell'])
+        ldap_user[0].modify()
+        logger.info(f"Setting user disabled shell={confopts['usersetup']['noshell']}")
+        user.is_deactivated = 1
+
+    if user.is_active == 1 and user.is_deactivated == 1:
+        ldap_user[0].change_attribute('loginShell', bonsai.LDAPModOp.REPLACE, '/bin/bash')
+        ldap_user[0].modify()
+        logger.info("Setting user default shell=/bin/bash")
+        user.is_deactivated = 0
 
     # check if sshkeys are added or removed
     keys_diff_add, keys_diff_del = set(), set()

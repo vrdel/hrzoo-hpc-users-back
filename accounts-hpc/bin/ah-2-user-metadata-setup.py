@@ -65,6 +65,9 @@ def main():
     for user in users:
         set_metadata = False
 
+        if user.is_active == 0:
+            continue
+
         if not user.ldap_username:
             user.ldap_username = gen_username(user.first_name, user.last_name, all_usernames)
             all_usernames.append(user.ldap_username)
