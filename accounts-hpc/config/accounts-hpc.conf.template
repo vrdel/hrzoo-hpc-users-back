@@ -37,6 +37,7 @@ userdirs_in = /storage/home/
 groupdirs_in = /lustre/group/, /storage/group/
 pbsfairshare_path = /var/spool/pbs/sched_priv/resource_group
 pbsprocname = pbs_sched
+noshell = /sbin/nologin
 
 [email]
 from = Napredno računanje <computing@srce.hr>

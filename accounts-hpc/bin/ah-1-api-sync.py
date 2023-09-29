@@ -200,7 +200,7 @@ def users_projects_add(args, session, projects_users):
 
 def check_users_without_projects(args, session, logger, apiusers):
     users_db = session.query(User)
-    uids_db = [user.uid_api for user in users_db.all()]
+    uids_db = [user.uid_api for user in users_db.all() if not user.is_deactivated]
     uids_not_onapi = set()
     for uid in uids_db:
         if uid not in apiusers:
