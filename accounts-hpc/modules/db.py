@@ -32,6 +32,7 @@ class User(Base):
     projects_api: Mapped[List[str]] = mapped_column(MutableJson)
     uid_api: Mapped[int] = mapped_column(Integer)
     is_active: Mapped[bool] = mapped_column(Boolean)
+    is_deactivated: Mapped[bool] = mapped_column(Boolean)
     is_opened: Mapped[bool] = mapped_column(Boolean)
     is_staff: Mapped[bool] = mapped_column(Boolean)
     is_dir_created: Mapped[bool] = mapped_column(Boolean)
