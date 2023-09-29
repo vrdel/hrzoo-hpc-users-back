@@ -126,13 +126,13 @@ def user_ldap_update(confopts, session, logger, user, ldap_user):
     if user.is_active == 0 and user.is_deactivated == 0:
         ldap_user[0].change_attribute('loginShell', bonsai.LDAPModOp.REPLACE, confopts['usersetup']['noshell'])
         ldap_user[0].modify()
-        logger.info(f"Setting user disabled shell={confopts['usersetup']['noshell']}")
+        logger.info(f"Deactivating {user.ldap_username}, setting disabled shell={confopts['usersetup']['noshell']}")
         user.is_deactivated = 1
 
     if user.is_active == 1 and user.is_deactivated == 1:
         ldap_user[0].change_attribute('loginShell', bonsai.LDAPModOp.REPLACE, '/bin/bash')
         ldap_user[0].modify()
-        logger.info("Setting user default shell=/bin/bash")
+        logger.info(f"Activating {user.ldap_username}, setting default shell=/bin/bash")
         user.is_deactivated = 0
 
     # check if sshkeys are added or removed
