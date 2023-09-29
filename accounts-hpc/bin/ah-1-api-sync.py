@@ -206,12 +206,12 @@ def check_users_without_projects(args, session, logger, apiusers):
 
     if uids_not_onapi:
         user_without_projects = users_db.filter(User.uid_api.in_(uids_not_onapi))
-        logger.info("Found users in local DB without any active project: {}"
+        logger.info("Found users in local DB without any registered project on HRZOO-SIGNUP-API: {}"
                     .format(', '.join([user.ldap_username for user in user_without_projects])))
-        logger.info("Nullifying user.projects_api and setting user.is_active=0 for such")
+        logger.info("Nullifying user.projects_api and setting user.is_active=0,ldap_gid=0 for such")
         session.execute(
             update(User),
-            [{"id": user.id, "projects_api": [], "is_active": 0} for user in user_without_projects]
+            [{"id": user.id, "projects_api": [], "ldap_gid": 0, "is_active": 0} for user in user_without_projects]
         )
 
 
@@ -293,7 +293,7 @@ async def run(logger, args, confopts):
             interested_users_api.add(up['user']['id'])
         visited_users.update([key['user']['id']])
 
-    logger.info(f"Interested in projects={len(stats['projects'])}/{len(stats['fullprojects'])} users={len(stats['users'])}/{len(stats['fullusers'])} keys={len(stats['keys'])}")
+    logger.info(f"Interested in ({','.join(confopts['hzsiapi']['project_resources'])}) projects={len(stats['projects'])}/{len(stats['fullprojects'])}  users={len(stats['users'])}/{len(stats['fullusers'])} keys={len(stats['keys'])}")
 
     engine = create_engine("sqlite:///{}".format(confopts['db']['path']))
     Session = sessionmaker(engine)
