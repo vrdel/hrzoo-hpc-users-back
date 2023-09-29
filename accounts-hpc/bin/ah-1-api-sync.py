@@ -14,6 +14,7 @@ from accounts_hpc.utils import only_alnum, all_none, contains_exception
 
 from sqlalchemy import create_engine
 from sqlalchemy import and_
+from sqlalchemy import update
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import NoResultFound
 
@@ -195,6 +196,25 @@ def users_projects_add(args, session, projects_users):
             session.add(us)
 
 
+def check_users_without_projects(args, session, logger, apiusers):
+    users_db = session.query(User)
+    uids_db = [user.uid_api for user in users_db.all()]
+    uids_not_onapi = set()
+    for uid in uids_db:
+        if uid not in apiusers:
+            uids_not_onapi.add(uid)
+
+    if uids_not_onapi:
+        user_without_projects = users_db.filter(User.uid_api.in_(uids_not_onapi))
+        logger.info("Found users in local DB without any active project: {}"
+                    .format(', '.join([user.ldap_username for user in user_without_projects])))
+        logger.info("Nullifying user.projects_api and setting user.is_active=0 for such")
+        session.execute(
+            update(User),
+            [{"id": user.id, "projects_api": [], "is_active": 0} for user in user_without_projects]
+        )
+
+
 async def fetch_data(logger, confopts):
     session = SessionWithRetry(logger, confopts, handle_session_close=True)
 
@@ -245,7 +265,7 @@ async def run(logger, args, confopts):
 
     stats = dict({'users': set(), 'fullusers': set(), 'fullprojects': set(), 'projects': set(), 'keys': set()})
     projects_users = list()
-    visited_users = set()
+    visited_users, interested_users_api = set(), set()
     # build of projects_users association list
     # user has at least one key added - enough at this point
     # filter project according to interested state and approved
@@ -270,6 +290,7 @@ async def run(logger, args, confopts):
                 projects_users.append(up)
                 stats['users'].add(key['user']['id'])
             stats['projects'].add(up['project']['id'])
+            interested_users_api.add(up['user']['id'])
         visited_users.update([key['user']['id']])
 
     logger.info(f"Interested in projects={len(stats['projects'])}/{len(stats['fullprojects'])} users={len(stats['users'])}/{len(stats['fullusers'])} keys={len(stats['keys'])}")
@@ -278,6 +299,7 @@ async def run(logger, args, confopts):
     Session = sessionmaker(engine)
     session = Session()
 
+    check_users_without_projects(args, session, logger, interested_users_api)
     users_projects_add(args, session, projects_users)
     users_projects_del(args, session, projects_users)
     sshkeys_add(args, session, projects_users, sshkeys)
