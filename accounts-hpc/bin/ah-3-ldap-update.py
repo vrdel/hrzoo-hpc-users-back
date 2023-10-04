@@ -34,6 +34,7 @@ def new_user_ldap_add(confopts, conn, user):
     else:
         ldap_user['sshPublicKey'] = ''
     conn.add(ldap_user)
+    return ldap_user
 
 
 def update_default_groups(confopts, conn, logger, users, group, onlyops=False):
@@ -173,6 +174,7 @@ def new_group_ldap_add(confopts, conn, project):
     ldap_project['gidNumber'] = [project.ldap_gid]
     ldap_project['memberUid'] = [user.ldap_username for user in project.user]
     conn.add(ldap_project)
+    return ldap_project
 
 
 def group_ldap_update(confopts, session, logger, project, ldap_project):
@@ -263,7 +265,8 @@ def main():
         ldap_user = conn.search(f"cn={user.ldap_username},ou=People,{confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
         try:
             if not ldap_user or not user.is_opened:
-                new_user_ldap_add(confopts, conn, user)
+                ldap_user = new_user_ldap_add(confopts, conn, user)
+                user_ldap_update(confopts, session, logger, user, [ldap_user])
             else:
                 user_ldap_update(confopts, session, logger, user, ldap_user)
             user.is_opened = True
@@ -278,7 +281,8 @@ def main():
         ldap_project = conn.search(f"cn={project.identifier},ou=Group,{confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
         try:
             if not ldap_project:
-                new_group_ldap_add(confopts, conn, project)
+                ldap_project = new_group_ldap_add(confopts, conn, project)
+                group_ldap_update(confopts, session, logger, project, [ldap_project])
             else:
                 group_ldap_update(confopts, session, logger, project, ldap_project)
         except bonsai.errors.LDAPError as exc:
