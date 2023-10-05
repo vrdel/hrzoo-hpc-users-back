@@ -272,6 +272,7 @@ def main():
             user.is_opened = True
         except bonsai.errors.AlreadyExists as exc:
             logger.warning(f'LDAP user {user.ldap_username} - {repr(exc)}')
+            user_ldap_update(confopts, session, logger, user, ldap_user)
             user.is_opened = True
         except bonsai.errors.LDAPError as exc:
             logger.error(f'Error adding/updating LDAP user {user.ldap_username} - {repr(exc)}')
