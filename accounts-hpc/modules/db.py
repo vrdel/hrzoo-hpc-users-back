@@ -29,6 +29,7 @@ class User(Base):
     person_mail: Mapped[str] = mapped_column(String(60))
     person_uniqueid: Mapped[str] = mapped_column(String(128))
     person_oib: Mapped[str] = mapped_column(String(11))
+    type_create: Mapped[str] = mapped_column(String(10))
     projects_api: Mapped[List[str]] = mapped_column(MutableJson)
     uid_api: Mapped[int] = mapped_column(Integer)
     is_active: Mapped[bool] = mapped_column(Boolean)

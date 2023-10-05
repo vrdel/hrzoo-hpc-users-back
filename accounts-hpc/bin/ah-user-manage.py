@@ -37,7 +37,7 @@ def user_key_add(logger, session, new_user, pubkey):
             )).one()
         logger.info('Key already found in DB')
     except NoResultFound:
-        dbkey = SshKey(name=f'{new_user.first}{new_user.last}-initial-key', fingerprint=key_fingerprint,
+        dbkey = SshKey(name=f'{new_user.first_name}{new_user.last_name}-initial-key', fingerprint=key_fingerprint,
                        public_key=key_content, uid_api=0)
         sshkeys_api = new_user.sshkeys_api
         if not sshkeys_api:
