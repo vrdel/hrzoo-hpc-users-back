@@ -54,7 +54,15 @@ def user_update(logger, args, session):
                 # purposley for that it gets triggered in ldap-update
                 # user.sshkey.append(dbkey)
                 session.add(dbkey)
-                logger.error(f"Key {key_fingerprint} added for user {args.username}")
+                logger.info(f"Key {key_fingerprint} added for user {args.username}")
+
+        if args.email:
+            user.person_mail = args.email
+            logger.info(f"Update email with {args.email} for user {args.username}")
+
+        if args.oib:
+            user.person_oib = int(args.oib)
+            logger.info(f"Update OIB with {args.oib} for user {args.username}")
 
     except NoResultFound:
         logger.error('User {args.username} not found')
@@ -175,7 +183,7 @@ def main():
     parser_update.add_argument('--username', dest='username', type=str, required=True, help='Username of user')
     parser_update.add_argument('--pubkey', dest='pubkey', type=argparse.FileType(), required=False, help='File path od public key component')
     parser_update.add_argument('--email', dest='email', type=str, required=False, help='Email of the user')
-    parser_update.add_argument('--oib', dest='email', type=str, required=False, help='OIB of the user')
+    parser_update.add_argument('--oib', dest='oib', type=str, required=False, help='OIB of the user')
 
     parser_delete = subparsers.add_parser('delete', help='Delete user settings')
 
