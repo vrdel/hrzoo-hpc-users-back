@@ -13,7 +13,7 @@ from sqlalchemy import create_engine
 from sqlalchemy import and_
 from sqlalchemy import update
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.exc import NoResultFound
+from sqlalchemy.exc import NoResultFound, IntegrityError
 from unidecode import unidecode
 
 
@@ -36,23 +36,30 @@ def user_key_add(logger, session, new_user, pubkey):
                 SshKey.user_id == new_user.id
             )).one()
         logger.info('Key already found in DB')
+
     except NoResultFound:
-        dbkey = SshKey(name=f'{new_user.first_name}{new_user.last_name}-initial-key', fingerprint=key_fingerprint,
-                       public_key=key_content, uid_api=0)
+        dbkey = SshKey(name=f'{new_user.first_name}{new_user.last_name}-initial-key',
+                       fingerprint=key_fingerprint,
+                       public_key=key_content,
+                       uid_api=0)
         sshkeys_api = new_user.sshkeys_api
         if not sshkeys_api:
             sshkeys_api = list()
         if key_fingerprint not in sshkeys_api:
             sshkeys_api.append(key_fingerprint)
         new_user.sshkeys_api = sshkeys_api
+        new_user.sshkey.append(dbkey)
+        session.add(new_user)
 
-    new_user.sshkey.append(dbkey)
-    session.add(new_user)
+    except IntegrityError as exc:
+        logger.error(f"Error while adding key - {repr(exc)}")
 
     return key_fingerprint
 
 
 def user_project_add(logger, args, session, project, first, last, email):
+
+    already_exists = False
 
     try:
         pr = session.query(Project).filter(Project.identifier == project).one()
@@ -75,6 +82,7 @@ def user_project_add(logger, args, session, project, first, last, email):
         us.person_mail = email
         us.is_active = True
         logger.info('User already found in cache DB')
+        already_exists = True
 
     except NoResultFound:
         us = User(first_name=first,
@@ -96,10 +104,12 @@ def user_project_add(logger, args, session, project, first, last, email):
                   uid_api=0,
                   ldap_uid=0,
                   ldap_gid=0,
-                  ldap_username='')
+                  ldap_username='',
+                  type_create='manual')
 
-    pr.user.append(us)
-    session.add(pr)
+    if not already_exists:
+        pr.user.append(us)
+        session.add(pr)
 
     return us
 
@@ -130,7 +140,7 @@ def main():
     if args.command == "create":
         new_user = user_project_add(logger, args, session, args.project, args.first, args.last, args.email)
         key_fingerprint = user_key_add(logger, session, new_user, args.pubkey)
-        logger.info(f"Created user {args.first} {args.last} with key {key_fingerprint}")
+        logger.info(f"Created user {args.first} {args.last} with key {key_fingerprint} and added to project {args.project}")
     elif args.command == "change":
         user_change(logger, args, session, args.project, args.username, args.uid, args.email)
     elif args.command == "delete":
