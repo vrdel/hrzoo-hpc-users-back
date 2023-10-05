@@ -7,7 +7,7 @@ import argparse
 from accounts_hpc.config import parse_config  # type: ignore
 from accounts_hpc.log import Logger  # type: ignore
 from accounts_hpc.db import Base, Project, User, SshKey  # type: ignore
-from accounts_hpc.utils import only_alnum, all_none, contains_exception
+from accounts_hpc.utils import only_alnum, all_none, contains_exception, get_ssh_key_fingerprint
 
 from sqlalchemy import create_engine
 from sqlalchemy import and_
@@ -25,8 +25,34 @@ def user_change():
     pass
 
 
-def user_project_add(logger, args, session, project, first, last, email, pubkey):
-    import ipdb; ipdb.set_trace()
+def user_key_add(logger, session, new_user, pubkey):
+    key_content = pubkey.read()
+    key_fingerprint = get_ssh_key_fingerprint(key_content)
+
+    try:
+        dbkey = session.query(SshKey).filter(
+            and_(
+                SshKey.fingerprint == key_fingerprint,
+                SshKey.user_id == new_user.id
+            )).one()
+        logger.info('Key already found in DB')
+    except NoResultFound:
+        dbkey = SshKey(name=f'{new_user.first}{new_user.last}-initial-key', fingerprint=key_fingerprint,
+                       public_key=key_content, uid_api=0)
+        sshkeys_api = new_user.sshkeys_api
+        if not sshkeys_api:
+            sshkeys_api = list()
+        if key_fingerprint not in sshkeys_api:
+            sshkeys_api.append(key_fingerprint)
+        new_user.sshkeys_api = sshkeys_api
+
+    new_user.sshkey.append(dbkey)
+    session.add(new_user)
+
+    return key_fingerprint
+
+
+def user_project_add(logger, args, session, project, first, last, email):
 
     try:
         pr = session.query(Project).filter(Project.identifier == project).one()
@@ -48,6 +74,7 @@ def user_project_add(logger, args, session, project, first, last, email, pubkey)
         # always up to date fields
         us.person_mail = email
         us.is_active = True
+        logger.info('User already found in cache DB')
 
     except NoResultFound:
         us = User(first_name=first,
@@ -64,7 +91,7 @@ def user_project_add(logger, args, session, project, first, last, email, pubkey)
                   person_mail=email,
                   projects_api=[project],
                   sshkeys_api=list(),
-                  person_uniqueid='NOT_SET',
+                  person_uniqueid=f"{first}{last}@UNIQUEID",
                   person_oib=0,
                   uid_api=0,
                   ldap_uid=0,
@@ -86,7 +113,7 @@ def main():
     parser_create.add_argument('--first', dest='first', type=str, required=True, help='First name of user')
     parser_create.add_argument('--last', dest='last', type=str, required=True, help='Last name of user')
     parser_create.add_argument('--project', dest='project', type=str, required=True, help='Project identifier that user will be associated to')
-    parser_create.add_argument('--pubkey', dest='pubkey', type=str, required=True, help='File patch od public key component')
+    parser_create.add_argument('--pubkey', dest='pubkey', type=argparse.FileType(), required=True, help='File patch od public key component')
     parser_create.add_argument('--email', dest='email', type=str, required=True, help='Email of the user')
 
     args = parser.parse_args()
@@ -101,7 +128,9 @@ def main():
     session = Session()
 
     if args.command == "create":
-        new_user = user_project_add(logger, args, session, args.project, args.first, args.last, args.email, args.pubkey)
+        new_user = user_project_add(logger, args, session, args.project, args.first, args.last, args.email)
+        key_fingerprint = user_key_add(logger, session, new_user, args.pubkey)
+        logger.info(f"Created user {args.first} {args.last} with key {key_fingerprint}")
     elif args.command == "change":
         user_change(logger, args, session, args.project, args.username, args.uid, args.email)
     elif args.command == "delete":
@@ -109,6 +138,7 @@ def main():
 
     session.commit()
     session.close()
+
 
 if __name__ == '__main__':
     main()
