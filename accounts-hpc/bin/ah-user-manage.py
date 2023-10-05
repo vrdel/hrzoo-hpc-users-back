@@ -17,16 +17,28 @@ from sqlalchemy.exc import NoResultFound
 from unidecode import unidecode
 
 
-def user_project_add(args, session, project, user, uid, email):
+def user_delete():
+    pass
+
+
+def user_change():
+    pass
+
+
+def user_project_add(logger, args, session, project, first, last, email, pubkey):
+    import ipdb; ipdb.set_trace()
+
     try:
-        pr = session.query(Project).filter(
-            Project.identifier == project).one()
-    except NoResultFound:
+        pr = session.query(Project).filter(Project.identifier == project).one()
+    except NoResultFound as exc:
+        logger.error(f"No project with identifier {project} found - {repr(exc)}")
         raise SystemExit(1)
 
     try:
-        us = session.query(User).filter(
-            User.ldap_username == user).one()
+        us = session.query(User).filter(and_(
+            User.first_name == first,
+            User.last_name == last,
+        )).one()
         projects_api = us.projects_api
         if not projects_api:
             projects_api = list()
@@ -35,11 +47,10 @@ def user_project_add(args, session, project, user, uid, email):
         us.projects_api = projects_api
         # always up to date fields
         us.person_mail = email
-        us.person_uniqueid = 'NOT_SET'
         us.is_active = True
 
     except NoResultFound:
-        us = User(first_name='NOT_SET',
+        us = User(first_name=first,
                   is_active=True,
                   is_opened=False,
                   is_dir_created=False,
@@ -49,23 +60,26 @@ def user_project_add(args, session, project, user, uid, email):
                   mail_is_sshkeyadded=False,
                   mail_name_sshkey=list(),
                   is_staff=False,
-                  last_name='NOT_SET',
-                  person_mail='NOT_SET',
+                  last_name=last,
+                  person_mail=email,
                   projects_api=[project],
                   sshkeys_api=list(),
                   person_uniqueid='NOT_SET',
                   person_oib=0,
-                  uid_api=uid,
+                  uid_api=0,
                   ldap_uid=0,
                   ldap_gid=0,
                   ldap_username='')
 
-    session.add(us)
+    pr.user.append(us)
+    session.add(pr)
+
+    return us
 
 
 def main():
     parser = argparse.ArgumentParser(description='Manage user create, change and delete manually with needed metadata about him')
-    subparsers = parser.add_subparsers(help="User subcommands")
+    subparsers = parser.add_subparsers(help="User subcommands", dest="command")
     parser_create = subparsers.add_parser('create', help='Create user based on passed metadata')
     parser_change = subparsers.add_parser('change', help='Change user settings')
     parser_delete = subparsers.add_parser('delete', help='Delete user')
@@ -74,7 +88,6 @@ def main():
     parser_create.add_argument('--project', dest='project', type=str, required=True, help='Project identifier that user will be associated to')
     parser_create.add_argument('--pubkey', dest='pubkey', type=str, required=True, help='File patch od public key component')
     parser_create.add_argument('--email', dest='email', type=str, required=True, help='Email of the user')
-    parser_create.add_argument('--uid', dest='uid', type=int, required=True, help='UID of the user')
 
     args = parser.parse_args()
 
@@ -87,7 +100,12 @@ def main():
     Session = sessionmaker(engine)
     session = Session()
 
-    user_project_add(args, session, args.project, args.username, args.uid, args.email)
+    if args.command == "create":
+        new_user = user_project_add(logger, args, session, args.project, args.first, args.last, args.email, args.pubkey)
+    elif args.command == "change":
+        user_change(logger, args, session, args.project, args.username, args.uid, args.email)
+    elif args.command == "delete":
+        user_delete(logger, args, session, args.project, args.username, args.uid, args.email)
 
     session.commit()
     session.close()
