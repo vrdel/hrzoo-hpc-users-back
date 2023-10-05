@@ -43,7 +43,6 @@ def user_key_add(logger, session, new_user, pubkey):
         if key_fingerprint not in sshkeys_api:
             sshkeys_api.append(key_fingerprint)
         new_user.sshkeys_api = sshkeys_api
-        new_user.sshkey.append(dbkey)
 
     except NoResultFound:
         dbkey = SshKey(name=f'{new_user.first_name}{new_user.last_name}-initial-key',
@@ -58,7 +57,6 @@ def user_key_add(logger, session, new_user, pubkey):
             sshkeys_api.append(key_fingerprint)
         new_user.sshkeys_api = sshkeys_api
         new_user.sshkey.append(dbkey)
-
         session.add(new_user)
 
     except IntegrityError as exc:
@@ -93,6 +91,8 @@ def user_project_add(logger, args, session, project, first, last, email):
         us.is_active = True
         logger.info('User already found in cache DB')
         already_exists = True
+        # exit for now
+        raise SystemExit(1)
 
     except NoResultFound:
         us = User(first_name=first,
