@@ -11,7 +11,7 @@ from accounts_hpc.db import Base, Project, User, SshKey  # type: ignore
 from sqlalchemy import create_engine
 from sqlalchemy import and_
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.exc import NoResultFound
+from sqlalchemy.exc import NoResultFound, MultipleResultsFound
 
 import argparse
 
@@ -142,14 +142,27 @@ def user_ldap_update(confopts, session, logger, user, ldap_user):
     keys_diff_add = set(user.sshkeys_api).difference(set(keys_db))
     if keys_diff_add:
         for key in keys_diff_add:
-            target_key = session.query(SshKey).filter(and_(
-                SshKey.fingerprint == key,
-                SshKey.uid_api == user.uid_api,
-            )).one()
+            try:
+                target_key = session.query(SshKey).filter(and_(
+                    SshKey.fingerprint == key,
+                    SshKey.uid_api == user.uid_api,
+                )).one()
+            except MultipleResultsFound:
+                try:
+                    target_key = session.query(SshKey).filter(and_(
+                        SshKey.fingerprint == key,
+                        SshKey.user_id == user.id,
+                    )).one()
+                except NoResultFound:
+                    target_key = session.query(SshKey).filter(and_(
+                        SshKey.fingerprint == key,
+                        SshKey.user_id == None
+                    )).one()
             user.sshkey.append(target_key)
             user.mail_name_sshkey.append(target_key.name)
             user.mail_is_sshkeyadded = False
             logger.info(f"Added key {target_key.name} for user {user.person_uniqueid}")
+
     keys_diff_del = set(keys_db).difference(set(user.sshkeys_api))
     if keys_diff_del:
         for key in keys_diff_del:

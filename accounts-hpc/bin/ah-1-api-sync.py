@@ -165,6 +165,7 @@ def users_projects_add(args, session, projects_users):
             us.person_mail = uspr['user']['person_mail']
             us.person_uniqueid = uspr['user']['username']
             us.is_active = uspr['user']['is_active']
+            us.uid_api = uspr['user']['id']
 
         except NoResultFound:
             us = User(first_name=only_alnum(unidecode(uspr['user']['first_name'])),
