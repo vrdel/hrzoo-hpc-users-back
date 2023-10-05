@@ -64,13 +64,17 @@ def user_project_add(args, session, project, user, uid, email):
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Create user manually with needed metadata about him')
-    parser.add_argument('--first', dest='first', type=str, required=True, help='First name of user')
-    parser.add_argument('--last', dest='last', type=str, required=True, help='Last name of user')
-    parser.add_argument('--project', dest='project', type=str, required=True, help='Project identifier that user will be associated to')
-    parser.add_argument('--pubkey', dest='pubkey', type=str, required=True, help='File patch od public key component')
-    parser.add_argument('--email', dest='email', type=str, required=True, help='Email of the user')
-    parser.add_argument('--uid', dest='uid', type=int, required=True, help='UID of the user')
+    parser = argparse.ArgumentParser(description='Manage user create, change and delete manually with needed metadata about him')
+    subparsers = parser.add_subparsers(help="User subcommands")
+    parser_create = subparsers.add_parser('create', help='Create user based on passed metadata')
+    parser_change = subparsers.add_parser('change', help='Change user settings')
+    parser_delete = subparsers.add_parser('delete', help='Delete user')
+    parser_create.add_argument('--first', dest='first', type=str, required=True, help='First name of user')
+    parser_create.add_argument('--last', dest='last', type=str, required=True, help='Last name of user')
+    parser_create.add_argument('--project', dest='project', type=str, required=True, help='Project identifier that user will be associated to')
+    parser_create.add_argument('--pubkey', dest='pubkey', type=str, required=True, help='File patch od public key component')
+    parser_create.add_argument('--email', dest='email', type=str, required=True, help='Email of the user')
+    parser_create.add_argument('--uid', dest='uid', type=int, required=True, help='UID of the user')
 
     args = parser.parse_args()
 
