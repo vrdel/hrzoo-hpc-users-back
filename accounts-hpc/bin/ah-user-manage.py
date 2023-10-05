@@ -26,7 +26,7 @@ def user_change():
 
 
 def user_key_add(logger, session, new_user, pubkey):
-    key_content = pubkey.read()
+    key_content = pubkey.read().strip()
     key_fingerprint = get_ssh_key_fingerprint(key_content)
 
     try:
