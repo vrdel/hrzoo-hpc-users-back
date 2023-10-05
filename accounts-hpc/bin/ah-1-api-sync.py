@@ -43,7 +43,7 @@ def sshkeys_del(args, session, projects_users, sshkeys):
 
         hzsi_api_user_keys[key['user']['username']].append(key['fingerprint'])
 
-    users = session.query(User).all()
+    users = session.query(User).filter(User.type_create == 'api').all()
 
     for us in users:
         if us.person_uniqueid not in hzsi_api_user_keys.keys():
