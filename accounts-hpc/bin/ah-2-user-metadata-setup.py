@@ -61,6 +61,16 @@ def main():
             project.ldap_gid = confopts['usersetup']['gid_offset'] + project.prjid_api
 
     users = session.query(User).all()
+
+    users_manual = session.query(User).filter(User.type_create == 'manual').all()
+    if users_manual:
+        next = max([user.ldap_uid for user in users_manual])
+        if next == 0:
+            last_uid_manual = confopts['usersetup']['uid_manual_offset'] + 1
+        else:
+            last_uid_manual = next + 1
+    manual_count = 0
+
     all_usernames = [user.ldap_username for user in users if user.ldap_username]
     for user in users:
         set_metadata = False
@@ -73,7 +83,11 @@ def main():
             all_usernames.append(user.ldap_username)
             set_metadata = True
         if not user.ldap_uid and not user.is_staff:
-            user.ldap_uid = confopts['usersetup']['uid_offset'] + user.uid_api
+            if user.type_create == 'manual':
+                user.ldap_uid = last_uid_manual + manual_count
+                manual_count += 1
+            else:
+                user.ldap_uid = confopts['usersetup']['uid_offset'] + user.uid_api
             set_metadata = True
         if not user.ldap_gid and not user.is_staff and user.project:
             # user GID is always set to GID of last assigned project
