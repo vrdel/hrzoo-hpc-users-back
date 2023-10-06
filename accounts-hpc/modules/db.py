@@ -47,7 +47,7 @@ class User(Base):
     ldap_uid: Mapped[int] = mapped_column(Integer)
     ldap_gid: Mapped[int] = mapped_column(Integer)
     project: Mapped[List[Project]] = \
-        relationship(secondary=user_projects_table, back_populates="user", cascade="all")
+        relationship(secondary=user_projects_table, back_populates="user")
 
 
 class Project(Base):
