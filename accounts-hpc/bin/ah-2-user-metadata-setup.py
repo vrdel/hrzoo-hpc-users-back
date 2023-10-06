@@ -62,7 +62,10 @@ def main():
 
     users = session.query(User).all()
 
-    users_manual = session.query(User).filter(User.type_create == 'manual').all()
+    users_manual = session.query(User).filter(and_(
+        User.type_create == 'manual',
+        User.is_staff == False
+    )).all()
     if users_manual:
         next = max([user.ldap_uid for user in users_manual])
         if next == 0:

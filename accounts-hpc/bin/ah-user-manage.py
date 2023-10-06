@@ -64,6 +64,10 @@ def user_update(logger, args, session):
             user.person_oib = int(args.oib)
             logger.info(f"Update OIB with {args.oib} for user {args.username}")
 
+        if args.staff:
+            user.is_staff = True
+            logger.info(f"Promote user {args.username} to staff")
+
     except NoResultFound:
         logger.error('User {args.username} not found')
         raise SystemExit(1)
@@ -148,7 +152,7 @@ def user_project_add(logger, args, session):
                   mail_is_subscribed=False,
                   mail_is_sshkeyadded=False,
                   mail_name_sshkey=list(),
-                  is_staff=False,
+                  is_staff=args.staff,
                   last_name=args.last,
                   person_mail=args.email,
                   projects_api=[args.project],
@@ -173,17 +177,33 @@ def main():
     subparsers = parser.add_subparsers(help="User subcommands", dest="command")
 
     parser_create = subparsers.add_parser('create', help='Create user based on passed metadata')
-    parser_create.add_argument('--first', dest='first', type=str, required=True, help='First name of user')
-    parser_create.add_argument('--last', dest='last', type=str, required=True, help='Last name of user')
-    parser_create.add_argument('--project', dest='project', type=str, required=True, help='Project identifier that user will be associated to')
-    parser_create.add_argument('--pubkey', dest='pubkey', type=argparse.FileType(), required=True, help='File path od public key component')
-    parser_create.add_argument('--email', dest='email', type=str, required=True, help='Email of the user')
+    parser_create.add_argument('--first', dest='first', type=str,
+                               required=True, help='First name of user')
+    parser_create.add_argument('--last', dest='last', type=str, required=True,
+                               help='Last name of user')
+    parser_create.add_argument('--project', dest='project', type=str,
+                               required=True, help='Project identifier that user will be associated to')
+    parser_create.add_argument('--pubkey', dest='pubkey',
+                               type=argparse.FileType(), required=True,
+                               help='File path od public key component')
+    parser_create.add_argument('--email', dest='email', type=str,
+                               required=True, help='Email of the user')
+    parser_create.add_argument('--staff', dest='staff', action='store_true',
+                               default=False,
+                               required=False, help='Flag user as staff')
 
     parser_update = subparsers.add_parser('update', help='Update user settings')
-    parser_update.add_argument('--username', dest='username', type=str, required=True, help='Username of user')
-    parser_update.add_argument('--pubkey', dest='pubkey', type=argparse.FileType(), required=False, help='File path od public key component')
-    parser_update.add_argument('--email', dest='email', type=str, required=False, help='Email of the user')
-    parser_update.add_argument('--oib', dest='oib', type=str, required=False, help='OIB of the user')
+    parser_update.add_argument('--username', dest='username', type=str,
+                               required=True, help='Username of user')
+    parser_update.add_argument('--pubkey', dest='pubkey',
+                               type=argparse.FileType(), required=False,
+                               help='File path od public key component')
+    parser_update.add_argument('--email', dest='email', type=str,
+                               required=False, help='Email of the user')
+    parser_update.add_argument('--oib', dest='oib', type=str, required=False,
+                               help='OIB of the user')
+    parser_update.add_argument('--staff', dest='staff', action='store_true',
+                               required=False, help='Flag user as staff')
 
     parser_delete = subparsers.add_parser('delete', help='Delete user settings')
 
