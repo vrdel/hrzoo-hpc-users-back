@@ -17,8 +17,31 @@ from sqlalchemy.exc import NoResultFound, IntegrityError, MultipleResultsFound
 from unidecode import unidecode
 
 
-def user_delete():
-    pass
+def user_delete(logger, args, session):
+    try:
+        user = session.query(User).filter(User.ldap_username == args.username).one()
+        user_keys = user.sshkey
+
+        if args.pubkeystring:
+            found = False
+
+            for key in user_keys:
+                if args.pubkeystring in key.public_key:
+                    session.delete(key)
+                    user.sshkeys_api.remove(key.fingerprint)
+                    logger.info(f"Key {key.fingerprint} deleted for {args.username}")
+
+            if not found:
+                logger.info(f"Key not found for {args.username}")
+        else:
+            for key in user_keys:
+                session.delete(key)
+            session.delete(user)
+            logger.info(f"Deleted {args.username} and keys")
+
+    except NoResultFound:
+        logger.error(f"User {args.username} not found")
+        raise SystemExit(1)
 
 
 def user_update(logger, args, session):
@@ -206,6 +229,11 @@ def main():
                                required=False, help='Flag user as staff')
 
     parser_delete = subparsers.add_parser('delete', help='Delete user settings')
+    parser_delete.add_argument('--username', dest='username', type=str,
+                               required=True, help='Username of user')
+    parser_delete.add_argument('--pubkey-string', dest='pubkeystring',
+                               type=str, required=False,
+                               help='String to match in public key content')
 
     args = parser.parse_args()
 
