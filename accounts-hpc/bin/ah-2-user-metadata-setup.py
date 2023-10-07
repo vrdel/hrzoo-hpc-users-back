@@ -62,18 +62,6 @@ def main():
 
     users = session.query(User).all()
 
-    users_manual = session.query(User).filter(and_(
-        User.type_create == 'manual',
-        User.is_staff == False
-    )).all()
-    if users_manual:
-        next = max([user.ldap_uid for user in users_manual])
-        if next == 0:
-            last_uid_manual = confopts['usersetup']['uid_manual_offset'] + 1
-        else:
-            last_uid_manual = next + 1
-    manual_count = 0
-
     all_usernames = [user.ldap_username for user in users if user.ldap_username]
     for user in users:
         set_metadata = False
@@ -87,8 +75,12 @@ def main():
             set_metadata = True
         if not user.ldap_uid and not user.is_staff:
             if user.type_create == 'manual':
-                user.ldap_uid = last_uid_manual + manual_count
-                manual_count += 1
+                target_user = [tu for tu in mapuser if tu['username'] == user.ldap_username]
+                if target_user:
+                    user.ldap_uid = target_user[0]['uid']
+                else:
+                    logger.warning(f"UID for manually created user {user.ldap_username} must be defined in mapping file")
+                    logger.warning("Skipping UID set")
             else:
                 user.ldap_uid = confopts['usersetup']['uid_offset'] + user.uid_api
             set_metadata = True
