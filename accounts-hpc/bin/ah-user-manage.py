@@ -190,9 +190,9 @@ def user_update(logger, args, session):
 
         if args.flagissshkeyadded and args.flagissshkeyadded > 0:
             user.mail_is_sshkeyadded = True
+            user.mail_name_sshkey = []
         elif args.flagissshkeyadded == 0:
             user.mail_is_sshkeyadded = False
-            user.mail_name_sshkey = []
         if args.flagissshkeyadded != None:
             logger.info(f"Set mail_is_sshkeyadded={args.flagissshkeyadded} for {user.ldap_username}")
 
