@@ -18,21 +18,32 @@ from sqlalchemy.exc import NoResultFound, IntegrityError, MultipleResultsFound
 from unidecode import unidecode
 
 
+def flush_sshkeys(logger, session):
+    keys_noowner = session.query(SshKey).filter(SshKey.user_id == None)
+
+    if keys_noowner.count() > 0:
+        keys_noowner.delete()
+        logger.info('All keys without owner flushed')
+    else:
+        logger.info('No keys without owner found')
+
+
 def user_delete(logger, args, session):
     try:
         user = session.query(User).filter(User.ldap_username == args.username).one()
         user_keys = user.sshkey
 
-        if args.pubkeystring:
+        if args.pubkey:
             found = False
 
             for key in user_keys:
-                if args.pubkeystring in key.public_key:
-                    session.delete(key)
+                if args.pubkey in key.public_key:
                     if args.force:
                         user.sshkeys_api.remove(key.fingerprint)
+                        session.delete(key)
                         logger.info(f"Key {key.fingerprint} DB relation deleted for {args.username}")
                     else:
+                        user.sshkeys_api.remove(key.fingerprint)
                         logger.info(f"Key {key.fingerprint} deleted for {args.username}")
                     found = True
 
@@ -146,7 +157,7 @@ def user_update(logger, args, session):
                 session.add(project)
 
     except NoResultFound:
-        logger.error('User {args.username} not found')
+        logger.error(f"User {args.username} not found")
         raise SystemExit(1)
 
 
@@ -184,6 +195,8 @@ def user_key_add(logger, args, session, new_user, pubkey):
 
         if args.force:
             new_user.sshkey.append(dbkey)
+        else:
+            session.add(dbkey)
 
         session.add(new_user)
 
@@ -258,6 +271,8 @@ def main():
     parser = argparse.ArgumentParser(description='Manage user create, change and delete manually with needed metadata about him')
     parser.add_argument('--force', dest='force', action='store_true', required=False,
                         help='Make changes in DB relations')
+    parser.add_argument('--flush-keys', dest='flushkeys', action='store_true', required=False,
+                        help='Flush all keys not associated to any user')
     subparsers = parser.add_subparsers(help="User subcommands", dest="command")
 
     parser_create = subparsers.add_parser('create', help='Create user based on passed metadata')
@@ -289,19 +304,16 @@ def main():
     parser_update.add_argument('--staff', dest='staff', action='store_true',
                                required=False, help='Flag user as staff')
     parser_update.add_argument('--project', dest='project', type=str,
-                               required=True, help='Project identifier that user will be associated to')
+                               required=False, help='Project identifier that user will be associated to')
 
     parser_delete = subparsers.add_parser('delete', help='Delete user metadata')
     parser_delete.add_argument('--username', dest='username', type=str,
                                required=True, help='Username of user')
-    parser_delete.add_argument('--pubkey-string', dest='pubkeystring',
+    parser_delete.add_argument('--pubkey', dest='pubkey',
                                type=str, required=False,
                                help='String to match in public key to delete')
-    parser_delete.add_argument('--pubkey-mark-string', dest='pubkeymarkstring',
-                               type=str, required=False,
-                               help='String to match in public key marked for deletion')
     parser_delete.add_argument('--project', dest='project', type=str,
-                               required=True, help='Project identifier that user will be removed from')
+                               required=False, help='Project identifier that user will be removed from')
 
     args = parser.parse_args()
 
@@ -322,6 +334,9 @@ def main():
         user_update(logger, args, session)
     elif args.command == "delete":
         user_delete(logger, args, session)
+
+    if args.flushkeys:
+        flush_sshkeys(logger, session)
 
     try:
         session.commit()

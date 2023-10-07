@@ -77,7 +77,7 @@ def update_resource_groups(confopts, conn, logger, users, group):
             if resource_match:
                 all_usernames.append(user.ldap_username)
 
-        if set(all_usernames) != set(existing_members):
+        if all_usernames and set(all_usernames) != set(existing_members):
             ldap_group[0].change_attribute('memberUid', bonsai.LDAPModOp.REPLACE, *all_usernames)
             ldap_group[0].modify()
             diff_res = set(all_usernames).difference(set(existing_members))
