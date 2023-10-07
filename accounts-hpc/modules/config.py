@@ -63,9 +63,8 @@ def parse_config(logger=None):
                 if section.startswith('usersetup'):
                     confopts['usersetup'] = ({'uid_offset': config.getint(section, 'uid_offset')})
                     confopts['usersetup'].update({'gid_offset': config.getint(section, 'gid_offset')})
-                    confopts['usersetup'].update({'uid_ops_offset': config.getint(section, 'uid_ops_offset')})
-                    confopts['usersetup'].update({'gid_ops_offset': config.getint(section, 'gid_ops_offset')})
                     confopts['usersetup'].update({'uid_manual_offset': config.getint(section, 'uid_manual_offset')})
+                    confopts['usersetup'].update({'gid_manual_offset': config.getint(section, 'gid_manual_offset')})
                     confopts['usersetup'].update({'default_groups': config.get(section, 'default_groups')})
                     confopts['usersetup']['default_groups'] = \
                             [gr.strip() for gr in confopts['usersetup']['default_groups'].split(',')]

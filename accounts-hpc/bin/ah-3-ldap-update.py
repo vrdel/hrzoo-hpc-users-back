@@ -222,7 +222,7 @@ def create_default_groups(confopts, conn, logger):
     for gr in confopts['usersetup']['default_groups']:
         group_ldap = conn.search(f"cn={gr},ou=Group,{confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
         if not group_ldap:
-            ldap_gid = confopts['usersetup']['gid_ops_offset'] + numgroup
+            ldap_gid = confopts['usersetup']['gid_manual_offset'] + numgroup
             ldap_project = bonsai.LDAPEntry(f"cn={gr},ou=Group,{confopts['ldap']['basedn']}")
             ldap_project['cn'] = [gr]
             ldap_project['objectClass'] = ['top', 'posixGroup']
@@ -238,7 +238,7 @@ def create_resource_groups(confopts, conn, logger):
     for gr in confopts['usersetup']['resource_groups']:
         group_ldap = conn.search(f"cn={gr},ou=Group,{confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
         if not group_ldap:
-            ldap_gid = confopts['usersetup']['gid_ops_offset'] + numgroup + num_defgroups
+            ldap_gid = confopts['usersetup']['gid_manual_offset'] + numgroup + num_defgroups
             ldap_project = bonsai.LDAPEntry(f"cn={gr},ou=Group,{confopts['ldap']['basedn']}")
             ldap_project['cn'] = [gr]
             ldap_project['objectClass'] = ['top', 'posixGroup']

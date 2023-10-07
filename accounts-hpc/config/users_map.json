@@ -48,5 +48,9 @@
         "username": "mkvakic",
         "uid": 2010,
         "gid": 2001
+    },
+    {
+        "username": "dceranac",
+        "uid": 2201
     }
 ]

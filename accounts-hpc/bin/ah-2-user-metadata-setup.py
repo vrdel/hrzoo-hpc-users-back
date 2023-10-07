@@ -99,7 +99,7 @@ def main():
             if target_user:
                 user.ldap_uid = target_user[0]['uid']
             else:
-                user.ldap_uid = confopts['usersetup']['uid_ops_offset'] + user.uid_api
+                user.ldap_uid = confopts['usersetup']['uid_manual_offset'] + user.uid_api
             set_metadata = True
         if user.is_staff and not user.ldap_gid:
             target_user = [tu for tu in mapuser if tu['username'] == user.ldap_username]
