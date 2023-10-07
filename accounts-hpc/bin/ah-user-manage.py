@@ -13,6 +13,7 @@ from sqlalchemy import create_engine
 from sqlalchemy import and_
 from sqlalchemy import update
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm.exc import StaleDataError
 from sqlalchemy.exc import NoResultFound, IntegrityError, MultipleResultsFound
 from unidecode import unidecode
 
@@ -28,11 +29,35 @@ def user_delete(logger, args, session):
             for key in user_keys:
                 if args.pubkeystring in key.public_key:
                     session.delete(key)
-                    user.sshkeys_api.remove(key.fingerprint)
-                    logger.info(f"Key {key.fingerprint} deleted for {args.username}")
+                    if args.force:
+                        user.sshkeys_api.remove(key.fingerprint)
+                        logger.info(f"Key {key.fingerprint} DB relation deleted for {args.username}")
+                    else:
+                        logger.info(f"Key {key.fingerprint} deleted for {args.username}")
+                    found = True
 
             if not found:
                 logger.info(f"Key not found for {args.username}")
+
+        elif args.project:
+            try:
+                project = session.query(Project).filter(Project.identifier == args.project).one()
+            except NoResultFound as exc:
+                logger.error(f"No project with identifier {args.project} found - {repr(exc)}")
+
+            if args.project in user.projects_api:
+                user.projects_api.remove(project.identifier)
+                logger.info(f"Removed {user.ldap_username} from {project.identifier}")
+
+            if args.force:
+                try:
+                    project.user.remove(user)
+                    session.add(project)
+                    logger.info(f"Removed {user.ldap_username} DB relation from {project.identifier}")
+
+                except ValueError:
+                    logger.error(f"{user.ldap_username} not in {project.identifier}")
+
         else:
             for key in user_keys:
                 session.delete(key)
@@ -52,7 +77,10 @@ def user_update(logger, args, session):
             try:
                 key_content = args.pubkey.read().strip()
                 key_fingerprint = get_ssh_key_fingerprint(key_content)
-                dbkey = session.query(SshKey).filter(SshKey.fingerprint == key_fingerprint).one()
+                dbkey = session.query(SshKey).filter(and_(
+                    SshKey.fingerprint == key_fingerprint,
+                    SshKey.user_id == user.id
+                )).one()
                 if dbkey:
                     logger.error(f"Key {key_fingerprint} already found in DB for the user {args.username}")
                     raise SystemExit(1)
@@ -74,10 +102,14 @@ def user_update(logger, args, session):
                 if key_fingerprint not in user.mail_name_sshkey:
                     user.mail_name_sshkey.append(key_fingerprint)
                 user.mail_is_sshkeyadded = False
-                # purposley for that it gets triggered in ldap-update
-                # user.sshkey.append(dbkey)
+
+                if args.force:
+                    user.sshkey.append(dbkey)
+                    logger.info(f"Key {key_fingerprint} DB relation added for user {args.username}")
+                else:
+                    logger.info(f"Key {key_fingerprint} added for user {args.username}")
+
                 session.add(dbkey)
-                logger.info(f"Key {key_fingerprint} added for user {args.username}")
 
         if args.email:
             user.person_mail = args.email
@@ -91,12 +123,34 @@ def user_update(logger, args, session):
             user.is_staff = True
             logger.info(f"Promote user {args.username} to staff")
 
+        if args.project:
+            try:
+                project = session.query(Project).filter(Project.identifier == args.project).one()
+            except NoResultFound as exc:
+                logger.error(f"No project with identifier {args.project} found - {repr(exc)}")
+                raise SystemExit(1)
+
+            projects_api = user.projects_api
+            if not projects_api:
+                projects_api = list()
+            if args.project in projects_api:
+                logger.info(f"User {user.ldap_username} already assigned to project {args.project}")
+            elif args.project not in projects_api:
+                projects_api.append(args.project)
+                logger.info(f"User {user.ldap_username} added to project {args.project}")
+            user.projects_api = projects_api
+
+            if args.force:
+                project.user.append(user)
+                logger.info(f"Project {args.project} DB relation added for user {user.ldap_username}")
+                session.add(project)
+
     except NoResultFound:
         logger.error('User {args.username} not found')
         raise SystemExit(1)
 
 
-def user_key_add(logger, session, new_user, pubkey):
+def user_key_add(logger, args, session, new_user, pubkey):
     key_content = pubkey.read().strip()
     key_fingerprint = get_ssh_key_fingerprint(key_content)
 
@@ -106,7 +160,7 @@ def user_key_add(logger, session, new_user, pubkey):
                 SshKey.fingerprint == key_fingerprint,
                 SshKey.user_id == new_user.id
             )).one()
-        logger.info('Key already found in DB')
+        logger.info(f'Key already found in DB for {new_user}')
 
         sshkeys_api = new_user.sshkeys_api
         if not sshkeys_api:
@@ -127,7 +181,10 @@ def user_key_add(logger, session, new_user, pubkey):
         if key_fingerprint not in sshkeys_api:
             sshkeys_api.append(key_fingerprint)
         new_user.sshkeys_api = sshkeys_api
-        new_user.sshkey.append(dbkey)
+
+        if args.force:
+            new_user.sshkey.append(dbkey)
+
         session.add(new_user)
 
     except IntegrityError as exc:
@@ -188,15 +245,19 @@ def user_project_add(logger, args, session):
                   ldap_username='',
                   type_create='manual')
 
-    if not already_exists:
+    if args.force and not already_exists:
         pr.user.append(us)
         session.add(pr)
+    elif not already_exists:
+        session.add(us)
 
     return us
 
 
 def main():
     parser = argparse.ArgumentParser(description='Manage user create, change and delete manually with needed metadata about him')
+    parser.add_argument('--force', dest='force', action='store_true', required=False,
+                        help='Make changes in DB relations')
     subparsers = parser.add_subparsers(help="User subcommands", dest="command")
 
     parser_create = subparsers.add_parser('create', help='Create user based on passed metadata')
@@ -215,7 +276,7 @@ def main():
                                default=False,
                                required=False, help='Flag user as staff')
 
-    parser_update = subparsers.add_parser('update', help='Update user settings')
+    parser_update = subparsers.add_parser('update', help='Update user metadata')
     parser_update.add_argument('--username', dest='username', type=str,
                                required=True, help='Username of user')
     parser_update.add_argument('--pubkey', dest='pubkey',
@@ -227,13 +288,20 @@ def main():
                                help='OIB of the user')
     parser_update.add_argument('--staff', dest='staff', action='store_true',
                                required=False, help='Flag user as staff')
+    parser_update.add_argument('--project', dest='project', type=str,
+                               required=True, help='Project identifier that user will be associated to')
 
-    parser_delete = subparsers.add_parser('delete', help='Delete user settings')
+    parser_delete = subparsers.add_parser('delete', help='Delete user metadata')
     parser_delete.add_argument('--username', dest='username', type=str,
                                required=True, help='Username of user')
     parser_delete.add_argument('--pubkey-string', dest='pubkeystring',
                                type=str, required=False,
-                               help='String to match in public key content')
+                               help='String to match in public key to delete')
+    parser_delete.add_argument('--pubkey-mark-string', dest='pubkeymarkstring',
+                               type=str, required=False,
+                               help='String to match in public key marked for deletion')
+    parser_delete.add_argument('--project', dest='project', type=str,
+                               required=True, help='Project identifier that user will be removed from')
 
     args = parser.parse_args()
 
@@ -248,15 +316,19 @@ def main():
 
     if args.command == "create":
         new_user = user_project_add(logger, args, session)
-        key_fingerprint = user_key_add(logger, session, new_user, args.pubkey)
+        key_fingerprint = user_key_add(logger, args, session, new_user, args.pubkey)
         logger.info(f"Created user {args.first} {args.last} with key {key_fingerprint} and added to project {args.project}")
     elif args.command == "update":
         user_update(logger, args, session)
     elif args.command == "delete":
         user_delete(logger, args, session)
 
-    session.commit()
-    session.close()
+    try:
+        session.commit()
+        session.close()
+    except (IntegrityError, StaleDataError) as exc:
+        logger.error(f"Error with {args.command}")
+        logger.error(exc)
 
 
 if __name__ == '__main__':
