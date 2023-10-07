@@ -196,6 +196,13 @@ def user_update(logger, args, session):
         if args.flagissshkeyadded != None:
             logger.info(f"Set mail_is_sshkeyadded={args.flagissshkeyadded} for {user.ldap_username}")
 
+        if args.flagisactive and args.flagisactive > 0:
+            user.is_active = True
+        elif args.flagisactive == 0:
+            user.is_active = False
+        if args.flagisactive != None:
+            logger.info(f"Set is_active={args.flagisactive} for {user.ldap_username}")
+
     except NoResultFound:
         logger.error(f"User {args.username} not found")
         raise SystemExit(1)
@@ -349,17 +356,17 @@ def main():
                                required=False, help='Flag user as staff')
     parser_update.add_argument('--project', dest='project', type=str,
                                required=False, help='Project identifier that user will be associated to')
-    parser_update.add_argument('--flag-subscribed', dest='flagissubscribed', type=int,
+    parser_update.add_argument('--flag-subscribed', dest='flagissubscribed', type=int, metavar='0/1',
                                required=False, help='Set flag mail_is_subscribed')
-    parser_update.add_argument('--flag-dircreated', dest='flagisdircreated', type=int,
+    parser_update.add_argument('--flag-dircreated', dest='flagisdircreated', type=int, metavar='0/1',
                                required=False, help='Set flag is_dir_created')
-    parser_update.add_argument('--flag-deactivated', dest='flagisdeactivated', type=int,
+    parser_update.add_argument('--flag-deactivated', dest='flagisdeactivated', type=int, metavar='0/1',
                                required=False, help='Set flag is_deactivated')
-    parser_update.add_argument('--flag-active', dest='flagisactive', type=int,
+    parser_update.add_argument('--flag-active', dest='flagisactive', type=int, metavar='0/1',
                                required=False, help='Set flag is_active')
-    parser_update.add_argument('--flag-sshkeyadded', dest='flagissshkeyadded', type=int,
+    parser_update.add_argument('--flag-sshkeyadded', dest='flagissshkeyadded', type=int, metavar='0/1',
                                required=False, help='Set flag mail_is_sshkeyadded')
-    parser_update.add_argument('--flag-opensend', dest='flagisopensend', type=int,
+    parser_update.add_argument('--flag-opensend', dest='flagisopensend', type=int, metavar='0/1',
                                required=False, help='Set flag mail_is_opensend')
 
     parser_delete = subparsers.add_parser('delete', help='Delete user metadata')
