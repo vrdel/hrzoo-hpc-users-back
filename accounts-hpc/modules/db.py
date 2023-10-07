@@ -40,7 +40,7 @@ class User(Base):
     mail_is_subscribed: Mapped[bool] = mapped_column(Boolean)
     mail_is_opensend: Mapped[bool] = mapped_column(Boolean)
     mail_is_sshkeyadded: Mapped[bool] = mapped_column(Boolean)
-    mail_name_sshkey: Mapped[bool] = mapped_column(MutableJson)
+    mail_name_sshkey: Mapped[List[str]] = mapped_column(MutableJson)
     sshkey: Mapped[List["SshKey"]] = relationship(back_populates="user")
     sshkeys_api: Mapped[List[str]] = mapped_column(MutableJson)
     ldap_username: Mapped[str] = mapped_column(String(8))

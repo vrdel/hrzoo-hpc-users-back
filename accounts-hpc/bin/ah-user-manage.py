@@ -134,6 +134,10 @@ def user_update(logger, args, session):
             user.is_staff = True
             logger.info(f"Promote user {args.username} to staff")
 
+        if args.uid:
+            user.uid = args.uid
+            logger.info(f"Setting user {args.username} UID={args.uid}")
+
         if args.project:
             try:
                 project = session.query(Project).filter(Project.identifier == args.project).one()
@@ -155,6 +159,42 @@ def user_update(logger, args, session):
                 project.user.append(user)
                 logger.info(f"Project {args.project} DB relation added for user {user.ldap_username}")
                 session.add(project)
+
+        if args.flagissubscribed and args.flagissubscribed > 0:
+            user.mail_is_subscribed = True
+        elif args.flagissubscribed == 0:
+            user.mail_is_subscribed = False
+        if args.flagissubscribed != None:
+            logger.info(f"Set mail_is_subscribed={args.flagissubscribed} for {user.ldap_username}")
+
+        if args.flagisdircreated and args.flagisdircreated > 0:
+            user.is_dir_created = True
+        elif args.flagisdircreated == 0:
+            user.is_dir_created = False
+        if args.flagisdircreated != None:
+            logger.info(f"Set is_dir_created={args.flagisdircreated} for {user.ldap_username}")
+
+        if args.flagisdeactivated and args.flagisdeactivated > 0:
+            user.is_deactivated = True
+        elif args.flagisdeactivated == 0:
+            user.is_deactivated = False
+        if args.flagisdeactivated != None:
+            logger.info(f"Set is_deactivated={args.flagisdeactivated} for {user.ldap_username}")
+
+        if args.flagisopensend and args.flagisopensend > 0:
+            user.mail_is_opensend = True
+        elif args.flagisopensend == 0:
+            user.mail_is_opensend = False
+        if args.flagisopensend != None:
+            logger.info(f"Set mail_is_opensend={args.flagisopensend} for {user.ldap_username}")
+
+        if args.flagissshkeyadded and args.flagissshkeyadded > 0:
+            user.mail_is_sshkeyadded = True
+        elif args.flagissshkeyadded == 0:
+            user.mail_is_sshkeyadded = False
+            user.mail_name_sshkey = []
+        if args.flagissshkeyadded != None:
+            logger.info(f"Set mail_is_sshkeyadded={args.flagissshkeyadded} for {user.ldap_username}")
 
     except NoResultFound:
         logger.error(f"User {args.username} not found")
@@ -253,7 +293,7 @@ def user_project_add(logger, args, session):
                   person_uniqueid=f"{args.first}{args.last}@UNIQUEID",
                   person_oib=0,
                   uid_api=0,
-                  ldap_uid=0,
+                  ldap_uid=args.uid if args.uid else 0,
                   ldap_gid=0,
                   ldap_username='',
                   type_create='manual')
@@ -287,6 +327,8 @@ def main():
                                help='File path od public key component')
     parser_create.add_argument('--email', dest='email', type=str,
                                required=True, help='Email of the user')
+    parser_create.add_argument('--uid', dest='uid', type=int,
+                               required=False, help='Set UID in advance - be careful')
     parser_create.add_argument('--staff', dest='staff', action='store_true',
                                default=False,
                                required=False, help='Flag user as staff')
@@ -301,10 +343,24 @@ def main():
                                required=False, help='Email of the user')
     parser_update.add_argument('--oib', dest='oib', type=str, required=False,
                                help='OIB of the user')
+    parser_update.add_argument('--uid', dest='uid', type=int, required=False,
+                               help='Update UID of the user - be careful')
     parser_update.add_argument('--staff', dest='staff', action='store_true',
                                required=False, help='Flag user as staff')
     parser_update.add_argument('--project', dest='project', type=str,
                                required=False, help='Project identifier that user will be associated to')
+    parser_update.add_argument('--flag-subscribed', dest='flagissubscribed', type=int,
+                               required=False, help='Set flag mail_is_subscribed')
+    parser_update.add_argument('--flag-dircreated', dest='flagisdircreated', type=int,
+                               required=False, help='Set flag is_dir_created')
+    parser_update.add_argument('--flag-deactivated', dest='flagisdeactivated', type=int,
+                               required=False, help='Set flag is_deactivated')
+    parser_update.add_argument('--flag-active', dest='flagisactive', type=int,
+                               required=False, help='Set flag is_active')
+    parser_update.add_argument('--flag-sshkeyadded', dest='flagissshkeyadded', type=int,
+                               required=False, help='Set flag mail_is_sshkeyadded')
+    parser_update.add_argument('--flag-opensend', dest='flagisopensend', type=int,
+                               required=False, help='Set flag mail_is_opensend')
 
     parser_delete = subparsers.add_parser('delete', help='Delete user metadata')
     parser_delete.add_argument('--username', dest='username', type=str,
