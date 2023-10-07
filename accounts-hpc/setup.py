@@ -38,7 +38,7 @@ setup(
                       'SQLAlchemy', 'sqlalchemy-json', 'Unidecode'],
     scripts=['bin/ah-1-api-sync.py', 'bin/ah-2-user-metadata-setup.py', 'bin/ah-3-ldap-update.py',
              'bin/ah-4-directories-create.py', 'bin/ah-5-fairshare-update.py', 'bin/ah-6-email-send.py',
-             'bin/ah-7-mailinglist-subscribe.py', 'bin/ah-db-tool.py', 'bin/ah-all-flags-set.py'
+             'bin/ah-7-mailinglist-subscribe.py', 'bin/ah-db-tool.py', 'bin/ah-all-flags-set.py',
              'bin/ah-user-manage.py'],
     data_files=[
         ('bin/', glob.glob('bin/*')),

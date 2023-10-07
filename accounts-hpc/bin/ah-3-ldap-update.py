@@ -87,8 +87,11 @@ def update_resource_groups(confopts, conn, logger, users, group):
 
 
 def user_ldap_update(confopts, session, logger, user, ldap_user):
-    # check if there are differencies between user's project just
-    # synced from API and ones already registered in cache
+    """
+        check if there are differencies between user's project just
+        synced from API and ones already registered in cache
+    """
+
     projects_diff_add, projects_diff_del = set(), set()
     projects_db = [pr.identifier for pr in user.project]
     projects_diff_add = set(user.projects_api).difference(set(projects_db))
@@ -136,7 +139,11 @@ def user_ldap_update(confopts, session, logger, user, ldap_user):
         logger.info(f"Activating {user.ldap_username}, setting default shell=/bin/bash")
         user.is_deactivated = 0
 
-    # check if sshkeys are added or removed
+
+def user_key_update(confopts, session, logger, user, ldap_user):
+    """
+        check if sshkeys are added or removed
+    """
     keys_diff_add, keys_diff_del = set(), set()
     keys_db = [key.fingerprint for key in user.sshkey]
     keys_diff_add = set(user.sshkeys_api).difference(set(keys_db))
@@ -280,12 +287,15 @@ def main():
             if not ldap_user or not user.is_opened:
                 ldap_user = new_user_ldap_add(confopts, conn, user)
                 user_ldap_update(confopts, session, logger, user, [ldap_user])
+                user_key_update(confopts, session, logger, user, [ldap_user])
             else:
                 user_ldap_update(confopts, session, logger, user, ldap_user)
+                user_key_update(confopts, session, logger, user, ldap_user)
             user.is_opened = True
         except bonsai.errors.AlreadyExists as exc:
             logger.warning(f'LDAP user {user.ldap_username} - {repr(exc)}')
             user_ldap_update(confopts, session, logger, user, ldap_user)
+            user_key_update(confopts, session, logger, user, ldap_user)
             user.is_opened = True
         except bonsai.errors.LDAPError as exc:
             logger.error(f'Error adding/updating LDAP user {user.ldap_username} - {repr(exc)}')
