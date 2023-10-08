@@ -18,6 +18,15 @@ from sqlalchemy.exc import NoResultFound, IntegrityError, MultipleResultsFound
 from unidecode import unidecode
 
 
+def flush_users(logger, session):
+    users = session.query(User).all()
+
+    for user in users:
+        if len(user.sshkey) == 0 and len(user.project) == 0:
+            session.delete(user)
+            logger.info(f'Flushing {user.ldap_username}')
+
+
 def flush_sshkeys(logger, session):
     keys_noowner = session.query(SshKey).filter(SshKey.user_id == None)
 
@@ -78,6 +87,7 @@ def user_delete(logger, args, session):
             else:
                 user.projects_api = []
                 user.sshkeys_api = []
+                user.is_active = 0
                 logger.info(f"Deleted {args.username} and keys")
 
     except NoResultFound:
@@ -325,6 +335,8 @@ def main():
                         help='Make changes in DB relations')
     parser.add_argument('--flush-keys', dest='flushkeys', action='store_true', required=False,
                         help='Flush all keys not associated to any user')
+    parser.add_argument('--flush-users', dest='flushusers', action='store_true', required=False,
+                        help='Flush all users without any keys and projects associated')
     subparsers = parser.add_subparsers(help="User subcommands", dest="command")
 
     parser_create = subparsers.add_parser('create', help='Create user based on passed metadata')
@@ -405,6 +417,9 @@ def main():
 
     if args.flushkeys:
         flush_sshkeys(logger, session)
+
+    if args.flushusers:
+        flush_users(logger, session)
 
     try:
         session.commit()
