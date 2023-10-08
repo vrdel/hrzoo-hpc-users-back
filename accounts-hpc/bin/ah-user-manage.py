@@ -70,10 +70,15 @@ def user_delete(logger, args, session):
                     logger.error(f"{user.ldap_username} not in {project.identifier}")
 
         else:
-            for key in user_keys:
-                session.delete(key)
-            session.delete(user)
-            logger.info(f"Deleted {args.username} and keys")
+            if args.force:
+                for key in user_keys:
+                    session.delete(key)
+                session.delete(user)
+                logger.info(f"Deleted {args.username} and keys and all DB relations")
+            else:
+                user.projects_api = []
+                user.sshkeys_api = []
+                logger.info(f"Deleted {args.username} and keys")
 
     except NoResultFound:
         logger.error(f"User {args.username} not found")
