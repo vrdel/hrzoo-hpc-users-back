@@ -3,7 +3,6 @@
 import sys
 import argparse
 
-
 from accounts_hpc.config import parse_config  # type: ignore
 from accounts_hpc.log import Logger  # type: ignore
 from accounts_hpc.db import Base, Project, User, SshKey  # type: ignore
@@ -269,7 +268,6 @@ def user_key_add(logger, args, session, new_user, pubkey):
 
 
 def user_project_add(logger, args, session):
-
     already_exists = False
 
     try:
