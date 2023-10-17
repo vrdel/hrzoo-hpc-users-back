@@ -6,7 +6,7 @@ import json
 import sys
 import configparser
 
-conf = f'./hzsi_srce.conf'
+conf = '/home/galaxy/galaxy_root/venv/lib/python3.8/site-packages/social_core/backends/hzsi_srce.conf'
 
 def parse_config():
     confopts = dict()
@@ -52,12 +52,12 @@ def hzsi_users():
     except (requests.exceptions.ConnectionError,
             requests.exceptions.ReadTimeout, socket.error,
             json.decoder.JSONDecodeError) as exc:
-        print(repr(exc))
+        raise SystemExit(1)
 
 
-def main():
-    interested_users = hzsi_users()
-    print(interested_users)
+# def main():
+    # interested_users = hzsi_users()
+    # print(interested_users)
 
-if __name__ == '__main__':
-    main()
+# if __name__ == '__main__':
+    # main()
