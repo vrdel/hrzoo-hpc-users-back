@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 
+import configparser
+import json
+import os
 import requests
 import socket
-import json
 import sys
-import configparser
 
-conf = '/home/galaxy/galaxy_root/venv/lib/python3.8/site-packages/social_core/backends/hzsi_srce.conf'
+conf = f"{os.environ.get('VIRTUAL_ENV', 'NoVirtEnvPath')}/hzsi_srce.conf"
 
 def parse_config():
     confopts = dict()
