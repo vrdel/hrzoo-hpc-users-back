@@ -16,12 +16,16 @@ from sqlalchemy.orm.exc import StaleDataError
 from sqlalchemy.exc import NoResultFound, IntegrityError, MultipleResultsFound
 from unidecode import unidecode
 
-
-def gen_gid(session, confopts):
-    pass
+import datetime
 
 
 def gen_id(session, confopts):
+    id = gen_gid(session, confopts) - confopts['usersetup']['gid_manual_offset']
+    now = datetime.datetime.now()
+    return "NRM-{:%Y}-{:%m}-{:03}".format(now, now, id)
+
+
+def gen_gid(session, confopts):
     manual_projects = session.query(Project).filter(Project.type == 'manual').all()
     defgroups = confopts['usersetup']['default_groups']
     resgroups = confopts['usersetup']['resource_groups']
@@ -31,10 +35,6 @@ def gen_id(session, confopts):
         + len(manual_projects) \
         + len(defgroups) \
         + len(resgroups)
-
-
-def gen_restype(restypes):
-    pass
 
 
 def project_delete(logger, args, session):
@@ -54,9 +54,10 @@ def project_add(logger, args, session, confopts):
                      type='manual',
                      is_dir_created=False,
                      is_pbsfairshare_added=False,
-                     staff_resources_type_api=gen_restype(args.resourcetypes),
+                     staff_resources_type_api=args.resourcetypes,
                      ldap_gid=gen_gid(session, confopts))
 
+    session.add(pr)
     return pr
 
 
@@ -89,7 +90,7 @@ def main():
 
     if args.command == "create":
         new_project = project_add(logger, args, session, confopts)
-        logger.info(f"Created project {new_project.name} with ID {new_project.identifier}")
+        logger.info(f"Created project \"{new_project.name}\" with ID {new_project.identifier}")
     elif args.command == "delete":
         project_delete(logger, args, session)
 
