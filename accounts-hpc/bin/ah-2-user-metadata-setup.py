@@ -91,9 +91,12 @@ def main():
             set_metadata = True
         if not user.ldap_gid and not user.is_staff and not user.project:
             # set ldap_gid based on user.projects_api last project
-            target_project = [pr for pr in projects if pr.identifier == user.projects_api[-1]]
-            user.ldap_gid = confopts['usersetup']['gid_offset'] + target_project[0].prjid_api
-            set_metadata = True
+            try:
+                target_project = [pr for pr in projects if pr.identifier == user.projects_api[-1]]
+                user.ldap_gid = confopts['usersetup']['gid_offset'] + target_project[0].prjid_api
+                set_metadata = True
+            except IndexError:
+                logger.warning(f"User {user.ldap_username} type={user.type_create} with empty projects_api")
         if user.is_staff and not user.ldap_uid:
             target_user = [tu for tu in mapuser if tu['username'] == user.ldap_username]
             if target_user:
