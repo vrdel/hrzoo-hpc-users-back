@@ -22,7 +22,7 @@ setup(
     version='0.1.0',
     description="""
         Set of backend tools that run on frontend node of HRZOO HPC clusters,
-        sync with HRZOO Signup API and opens user accounts in LDAP and performs
+        sync with HRZOO Signup API, set user entries in LDAP and performs
         other actions for user to get access
     """,
     author='SRCE',
@@ -39,7 +39,7 @@ setup(
     scripts=['bin/ah-1-api-sync.py', 'bin/ah-2-user-metadata-setup.py', 'bin/ah-3-ldap-update.py',
              'bin/ah-4-directories-create.py', 'bin/ah-5-fairshare-update.py', 'bin/ah-6-email-send.py',
              'bin/ah-7-mailinglist-subscribe.py', 'bin/ah-db-tool.py', 'bin/ah-all-flags-set.py',
-             'bin/ah-user-manage.py'],
+             'bin/ah-user-manage.py', 'bin/ah-project-manage.py'],
     data_files=[
         ('bin/', glob.glob('bin/*')),
         ('etc/accounts-hpc', ['config/email-template-new-key.txt',
