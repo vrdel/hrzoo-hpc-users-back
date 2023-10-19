@@ -37,6 +37,16 @@ def gen_gid(session, confopts):
         + len(resgroups)
 
 
+def project_list(logger, args, session):
+    projects = session.query(Project).all()
+    for project in projects:
+        if (args.name and args.name.lower() in project.name.lower()) or \
+           (args.identifier and args.identifier.lower() in project.identifier.lower()):
+            print("{0:<12} = {1}".format("name", project.name))
+            print("{0:<12} = {1}".format("identifier", project.identifier))
+            print("{0:<12} = {1}\n".format("users", ', '.join([user.ldap_username for user in project.user])))
+
+
 def project_delete(logger, args, session):
     try:
         pr = session.query(Project).filter(
@@ -105,6 +115,11 @@ def main():
                                           help='Delete project')
     parser_delete.add_argument('--identifier', dest='identifier', type=str, required=False,
                                help='Project identifier')
+    parser_list = subparsers.add_parser('list', help='List projects based on passed metadata')
+    parser_list.add_argument('--name', dest='name', type=str, required=False,
+                             help='String that will be matched with the project name')
+    parser_list.add_argument('--identifier', dest='identifier', type=str, required=False,
+                             help='String that will be matched with the project identifier')
 
     args = parser.parse_args()
 
@@ -122,6 +137,8 @@ def main():
         logger.info(f"Created project \"{new_project.name}\" with ID {new_project.identifier}")
     elif args.command == "delete":
         project_delete(logger, args, session)
+    elif args.command == "list":
+        project_list(logger, args, session)
 
     try:
         session.commit()
