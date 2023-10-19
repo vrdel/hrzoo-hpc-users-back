@@ -8,6 +8,12 @@ from accounts_hpc.log import Logger  # type: ignore
 from accounts_hpc.db import Base, Project, User, SshKey  # type: ignore
 from accounts_hpc.utils import only_alnum, all_none, contains_exception, get_ssh_key_fingerprint
 
+from rich import print
+from rich.columns import Columns
+from rich.table import Table
+from rich.console import Console
+from rich.pretty import pprint
+
 from sqlalchemy import create_engine
 from sqlalchemy import and_
 from sqlalchemy import update
@@ -39,12 +45,29 @@ def gen_gid(session, confopts):
 
 def project_list(logger, args, session):
     projects = session.query(Project).all()
+    table = None
+    table = Table(title="Found projects", title_justify="left", box=None, show_lines=True, title_style="")
+    table.add_column(justify="right")
+    table.add_column()
+    table.add_column()
+
     for project in projects:
         if (args.name and args.name.lower() in project.name.lower()) or \
            (args.identifier and args.identifier.lower() in project.identifier.lower()):
-            print("{0:<12} = {1}".format("name", project.name))
-            print("{0:<12} = {1}".format("identifier", project.identifier))
-            print("{0:<12} = {1}\n".format("users", ', '.join([user.ldap_username for user in project.user])))
+            users = ', '.join([user.ldap_username for user in project.user])
+            table.add_row('name =', project.name)
+            table.add_row('identifier =', project.identifier)
+            table.add_row('users =', users)
+            table.add_row(' ')
+        if not args.name and not args.identifier:
+            users = ', '.join([user.ldap_username for user in project.user])
+            table.add_row('name =', project.name)
+            table.add_row('identifier =', project.identifier)
+            table.add_row('users =', users)
+            table.add_row(' ')
+    if table.row_count:
+        console = Console()
+        console.print(table)
 
 
 def project_delete(logger, args, session):
