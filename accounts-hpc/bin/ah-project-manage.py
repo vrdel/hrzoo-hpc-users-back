@@ -38,7 +38,34 @@ def gen_gid(session, confopts):
 
 
 def project_delete(logger, args, session):
-    pass
+    try:
+        pr = session.query(Project).filter(
+            Project.identifier == args.identifier).one()
+
+        if pr:
+            logger.info(f"Projects found with {args.identifier}")
+            logger.info("This will delete the project from cache DB and deassociate users from it\nAre you sure you want to continue? (yes/no): ")
+            decision = input('--> ')
+            if decision.lower() != 'yes' and decision.lower() != 'no':
+                logger.error("Cannot interpret the answer, skipping action")
+            elif decision.lower() == 'yes':
+                for us in pr.user:
+                    us.projects_api.remove(args.identifier)
+                if not args.force:
+                    logger.info("Project and its users deleted")
+                else:
+                    for us in pr.user:
+                        pr.user.remove(us)
+                    session.delete(pr)
+                    logger.info("Project and its users DB relation deleted")
+
+    except MultipleResultsFound:
+        logger.error("Multiple projects found with the same identifier or name")
+        raise SystemExit(1)
+
+    except NoResultFound:
+        logger.error("No project found")
+        raise SystemExit(1)
 
 
 def project_add(logger, args, session, confopts):
@@ -64,6 +91,8 @@ def project_add(logger, args, session, confopts):
 def main():
     parser = argparse.ArgumentParser(description='Manage project create and delete manually with needed metadata about it')
     subparsers = parser.add_subparsers(help="Project subcommands", dest="command")
+    parser.add_argument('--force', dest='force', action='store_true',
+                        required=False, help='Make changes in DB relations')
 
     parser_create = subparsers.add_parser('create', help='Create project based on passed metadata')
     parser_create.add_argument('--name', dest='name', type=str, required=True,
@@ -73,9 +102,9 @@ def main():
                                help='Resource types')
 
     parser_delete = subparsers.add_parser('delete',
-                                          help='Delete project metadata')
-    parser_delete.add_argument('--name', dest='name', type=str, required=True,
-                               help='Project name')
+                                          help='Delete project')
+    parser_delete.add_argument('--identifier', dest='identifier', type=str, required=False,
+                               help='Project identifier')
 
     args = parser.parse_args()
 
