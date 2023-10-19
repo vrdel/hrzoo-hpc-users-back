@@ -45,7 +45,6 @@ def gen_gid(session, confopts):
 
 def project_list(logger, args, session):
     projects = session.query(Project).all()
-    table = None
     table = Table(title="Found projects", title_justify="left", box=None, show_lines=True, title_style="")
     table.add_column(justify="right")
     table.add_column()
