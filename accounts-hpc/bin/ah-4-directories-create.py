@@ -86,6 +86,10 @@ def main():
                 except (PermissionError, OSError, FileNotFoundError) as exc:
                     logger.error(exc)
 
+                except IndexError as exc:
+                    logger.warning(f"Project {project.identifier} without users")
+                    logger.warning(exc)
+
             if completed == len(confopts['usersetup']['groupdirs_in']):
                 project.is_dir_created = True
                 for dir in confopts['usersetup']['groupdirs_in']:
