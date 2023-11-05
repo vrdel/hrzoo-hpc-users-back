@@ -164,12 +164,12 @@ def users_projects_add(args, session, projects_users):
             # always up to date fields
             us.person_mail = uspr['user']['person_mail']
             us.person_uniqueid = uspr['user']['username']
-            us.is_active = uspr['user']['is_active']
+            us.is_active = uspr['user']['status']
             us.uid_api = uspr['user']['id']
 
         except NoResultFound:
             us = User(first_name=only_alnum(unidecode(uspr['user']['first_name'])),
-                      is_active=uspr['user']['is_active'],
+                      is_active=uspr['user']['status'],
                       is_opened=True if args.initset else False,
                       is_dir_created=True if args.initset else False,
                       is_deactivated=True if args.initset else False,
