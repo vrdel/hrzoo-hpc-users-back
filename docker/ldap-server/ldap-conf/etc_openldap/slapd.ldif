@@ -122,6 +122,11 @@ olcDatabase: frontend
 #	by self write
 #	by users read
 #	by anonymous auth
+# -vrdel
+# allow anon user to only authn without any other perms
+# needed for readonly user that will query only subtree
+# of particular o=PROJECT-identifier subtree
+olcAccess: to * by anonymous auth
 #
 # if no access controls are present, the default policy
 # allows anyone and everyone to read anything but restricts
