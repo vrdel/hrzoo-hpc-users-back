@@ -58,6 +58,7 @@ RUN mkdir /home/user/rpms/
 COPY rpms/* /home/user/rpms/
 RUN curl -sfL https://git.io/chezmoi | sh
 COPY chezmoi-config-apply.sh /home/user
+COPY destroy-ldap.sh bootstrap-ldap-orgproj.sh /home/user
 RUN sudo dnf localinstall -y /home/user/rpms/*
 RUN sudo ln -s \
     /usr/share/doc/openssh-ldap/openssh-lpk-openldap.schema /etc/openldap/schema && \
