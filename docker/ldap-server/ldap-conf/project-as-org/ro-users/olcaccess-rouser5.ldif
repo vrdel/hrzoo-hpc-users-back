@@ -1,0 +1,4 @@
+dn: olcDatabase={2}mdb,cn=config
+changetype: modify
+add: olcAccess
+olcAccess: {0}to dn.subtree="o=PROJECT-project5,dc=hpc,dc=srce,dc=hr" by dn.exact="cn=readonly-user5,dc=hpc,dc=srce,dc=hr" read

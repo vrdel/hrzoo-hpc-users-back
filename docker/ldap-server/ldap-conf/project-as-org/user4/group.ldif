@@ -1,0 +1,6 @@
+dn: cn=project4,ou=Group,o=PROJECT-project4,dc=hpc,dc=srce,dc=hr
+objectClass: posixGroup
+objectClass: top
+cn: project4
+userPassword: {crypt}x
+gidNumber: 1003
