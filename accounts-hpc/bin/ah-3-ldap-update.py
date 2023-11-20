@@ -266,8 +266,9 @@ def main():
         )
         conn = client.connect()
 
-        create_default_groups(confopts, conn, logger)
-        create_resource_groups(confopts, conn, logger)
+        if not confopts['ldap']['project_organisation']:
+            create_default_groups(confopts, conn, logger)
+            create_resource_groups(confopts, conn, logger)
 
     except bonsai.errors.AuthenticationError as exc:
         logger.error(exc)
@@ -276,6 +277,7 @@ def main():
     engine = create_engine("sqlite:///{}".format(confopts['db']['path']))
     Session = sessionmaker(engine)
     session = Session()
+
 
     users = session.query(User).all()
 
@@ -312,13 +314,14 @@ def main():
         except bonsai.errors.LDAPError as exc:
             logger.error(f'Error adding/updating LDAP group {project.identifier} - {repr(exc)}')
 
-    # handle default groups associations
-    update_default_groups(confopts, conn, logger, users, "hpc-users")
-    # update_default_groups(confopts, conn, logger, users, "hpc", onlyops=True)
+    if not confopts['ldap']['project_organisation']:
+        # handle default groups associations
+        update_default_groups(confopts, conn, logger, users, "hpc-users")
+        # update_default_groups(confopts, conn, logger, users, "hpc", onlyops=True)
 
-    # handle resource groups associations
-    update_resource_groups(confopts, conn, logger, users, "hpc-bigmem")
-    update_resource_groups(confopts, conn, logger, users, "hpc-gpu")
+        # handle resource groups associations
+        update_resource_groups(confopts, conn, logger, users, "hpc-bigmem")
+        update_resource_groups(confopts, conn, logger, users, "hpc-gpu")
 
     session.commit()
     session.close()
