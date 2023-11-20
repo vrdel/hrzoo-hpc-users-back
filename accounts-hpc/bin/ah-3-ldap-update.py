@@ -16,8 +16,11 @@ from sqlalchemy.exc import NoResultFound, MultipleResultsFound
 import argparse
 
 
-def new_user_ldap_add(confopts, conn, user):
-    ldap_user = bonsai.LDAPEntry(f"cn={user.ldap_username},ou=People,{confopts['ldap']['basedn']}")
+def new_user_ldap_add(confopts, conn, user, identifier=None):
+    if identifier:
+        ldap_user = bonsai.LDAPEntry(f"cn={user.ldap_username},ou=People,o=PROJECT-{identifier},{confopts['ldap']['basedn']}")
+    else:
+        ldap_user = bonsai.LDAPEntry(f"cn={user.ldap_username},ou=People,{confopts['ldap']['basedn']}")
     ldap_user['objectClass'] = ['top', 'account', 'posixAccount', 'shadowAccount', 'ldapPublicKey']
     ldap_user['cn'] = [user.ldap_username]
     ldap_user['uid'] = [user.ldap_username]
@@ -266,6 +269,7 @@ def main():
         )
         conn = client.connect()
 
+        # default and resource groups are created only for flat hierarchies
         if not confopts['ldap']['project_organisation']:
             create_default_groups(confopts, conn, logger)
             create_resource_groups(confopts, conn, logger)
@@ -284,27 +288,50 @@ def main():
     for user in users:
         if not user.ldap_username:
             continue
-        ldap_user = conn.search(f"cn={user.ldap_username},ou=People,{confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
-        try:
-            if not ldap_user or not user.is_opened:
-                ldap_user = new_user_ldap_add(confopts, conn, user)
-                user_ldap_update(confopts, session, logger, user, [ldap_user])
-                user_key_update(confopts, session, logger, user, [ldap_user])
-            else:
+        if not confopts['ldap']['project_organisation']:
+            ldap_user = conn.search(f"cn={user.ldap_username},ou=People,{confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
+            try:
+                if not ldap_user or not user.is_opened:
+                    ldap_user = new_user_ldap_add(confopts, conn, user)
+                    user_ldap_update(confopts, session, logger, user, [ldap_user])
+                    user_key_update(confopts, session, logger, user, [ldap_user])
+                else:
+                    user_ldap_update(confopts, session, logger, user, ldap_user)
+                    user_key_update(confopts, session, logger, user, ldap_user)
+                user.is_opened = True
+            except bonsai.errors.AlreadyExists as exc:
+                logger.warning(f'LDAP user {user.ldap_username} - {repr(exc)}')
                 user_ldap_update(confopts, session, logger, user, ldap_user)
                 user_key_update(confopts, session, logger, user, ldap_user)
-            user.is_opened = True
-        except bonsai.errors.AlreadyExists as exc:
-            logger.warning(f'LDAP user {user.ldap_username} - {repr(exc)}')
-            user_ldap_update(confopts, session, logger, user, ldap_user)
-            user_key_update(confopts, session, logger, user, ldap_user)
-            user.is_opened = True
-        except bonsai.errors.LDAPError as exc:
-            logger.error(f'Error adding/updating LDAP user {user.ldap_username} - {repr(exc)}')
+                user.is_opened = True
+            except bonsai.errors.LDAPError as exc:
+                logger.error(f'Error adding/updating LDAP user {user.ldap_username} - {repr(exc)}')
+        else:
+            for identifier in user.projects_api:
+                ldap_user = conn.search(f"cn={user.ldap_username},ou=People,o=PROJECT-{identifier},{confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
+                try:
+                    if not ldap_user or not user.is_opened:
+                        ldap_user = new_user_ldap_add(confopts, conn, user, identifier)
+                        user_ldap_update(confopts, session, logger, user, [ldap_user])
+                        user_key_update(confopts, session, logger, user, [ldap_user])
+                    else:
+                        user_ldap_update(confopts, session, logger, user, ldap_user)
+                        user_key_update(confopts, session, logger, user, ldap_user)
+                    user.is_opened = True
+                except bonsai.errors.AlreadyExists as exc:
+                    logger.warning(f'LDAP user {user.ldap_username} - {repr(exc)}')
+                    user_ldap_update(confopts, session, logger, user, ldap_user)
+                    user_key_update(confopts, session, logger, user, ldap_user)
+                    user.is_opened = True
+                except bonsai.errors.LDAPError as exc:
+                    logger.error(f'Error adding/updating LDAP user {user.ldap_username} - {repr(exc)}')
 
     projects = session.query(Project).all()
     for project in projects:
-        ldap_project = conn.search(f"cn={project.identifier},ou=Group,{confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
+        if not confopts['ldap']['project_organisation']:
+            ldap_project = conn.search(f"cn={project.identifier},ou=Group,{confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
+        else:
+            ldap_project = conn.search(f"cn={project.identifier},ou=Group,o=PROJECT-{project.identifier},{confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
         try:
             if not ldap_project:
                 ldap_project = new_group_ldap_add(confopts, conn, project)
