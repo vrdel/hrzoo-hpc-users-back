@@ -16,6 +16,24 @@ from sqlalchemy.exc import NoResultFound, MultipleResultsFound
 import argparse
 
 
+def new_organisation_project(confopts, conn, identifier):
+    ldap_org_proj = bonsai.LDAPEntry(f"o=PROJECT-{identifier},{confopts['ldap']['basedn']}")
+    ldap_org_proj['objectClass'] = ['top', 'organization']
+    ldap_org_proj['o'] = f'PROJECT-{identifier}'
+    ldap_org_proj['description'] = f'Project on HRZOO resources {identifier}'
+    conn.add(ldap_org_proj)
+
+    ldap_org_proj_people = bonsai.LDAPEntry(f"ou=People,o=PROJECT-{identifier},{confopts['ldap']['basedn']}")
+    ldap_org_proj_people['objectClass'] = ['organizationalUnit']
+    ldap_org_proj_people['ou'] = 'People'
+    conn.add(ldap_org_proj_people)
+
+    ldap_org_proj_group = bonsai.LDAPEntry(f"ou=Group,o=PROJECT-{identifier},{confopts['ldap']['basedn']}")
+    ldap_org_proj_group['objectClass'] = ['organizationalUnit']
+    ldap_org_proj_group['ou'] = 'Group'
+    conn.add(ldap_org_proj_group)
+
+
 def new_user_ldap_add(confopts, conn, user, identifier=None):
     if identifier:
         ldap_user = bonsai.LDAPEntry(f"cn={user.ldap_username},ou=People,o=PROJECT-{identifier},{confopts['ldap']['basedn']}")
@@ -191,7 +209,10 @@ def user_key_update(confopts, session, logger, user, ldap_user):
 
 
 def new_group_ldap_add(confopts, conn, project):
-    ldap_project = bonsai.LDAPEntry(f"cn={project.identifier},ou=Group,{confopts['ldap']['basedn']}")
+    if not confopts['ldap']['project_organisation']:
+        ldap_project = bonsai.LDAPEntry(f"cn={project.identifier},ou=Group,{confopts['ldap']['basedn']}")
+    else:
+        ldap_project = bonsai.LDAPEntry(f"cn={project.identifier},ou=Group,o=PROJECT-{project.identifier},{confopts['ldap']['basedn']}")
     ldap_project['cn'] = [project.identifier]
     ldap_project['objectClass'] = ['top', 'posixGroup']
     ldap_project['gidNumber'] = [project.ldap_gid]
@@ -308,6 +329,9 @@ def main():
                 logger.error(f'Error adding/updating LDAP user {user.ldap_username} - {repr(exc)}')
         else:
             for identifier in user.projects_api:
+                ldap_org_proj = conn.search(f"o=PROJECT-{identifier},{confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
+                if not ldap_org_proj:
+                    new_organisation_project(confopts, conn, identifier)
                 ldap_user = conn.search(f"cn={user.ldap_username},ou=People,o=PROJECT-{identifier},{confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
                 try:
                     if not ldap_user or not user.is_opened:
