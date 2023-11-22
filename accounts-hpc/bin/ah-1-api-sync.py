@@ -16,7 +16,7 @@ from sqlalchemy import create_engine
 from sqlalchemy import and_
 from sqlalchemy import update
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.exc import NoResultFound
+from sqlalchemy.exc import NoResultFound, MultipleResultsFound
 
 from unidecode import unidecode
 
@@ -133,7 +133,7 @@ def users_projects_del(args, session, projects_users):
         visited_users.update([uspr['user']['id']])
 
 
-def users_projects_add(args, session, projects_users):
+def users_projects_add(args, session, logger, projects_users):
     for uspr in projects_users:
         try:
             pr = session.query(Project).filter(
@@ -189,6 +189,10 @@ def users_projects_add(args, session, projects_users):
                       ldap_gid=0,
                       ldap_username='',
                       type_create='api')
+
+        except MultipleResultsFound as exc:
+            logger.error(exc)
+            logger.error('Troublesome DB entry: {}'.format(repr(uspr)))
 
         # sync (user, project) relations to cache
         # only if --init-set
@@ -305,7 +309,7 @@ async def run(logger, args, confopts):
     session = Session()
 
     check_users_without_projects(args, session, logger, interested_users_api)
-    users_projects_add(args, session, projects_users)
+    users_projects_add(args, session, logger, projects_users)
     users_projects_del(args, session, projects_users)
     sshkeys_add(args, session, projects_users, sshkeys)
     sshkeys_del(args, session, projects_users, sshkeys)
