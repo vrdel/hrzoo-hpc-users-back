@@ -227,6 +227,10 @@ def user_update(logger, args, session):
             logger.info(f"Set type_create={args.typecreate} for {user.ldap_username}")
             user.type_create = args.typecreate
 
+        if args.ssouid != None:
+            logger.info(f"Set type_create={args.ssouid} for {user.ldap_username}")
+            user.person_uniqueid = args.ssouid
+
     except NoResultFound:
         logger.error(f"User {args.username} not found")
         raise SystemExit(1)
@@ -572,6 +576,8 @@ def main():
                                required=False, help='Set flag mail_is_opensend')
     parser_update.add_argument('--type-create', dest='typecreate', type=str, metavar='api/manual',
                                required=False, help='Set type_create')
+    parser_update.add_argument('--sso-uid', dest='ssouid', type=str,
+                               required=False, help='Set SSO UID')
 
     parser_delete = subparsers.add_parser('delete', help='Delete user metadata')
     parser_delete.add_argument('--username', dest='username', type=str,
