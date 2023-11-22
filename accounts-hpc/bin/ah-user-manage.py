@@ -147,7 +147,7 @@ def user_update(logger, args, session):
             logger.info(f"Update email with {args.email} for user {args.username}")
 
         if args.oib:
-            user.person_oib = int(args.oib)
+            user.person_oib = args.oib
             logger.info(f"Update OIB with {args.oib} for user {args.username}")
 
         if args.staff:
