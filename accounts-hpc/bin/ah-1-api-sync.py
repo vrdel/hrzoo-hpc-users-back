@@ -71,6 +71,7 @@ def sshkeys_add(args, session, logger, projects_users, sshkeys):
     for key in sshkeys:
         if key['user']['id'] not in interested_users:
             continue
+
         try:
             us = session.query(User).filter(User.person_uniqueid == key['user']['username']).one()
 
@@ -122,7 +123,7 @@ def users_projects_del(args, session, logger, projects_users):
             continue
 
         try:
-            us = session.query(User).filter(User.person_uniqueid == uspr['user']['username']).one()
+            us = session.query(User).filter(User.person_oib == uspr['user']['person_oib']).one()
 
         except MultipleResultsFound as exc:
             logger.error(exc)
