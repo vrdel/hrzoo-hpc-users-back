@@ -223,6 +223,10 @@ def user_update(logger, args, session):
         if args.flagisactive != None:
             logger.info(f"Set is_active={args.flagisactive} for {user.ldap_username}")
 
+        if args.typecreate != None:
+            logger.info(f"Set type_create={args.typecreate} for {user.ldap_username}")
+            user.type_create = args.typecreate
+
     except NoResultFound:
         logger.error(f"User {args.username} not found")
         raise SystemExit(1)
@@ -566,6 +570,8 @@ def main():
                                required=False, help='Set flag mail_is_sshkeyadded')
     parser_update.add_argument('--flag-opensend', dest='flagisopensend', type=int, metavar='0/1',
                                required=False, help='Set flag mail_is_opensend')
+    parser_update.add_argument('--type-create', dest='typecreate', type=str, metavar='api/manual',
+                               required=False, help='Set type_create')
 
     parser_delete = subparsers.add_parser('delete', help='Delete user metadata')
     parser_delete.add_argument('--username', dest='username', type=str,
