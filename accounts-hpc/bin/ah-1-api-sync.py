@@ -30,7 +30,7 @@ def replace_projectsapi_fields(projectsfields, userproject):
             userproject['project'][which] = userproject['project'][which].replace(field['from'], field['to'])
 
 
-def sshkeys_del(args, session, projects_users, sshkeys):
+def sshkeys_del(args, session, logger, projects_users, sshkeys):
     interested_users = [up['user']['id'] for up in projects_users]
     hzsi_api_user_keys = dict()
 
@@ -65,14 +65,19 @@ def sshkeys_del(args, session, projects_users, sshkeys):
                     session.delete(key)
 
 
-def sshkeys_add(args, session, projects_users, sshkeys):
+def sshkeys_add(args, session, logger, projects_users, sshkeys):
     interested_users = set([up['user']['id'] for up in projects_users])
 
     for key in sshkeys:
         if key['user']['id'] not in interested_users:
             continue
+        try:
+            us = session.query(User).filter(User.person_uniqueid == key['user']['username']).one()
 
-        us = session.query(User).filter(User.person_uniqueid == key['user']['username']).one()
+        except MultipleResultsFound as exc:
+            logger.error(exc)
+            logger.error('{} - Troublesome DB entry: {}'.format(sshkeys_add.__name__, repr(key)))
+            raise SystemExit(1)
 
         if key['fingerprint'] not in us.sshkeys_api:
             us.sshkeys_api.append(key['fingerprint'])
@@ -99,7 +104,7 @@ def sshkeys_add(args, session, projects_users, sshkeys):
             session.add(us)
 
 
-def users_projects_del(args, session, projects_users):
+def users_projects_del(args, session, logger, projects_users):
     hzsi_api_user_projects = dict()
 
     for uspr in projects_users:
@@ -116,7 +121,13 @@ def users_projects_del(args, session, projects_users):
         if uspr['user']['id'] in visited_users:
             continue
 
-        us = session.query(User).filter(User.person_uniqueid == uspr['user']['username']).one()
+        try:
+            us = session.query(User).filter(User.person_uniqueid == uspr['user']['username']).one()
+
+        except MultipleResultsFound as exc:
+            logger.error(exc)
+            logger.error('{} - Troublesome DB entry: {}'.format(users_projects_del.__name__, repr(uspr)))
+            raise SystemExit(1)
 
         if len(us.projects_api) > len(hzsi_api_user_projects[uspr['user']['username']]):
             us.projects_api = hzsi_api_user_projects[uspr['user']['username']]
@@ -131,6 +142,7 @@ def users_projects_del(args, session, projects_users):
                     us.project.remove(pr)
 
         visited_users.update([uspr['user']['id']])
+
 
 
 def users_projects_add(args, session, logger, projects_users):
@@ -192,7 +204,7 @@ def users_projects_add(args, session, logger, projects_users):
 
         except MultipleResultsFound as exc:
             logger.error(exc)
-            logger.error('Troublesome DB entry: {}'.format(repr(uspr)))
+            logger.error('{} - Troublesome DB entry: {}'.format(users_projects_add.__name__, repr(uspr)))
 
         # sync (user, project) relations to cache
         # only if --init-set
@@ -310,9 +322,9 @@ async def run(logger, args, confopts):
 
     check_users_without_projects(args, session, logger, interested_users_api)
     users_projects_add(args, session, logger, projects_users)
-    users_projects_del(args, session, projects_users)
-    sshkeys_add(args, session, projects_users, sshkeys)
-    sshkeys_del(args, session, projects_users, sshkeys)
+    users_projects_del(args, session, logger, projects_users)
+    sshkeys_add(args, session, logger, projects_users, sshkeys)
+    sshkeys_del(args, session, logger, projects_users, sshkeys)
 
     session.commit()
     session.close()
