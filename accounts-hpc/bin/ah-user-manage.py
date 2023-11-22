@@ -337,8 +337,6 @@ def user_project_list(logger, args, session):
     all_users = session.query(User).all()
 
     if args.project:
-        import ipdb; ipdb.set_trace()
-
         table = Table(
             title=f"Found users for projects {args.project}",
             title_justify="left",
@@ -353,6 +351,132 @@ def user_project_list(logger, args, session):
         projects = session.query(Project).filter(Project.identifier == args.project)
         for project in projects:
             for user in project.user:
+                sshkeys = ', '.join(
+                    ['\[{}...{}]'.format(key.public_key[0:32], key.public_key[-32:]) for key in user.sshkey]
+                )
+                table.add_row("First = ", user.first_name)
+                table.add_row("Last = ", user.last_name)
+                table.add_row("Mail = ", user.person_mail)
+                table.add_row("Username = ", user.ldap_username)
+                table.add_row("LDAP UID = ", str(user.ldap_uid))
+                table.add_row("LDAP GID = ", str(user.ldap_gid))
+                table.add_row("Type create = ", str(user.type_create))
+                table.add_row("SSO UID = ", user.person_uniqueid)
+                table.add_row("Projects API = ", ', '.join(user.projects_api))
+                table.add_row("SSH keys API = ", ', '.join(user.sshkeys_api))
+                table.add_row("SSH keys = ", sshkeys)
+                table.add_row("Active = ", str(user.is_active))
+                table.add_row("Deactivated = ", str(user.is_deactivated))
+                table.add_row("Staff = ", str(user.is_staff))
+                table.add_row("Directories = ", str(user.is_dir_created))
+                table.add_row("Subscribed = ", str(user.mail_is_subscribed))
+                table.add_row("Mail open = ", str(user.mail_is_opensend))
+                table.add_row("Mail SSH key = ", str(user.mail_is_sshkeyadded))
+                table.add_row("Mail key name = ", ', '.join(user.mail_name_sshkey))
+                table.add_row(" ")
+
+        if table.row_count:
+            console = Console()
+            console.print(table)
+
+    if args.first:
+        table = Table(
+            title=f"Found users with first name {args.first}",
+            title_justify="left",
+            box=None,
+            show_lines=True,
+            title_style=""
+        )
+        table.add_column(justify="right")
+        table.add_column()
+        table.add_column()
+
+        for user in all_users:
+            if args.first.lower() in user.first_name.lower():
+                sshkeys = ', '.join(
+                    ['\[{}...{}]'.format(key.public_key[0:32], key.public_key[-32:]) for key in user.sshkey]
+                )
+                table.add_row("First = ", user.first_name)
+                table.add_row("Last = ", user.last_name)
+                table.add_row("Mail = ", user.person_mail)
+                table.add_row("Username = ", user.ldap_username)
+                table.add_row("LDAP UID = ", str(user.ldap_uid))
+                table.add_row("LDAP GID = ", str(user.ldap_gid))
+                table.add_row("Type create = ", str(user.type_create))
+                table.add_row("SSO UID = ", user.person_uniqueid)
+                table.add_row("Projects API = ", ', '.join(user.projects_api))
+                table.add_row("SSH keys API = ", ', '.join(user.sshkeys_api))
+                table.add_row("SSH keys = ", sshkeys)
+                table.add_row("Active = ", str(user.is_active))
+                table.add_row("Deactivated = ", str(user.is_deactivated))
+                table.add_row("Staff = ", str(user.is_staff))
+                table.add_row("Directories = ", str(user.is_dir_created))
+                table.add_row("Subscribed = ", str(user.mail_is_subscribed))
+                table.add_row("Mail open = ", str(user.mail_is_opensend))
+                table.add_row("Mail SSH key = ", str(user.mail_is_sshkeyadded))
+                table.add_row("Mail key name = ", ', '.join(user.mail_name_sshkey))
+                table.add_row(" ")
+
+        if table.row_count:
+            console = Console()
+            console.print(table)
+
+    if args.last:
+        table = Table(
+            title=f"Found users with last name {args.last}",
+            title_justify="left",
+            box=None,
+            show_lines=True,
+            title_style=""
+        )
+        table.add_column(justify="right")
+        table.add_column()
+        table.add_column()
+
+        for user in all_users:
+            if args.last.lower() in user.last_name.lower():
+                sshkeys = ', '.join(
+                    ['\[{}...{}]'.format(key.public_key[0:32], key.public_key[-32:]) for key in user.sshkey]
+                )
+                table.add_row("First = ", user.first_name)
+                table.add_row("Last = ", user.last_name)
+                table.add_row("Mail = ", user.person_mail)
+                table.add_row("Username = ", user.ldap_username)
+                table.add_row("LDAP UID = ", str(user.ldap_uid))
+                table.add_row("LDAP GID = ", str(user.ldap_gid))
+                table.add_row("Type create = ", str(user.type_create))
+                table.add_row("SSO UID = ", user.person_uniqueid)
+                table.add_row("Projects API = ", ', '.join(user.projects_api))
+                table.add_row("SSH keys API = ", ', '.join(user.sshkeys_api))
+                table.add_row("SSH keys = ", sshkeys)
+                table.add_row("Active = ", str(user.is_active))
+                table.add_row("Deactivated = ", str(user.is_deactivated))
+                table.add_row("Staff = ", str(user.is_staff))
+                table.add_row("Directories = ", str(user.is_dir_created))
+                table.add_row("Subscribed = ", str(user.mail_is_subscribed))
+                table.add_row("Mail open = ", str(user.mail_is_opensend))
+                table.add_row("Mail SSH key = ", str(user.mail_is_sshkeyadded))
+                table.add_row("Mail key name = ", ', '.join(user.mail_name_sshkey))
+                table.add_row(" ")
+
+        if table.row_count:
+            console = Console()
+            console.print(table)
+
+    if args.username:
+        table = Table(
+            title=f"Found users with username {args.username}",
+            title_justify="left",
+            box=None,
+            show_lines=True,
+            title_style=""
+        )
+        table.add_column(justify="right")
+        table.add_column()
+        table.add_column()
+
+        for user in all_users:
+            if args.username.lower() in user.ldap_username.lower():
                 sshkeys = ', '.join(
                     ['\[{}...{}]'.format(key.public_key[0:32], key.public_key[-32:]) for key in user.sshkey]
                 )
