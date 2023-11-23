@@ -59,6 +59,8 @@ def project_list(logger, args, session):
             table.add_row('Identifier =', project.identifier)
             table.add_row('Resources =', resources)
             table.add_row('LDAP GID =', str(project.ldap_gid))
+            table.add_row('API ID =', str(project.prjid_api))
+            table.add_row('Type create =', str(project.type))
             table.add_row('Directory =', str(project.is_dir_created))
             table.add_row('PBS =', str(project.is_dir_created))
             table.add_row('Users =', users)
@@ -70,6 +72,7 @@ def project_list(logger, args, session):
             table.add_row('Identifier =', project.identifier)
             table.add_row('Resources =', resources)
             table.add_row('LDAP GID =', str(project.ldap_gid))
+            table.add_row('API ID =', str(project.prjid_api))
             table.add_row('Directory =', str(project.is_dir_created))
             table.add_row('PBS =', str(project.is_dir_created))
             table.add_row('Users =', users)
@@ -78,6 +81,57 @@ def project_list(logger, args, session):
         console = Console()
         console.print(table)
 
+
+def project_update(logger, args, session):
+    try:
+        pr = session.query(Project).filter(
+            Project.identifier == args.identifier).one()
+
+        if args.name:
+            pr.name = args.name
+            logger.info(f"Update project {args.identifier} with new name with {args.name}")
+
+        if args.newidentifier:
+            pr.identifier = args.newidentifier
+            logger.info(f"Update identifier for project {args.identifier} with new {args.newidentifier}")
+
+        if args.resourcetypes:
+            pr.staff_resources_type_api = args.resourcetypes
+            logger.info(f"Update resources for project {args.identifier} with {args.resourcetypes}")
+
+        if args.apiid:
+            pr.prjid_api = args.apiid
+            logger.info(f"Update API ID for project {args.identifier} with {args.apiid}")
+
+        if args.typecreate:
+            pr.type = args.typecreate
+            logger.info(f"Update type_create for project {args.identifier} with {args.typecreate}")
+
+        if args.flagisdircreated and args.flagisdircreated > 0:
+            pr.is_dir_created = True
+            logger.info(f"Set is_dir_created for project {args.identifier}")
+        elif args.flagisdircreated == 0:
+            pr.is_dir_created = False
+            logger.info(f"Unset is_dir_created for project {args.identifier}")
+
+        if args.flagfairshare and args.flagfairshare > 0:
+            pr.is_pbsfairshare_added = True
+            logger.info(f"Set is_pbsfairshare_added for project {args.identifier}")
+        elif args.flagfairshare == 0:
+            pr.is_pbsfairshare_added = False
+            logger.info(f"Unset is_pbsfairshare_added for project {args.identifier}")
+
+        if args.nullgid:
+            pr.ldap_gid = 0
+            logger.info(f"Set 0 for LDAL GID for project {args.identifier}")
+
+    except MultipleResultsFound:
+        logger.error("Multiple projects found with the same identifier or name")
+        raise SystemExit(1)
+
+    except NoResultFound:
+        logger.error("No project found")
+        raise SystemExit(1)
 
 def project_delete(logger, args, session):
     try:
@@ -147,6 +201,25 @@ def main():
                                           help='Delete project')
     parser_delete.add_argument('--identifier', dest='identifier', type=str, required=False,
                                help='Project identifier')
+    parser_update = subparsers.add_parser('update', help='Update project metadata')
+    parser_update.add_argument('--identifier', dest='identifier', type=str, required=True,
+                               help='String that will be matched with the project name')
+    parser_update.add_argument('--new-identifier', dest='newidentifier', type=str, required=False,
+                               help='New project identifier')
+    parser_update.add_argument('--name', dest='name', type=str, required=False,
+                               help='New project name')
+    parser_update.add_argument('--null-gid', dest='nullgid', default=False, action='store_true',
+                               required=False, help='Set LDAP GID for project to 0')
+    parser_update.add_argument('--type-create', dest='typecreate', type=str, metavar='api/manual',
+                               required=False, help='Set type_create')
+    parser_update.add_argument('--api-id', dest='apiid', type=int,
+                               required=False, help='Update project API ID')
+    parser_update.add_argument('--resource-types', dest='resourcetypes', type=str,
+                               required=False, nargs='+', help='Update resource types')
+    parser_update.add_argument('--flag-dircreated', dest='flagisdircreated', type=int, metavar='0/1',
+                               required=False, help='Set flag is_dir_created')
+    parser_update.add_argument('--flag-fairshare', dest='flagfairshare', type=int, metavar='0/1',
+                               required=False, help='Set flag is_pbsfairshare_added')
     parser_list = subparsers.add_parser('list', help='List projects based on passed metadata')
     parser_list.add_argument('--name', dest='name', type=str, required=False,
                              help='String that will be matched with the project name')
@@ -169,6 +242,8 @@ def main():
         logger.info(f"Created project \"{new_project.name}\" with ID {new_project.identifier}")
     elif args.command == "delete":
         project_delete(logger, args, session)
+    elif args.command == "update":
+        project_update(logger, args, session)
     elif args.command == "list":
         project_list(logger, args, session)
 
