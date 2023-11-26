@@ -39,7 +39,7 @@ def subscribe_maillist(confopts, logger, email, username):
                                  timeout=confopts['mailinglist']['timeout'])
         response.raise_for_status()
 
-        return True
+        return (True, True)
 
     except (requests.exceptions.ConnectionError, requests.exceptions.HTTPError) as e:
         excp_msg = getattr(e.response, 'content', False)
@@ -51,7 +51,7 @@ def subscribe_maillist(confopts, logger, email, username):
         logger.error('Failed subscribing user %s on %s: %s' % (username,
                                                                confopts['mailinglist']['name'],
                                                                errormsg))
-        return False
+        return (False, e)
 
 
 def main():
@@ -69,14 +69,14 @@ def main():
 
     users = session.query(User).filter(User.mail_is_subscribed == False).all()
     for user in users:
-        if subscribe_maillist(
-            confopts,
-            logger,
-            user.person_mail,
-            user.ldap_username,
-        ):
+        subscribed = subscribe_maillist(confopts, logger, user.person_mail, user.ldap_username)
+        if subscribed[0]:
             user.mail_is_subscribed = True
             logger.info(f"User {user.ldap_username} subscribed to {confopts['mailinglist']['name']}")
+        else:
+            if subscribed[1].response.status_code == 409:
+                logger.info(f"User {user.ldap_username} already subscribed to {confopts['mailinglist']['name']}, setting flag to True")
+                user.mail_is_subscribed = True
 
     session.commit()
     session.close()
