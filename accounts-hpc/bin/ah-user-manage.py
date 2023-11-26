@@ -130,9 +130,6 @@ def user_update(logger, args, session):
                 if key_fingerprint not in sshkeys_api:
                     sshkeys_api.append(key_fingerprint)
                 user.sshkeys_api = sshkeys_api
-                if key_fingerprint not in user.mail_name_sshkey:
-                    user.mail_name_sshkey.append(key_fingerprint)
-                user.mail_is_sshkeyadded = False
 
                 if args.force:
                     user.sshkey.append(dbkey)

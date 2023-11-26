@@ -123,7 +123,7 @@ def project_update(logger, args, session):
 
         if args.nullgid:
             pr.ldap_gid = 0
-            logger.info(f"Set 0 for LDAL GID for project {args.identifier}")
+            logger.info(f"Set 0 for LDAP GID for project {args.identifier}")
 
     except MultipleResultsFound:
         logger.error("Multiple projects found with the same identifier or name")
