@@ -30,7 +30,7 @@ def build_connection_retry_settings(confopts):
 
 
 class SessionWithRetry(object):
-    def __init__(self, logger, confopts, handle_session_close=False):
+    def __init__(self, logger, confopts, auth=None, handle_session_close=False):
         self.ssl_context = build_ssl_settings(confopts)
         n_try, client_timeout = build_connection_retry_settings(confopts)
         client_timeout = aiohttp.ClientTimeout(total=client_timeout,
@@ -38,6 +38,11 @@ class SessionWithRetry(object):
                                                sock_read=client_timeout)
         self.session = aiohttp.ClientSession(timeout=client_timeout)
         self.confopts = confopts
+        if auth:
+            self.auth = aiohttp.BasicAuth(login=auth[0], password=auth[1])
+        else:
+            self.auth = None
+
         self.n_try = n_try
         self.logger = logger
         self.token = confopts['hzsiapi']['token']
@@ -48,12 +53,12 @@ class SessionWithRetry(object):
         method_obj = getattr(self.session, method)
         raised_exc = None
         n = 1
-        if self.token:
-            headers = headers or {}
-            headers.update({
-                'Authorization': f'Api-Key {self.token}',
-                'Accept': 'application/json'
-            })
+        # if self.token:
+            # headers = headers or {}
+            # headers.update({
+                # 'Authorization': f'Api-Key {self.token}',
+                # 'Accept': 'application/json'
+            # })
         try:
             sleepsecs = float(self.confopts['connection']['sleepretry'])
 
@@ -62,7 +67,7 @@ class SessionWithRetry(object):
                     self.logger.info(f"{module_class_name(self)} : HTTP Connection try - {n} after sleep {sleepsecs} seconds")
                 try:
                     async with method_obj(url, data=data, headers=headers,
-                                          ssl=self.ssl_context) as response:
+                                          ssl=self.ssl_context, auth=self.auth) as response:
 
                         if response.status in self.erroneous_statuses:
                             self.logger.error('{}.http_{}({}) - Erroneous HTTP status: {} {}'.

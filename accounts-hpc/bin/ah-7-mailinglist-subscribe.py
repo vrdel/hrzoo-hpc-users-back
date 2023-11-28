@@ -5,31 +5,39 @@ import sys
 from accounts_hpc.config import parse_config  # type: ignore
 from accounts_hpc.log import Logger  # type: ignore
 from accounts_hpc.db import User  # type: ignore
+from accounts_hpc.exceptions import SyncHttpError
+from accounts_hpc.httpconn import SessionWithRetry
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from urllib.parse import urlencode
 
+import asyncio
 import argparse
 import signal
 import requests
 import json
 
 
-def subscribe_maillist(confopts, logger, email, username):
+async def maillist_id(confopts, session, headers):
+    headers = dict()
+
+    response = await session.http_get('{}/lists/{}'.format(
+        confopts['mailinglist']['server'], confopts['mailinglist']['name']),
+        headers=headers
+    )
+    import ipdb; ipdb.set_trace()
+
+    if response:
+        list_id = json.loads(response)['list_id']
+
+        return list_id
+
+
+async def subscribe_maillist(confopts, logger, email, username, list_id):
     try:
         headers = dict()
-
-        headers = requests.utils.default_headers()
-        headers['Content-Type'] = 'application/x-www-form-urlencoded'
-        auth = tuple(confopts['mailinglist']['credentials'].split(':'))
-        response = requests.get('{}/lists/{}'.format(
-            confopts['mailinglist']['server'], confopts['mailinglist']['name']),
-            auth=auth,
-            headers=headers
-        )
-        list_id = json.loads(response.content)['list_id']
         subscribe_payload = dict(list_id=list_id, subscriber=email,
                                  pre_verified=True, pre_confirmed=True)
         data = urlencode(subscribe_payload, doseq=True)
@@ -54,6 +62,34 @@ def subscribe_maillist(confopts, logger, email, username):
         return (False, e)
 
 
+async def run(logger, session, confopts):
+    headers = requests.utils.default_headers()
+    headers['Content-Type'] = 'application/x-www-form-urlencoded'
+    auth = confopts['mailinglist']['credentials'].split(':')
+
+    session = SessionWithRetry(logger, confopts, auth, handle_session_close=True)
+
+    try:
+        list_id = await maillist_id(confopts, session, headers)
+        print(list_id)
+    except SyncHttpError as exc:
+        logger.error(f"Error fetch mailing list id {repr(exc)}")
+        raise SystemExit(1)
+
+    # users = session.query(User).filter(User.mail_is_subscribed == False).all()
+    # for user in users:
+        # subscribed = await subscribe_maillist(confopts, logger, user.person_mail, user.ldap_username, list_id)
+        # if subscribed[0]:
+            # user.mail_is_subscribed = True
+            # logger.info(f"User {user.ldap_username} subscribed to {confopts['mailinglist']['name']}")
+        # else:
+            # if subscribed[1].response.status_code == 409:
+                # logger.info(f"User {user.ldap_username} already subscribed to {confopts['mailinglist']['name']}, setting flag to True")
+                # user.mail_is_subscribed = True
+
+    await session.close()
+
+
 def main():
     lobj = Logger(sys.argv[0])
     logger = lobj.get()
@@ -67,16 +103,13 @@ def main():
     Session = sessionmaker(engine)
     session = Session()
 
-    users = session.query(User).filter(User.mail_is_subscribed == False).all()
-    for user in users:
-        subscribed = subscribe_maillist(confopts, logger, user.person_mail, user.ldap_username)
-        if subscribed[0]:
-            user.mail_is_subscribed = True
-            logger.info(f"User {user.ldap_username} subscribed to {confopts['mailinglist']['name']}")
-        else:
-            if subscribed[1].response.status_code == 409:
-                logger.info(f"User {user.ldap_username} already subscribed to {confopts['mailinglist']['name']}, setting flag to True")
-                user.mail_is_subscribed = True
+    loop = asyncio.new_event_loop()
+
+    try:
+        loop.run_until_complete(run(logger, args, confopts))
+
+    except (SyncHttpError, KeyboardInterrupt):
+        pass
 
     session.commit()
     session.close()
