@@ -238,7 +238,8 @@ def check_users_without_projects(args, session, logger, apiusers):
 
 
 async def fetch_data(logger, confopts):
-    session = SessionWithRetry(logger, confopts, handle_session_close=True)
+    token = confopts['hzsiapi']['token']
+    session = SessionWithRetry(logger, confopts, token=token, handle_session_close=True)
 
     coros = [
         session.http_get(

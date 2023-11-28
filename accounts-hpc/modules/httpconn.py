@@ -30,7 +30,7 @@ def build_connection_retry_settings(confopts):
 
 
 class SessionWithRetry(object):
-    def __init__(self, logger, confopts, auth=None, handle_session_close=False):
+    def __init__(self, logger, confopts, token=None, auth=None, handle_session_close=False):
         self.ssl_context = build_ssl_settings(confopts)
         n_try, client_timeout = build_connection_retry_settings(confopts)
         client_timeout = aiohttp.ClientTimeout(total=client_timeout,
@@ -42,10 +42,9 @@ class SessionWithRetry(object):
             self.auth = aiohttp.BasicAuth(login=auth[0], password=auth[1])
         else:
             self.auth = None
-
         self.n_try = n_try
         self.logger = logger
-        self.token = confopts['hzsiapi']['token']
+        self.token = token
         self.handle_session_close = handle_session_close
         self.erroneous_statuses = [404, 403]
 
@@ -53,12 +52,12 @@ class SessionWithRetry(object):
         method_obj = getattr(self.session, method)
         raised_exc = None
         n = 1
-        # if self.token:
-            # headers = headers or {}
-            # headers.update({
-                # 'Authorization': f'Api-Key {self.token}',
-                # 'Accept': 'application/json'
-            # })
+        headers = headers or {}
+        if self.token:
+            headers.update({
+                'Authorization': f'Api-Key {self.token}',
+                'Accept': 'application/json'
+            })
         try:
             sleepsecs = float(self.confopts['connection']['sleepretry'])
 
