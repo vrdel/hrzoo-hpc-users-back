@@ -46,9 +46,9 @@ class SessionWithRetry(object):
         self.logger = logger
         self.token = token
         self.handle_session_close = handle_session_close
-        self.erroneous_statuses = [404, 403]
+        self.erroneous_statuses = [404, 403, 400, 409]
 
-    async def _http_method(self, method, url, data=None, headers=None):
+    async def _http_method(self, method, url, data=None, headers=None, allow_empty=True):
         method_obj = getattr(self.session, method)
         raised_exc = None
         n = 1
@@ -74,12 +74,15 @@ class SessionWithRetry(object):
                                                      method, url,
                                                      response.status,
                                                      response.reason))
-                            break
+                            return response
+
                         content = await response.text()
                         if content:
                             return content
-
-                        self.logger.warn("{} : HTTP Empty response".format(module_class_name(self)))
+                        elif response.status >= 200 and response.status < 300:
+                            return response
+                        else:
+                            self.logger.warn("{} : HTTP Empty response".format(module_class_name(self)))
 
                 # do not retry on SSL errors
                 # raise exc that will be handled in outer try/except clause
@@ -117,6 +120,14 @@ class SessionWithRetry(object):
     async def http_get(self, url, headers=None):
         try:
             content = await self._http_method('get', url, headers=headers)
+            return content
+
+        except Exception as exc:
+            raise SyncHttpError(repr(exc)) from exc
+
+    async def http_post(self, url, data, headers=None):
+        try:
+            content = await self._http_method('post', url, data=data, headers=headers)
             return content
 
         except Exception as exc:
