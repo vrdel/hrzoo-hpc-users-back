@@ -15,7 +15,7 @@ URI     ldaps://docker-hrzooldapserv
 # When no CA certificates are specified the Shared System Certificates
 # are in use. In order to have these available along with the ones specified
 # by TLS_CACERTDIR one has to include them explicitly:
-TLS_CACERT	/usr/local/share/certificates/root.cert
+TLS_CACERT	/usr/local/share/ca-certificates/root.cert
 
 # TLS_REQCERT      demand
 # TLS_CIPHERS      ECDHE-RSA-AES256-SHA384:AES256-SHA256:!RC4:HIGH:!MD5:!aNULL:!EDH:!EXP:!SSLV2:!eNULL
