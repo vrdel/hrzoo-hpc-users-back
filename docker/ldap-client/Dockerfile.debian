@@ -10,6 +10,8 @@ RUN apt-get install -y \
     locales-all \
     memcached \
     net-tools \
+    libtinfo5 \
+    procps \
     python3 \
     python3-pip \
     python3-venv \
@@ -21,11 +23,19 @@ RUN apt-get install -y \
     wget \
     xmlsec1 \
     zsh
-RUN pip install -U pip; pip3 install -U pip
+RUN apt-get install -y \
+    sssd \
+    sssd-ldap \
+    ldap-utils \
+    oddjob-mkhomedir \
+    libpam-sss \
+    libnss-sss \
+    sssd-tools \
+    libsss-sudo
 RUN passwd -d root
 VOLUME [ "/sys/fs/cgroup" ]
 RUN sed -r -i 's/(^Defaults.*always_set_home)/# \1/' /etc/sudoers
-RUN echo -e "user ALL=(ALL) NOPASSWD: ALL\nDefaults env_keep += \"HOME\"" >> /etc/sudoers
+RUN echo "user ALL=(ALL) NOPASSWD: ALL\nDefaults env_keep += \"HOME\"" >> /etc/sudoers
 USER user
 WORKDIR /home/user
 COPY rpms/* /home/user/rpms/
