@@ -26,8 +26,10 @@ RUN apt-get install -y \
     zsh
 RUN apt-get install -y \
     ldap-utils \
+    libldap-dev \
     libnss-sss \
     libpam-sss \
+    libsasl2-dev \
     libsss-sudo \
     oddjob-mkhomedir \
     sssd \
@@ -50,4 +52,7 @@ RUN sudo pam-auth-update --enable mkhomedir
 RUN sudo cp ldap-conf/sudo/etc_nsswitch.conf /etc/nsswitch.conf \
     && sudo cp ldap-conf/sudo/etc_sssd.conf /etc/sssd/sssd.conf \
     && sudo cp ldap-conf/sudo/etc_sudo-ldap.conf /etc/sudo-ldap.conf
+RUN sudo cp ldap-conf/pubkey/etc_ldap.conf /etc/ldap.conf
+RUN sudo python3 -m venv /opt/hrzoo-accounts-hpc/
+RUN sudo /bin/bash -c 'source /opt/hrzoo-accounts-hpc/bin/activate; pip install ssh-ldap-pubkey'
 CMD ["/sbin/init"]
