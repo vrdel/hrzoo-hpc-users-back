@@ -1,0 +1,34 @@
+FROM debian:12
+MAINTAINER dvrcic@srce.hr
+RUN groupadd user -g 1000 && useradd -u 1000 -g 1000 user -m -d /home/user -s /bin/zsh
+RUN apt-get update -y
+RUN apt-get install -y \
+    curl \
+    dialog \
+    git \
+    htop \
+    locales-all \
+    memcached \
+    net-tools \
+    python3 \
+    python3-pip \
+    python3-venv \
+    rsync \
+    sudo \
+    tree \
+    tmux \
+    vim \
+    wget \
+    xmlsec1 \
+    zsh
+RUN pip install -U pip; pip3 install -U pip
+RUN passwd -d root
+VOLUME [ "/sys/fs/cgroup" ]
+RUN sed -r -i 's/(^Defaults.*always_set_home)/# \1/' /etc/sudoers
+RUN echo -e "user ALL=(ALL) NOPASSWD: ALL\nDefaults env_keep += \"HOME\"" >> /etc/sudoers
+USER user
+WORKDIR /home/user
+COPY rpms/* /home/user/rpms/
+RUN curl -sfL https://git.io/chezmoi | sh
+COPY chezmoi-config-apply.sh /home/user
+CMD ["/sbin/init"]
