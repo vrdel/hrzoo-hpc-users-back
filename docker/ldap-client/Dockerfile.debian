@@ -38,7 +38,12 @@ RUN sed -r -i 's/(^Defaults.*always_set_home)/# \1/' /etc/sudoers
 RUN echo "user ALL=(ALL) NOPASSWD: ALL\nDefaults env_keep += \"HOME\"" >> /etc/sudoers
 USER user
 WORKDIR /home/user
-COPY rpms/* /home/user/rpms/
 RUN curl -sfL https://git.io/chezmoi | sh
 COPY chezmoi-config-apply.sh /home/user
+COPY ldap-conf/ /home/user/ldap-conf/
+COPY certs/ /home/user/certs/
+RUN sudo cp certs/root.cert /usr/local/share/ca-certificates \
+    && sudo update-ca-certificates
+RUN sudo cp -f ldap-conf/etc_openldap/ldap.conf.debian /etc/ldap/ldap.conf
+RUN sudo pam-auth-update --enable mkhomedir
 CMD ["/sbin/init"]
