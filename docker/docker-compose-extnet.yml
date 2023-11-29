@@ -23,6 +23,42 @@ services:
     networks:
       - docker_hzsi-front-app_net
 
+  hrzoo-ldap-client-debian:
+    env_file:
+      - compose.env
+    image: $IMAGE_CLIENT_DEBIAN
+    cgroup: host
+    command: /sbin/init
+    privileged: true
+    container_name: hrzoo-ldapclient-debian
+    hostname: docker-hrzooldapclient-debian
+    tty: true
+    stdin_open: true
+    user: root
+    tmpfs:
+      - /run
+      - /tmp
+    depends_on:
+      - hrzoo-ldap-server
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup
+      - $HOME:/mnt
+      - $HOME/.ssh:/home/user/.ssh/
+      - /dev/log:/dev/log
+      - /etc/localtime:/etc/localtime:ro
+      - ./ldap-client/ldap-conf/:/home/user/ldap-conf
+      - ../accounts-hpc/bin/empty:$VENV_HPC/bin/empty
+      - ../accounts-hpc/config/:$VENV_HPC/etc/accounts-hpc
+      - ../accounts-hpc/cron/:$VENV_HPC/cron
+      - ../accounts-hpc/var/:$VENV_HPC/var
+      - ../accounts-hpc/modules/:$VENV_HPC/lib/python3.9/site-packages/accounts_hpc
+      - ../docker/ldap-client/syncsite.sh:/home/user/syncsite.sh
+      - ../docker/ldap-client/pypath.sh:/home/user/pypath.sh
+      - ../docker/ldap-client/pysitepkg:/home/user/pysitepkg
+      - ../accounts-hpc/:/home/user/accounts-hpc-source/
+    networks:
+      - docker_hzsi-front-app_net
+
   hrzoo-ldap-client:
     env_file:
       - compose.env
