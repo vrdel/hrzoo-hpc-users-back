@@ -52,10 +52,12 @@ RUN sudo cp certs/root.cert /usr/local/share/ca-certificates \
 RUN sudo cp -f ldap-conf/etc_openldap/ldap.conf.debian /etc/ldap/ldap.conf
 RUN sudo pam-auth-update --enable mkhomedir
 RUN sudo cp ldap-conf/sudo/etc_nsswitch.conf /etc/nsswitch.conf \
-    && sudo cp ldap-conf/sudo/etc_sssd.conf /etc/sssd/sssd.conf \
-    && sudo cp ldap-conf/sudo/etc_sudo-ldap.conf /etc/sudo-ldap.conf
+    && sudo cp ldap-conf/sudo/etc_sssd.conf.debian /etc/sssd/sssd.conf \
+    && sudo cp ldap-conf/sudo/etc_sudo-ldap.conf /etc/sudo-ldap.conf \
+    && sudo chmod 600 /etc/sssd/sssd.conf
 RUN sudo cp ldap-conf/pubkey/etc_ldap.conf /etc/ldap.conf \
     && sudo cp ldap-conf/pubkey/etc_sshd_config.debian /etc/ssh/sshd_config
 RUN sudo python3 -m venv /opt/hrzoo-accounts-hpc/
 RUN sudo /bin/bash -c 'source /opt/hrzoo-accounts-hpc/bin/activate; pip install ssh-ldap-pubkey'
+RUN sudo cp ldap-conf/pubkey/ssh-ldap-pubkey-wrapper.debian /opt/hrzoo-accounts-hpc/bin/ssh-ldap-pubkey-wrapper
 CMD ["/sbin/init"]
