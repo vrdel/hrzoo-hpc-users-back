@@ -10,7 +10,7 @@ docker run \
 -v /dev/log:/dev/log \
 -v /etc/localtime:/etc/localtime \
 -v /tmp/.X11-unix:/tmp/.X11-unix \
--v /sys/fs/cgroup:/sys/fs/cgroup \
+-v /sys/fs/cgroup:/sys/fs/cgroup:ro \
 -v $HOME:/mnt \
 -v $HOME/.ssh/:/home/user/.ssh \
 -v $PWD/ldap-conf:/home/user/ldap-conf \
@@ -19,4 +19,4 @@ docker run \
 --name hrzoo-ldapclient-debian \
 --rm -ti \
 -u root \
-ipanema:5000/hrzoo-ldapclient-debian:$TAG
+ipanema:5000/hrzoo-ldapclient-debian11:$TAG
