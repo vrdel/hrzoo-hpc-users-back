@@ -1,0 +1,6 @@
+dn: cn=readonly-NRM-2023-11-001,dc=hpc,dc=srce,dc=hr
+objectClass: simpleSecurityObject
+objectClass: organizationalRole
+cn: readonly-user5
+userPassword: {SSHA}8Z5DNIO66bnRsHsBekPyofpaHQ5yZj4j
+description: LDAP read-only user
