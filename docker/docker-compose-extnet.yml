@@ -23,10 +23,10 @@ services:
     networks:
       - docker_hzsi-front-app_net
 
-  hrzoo-ldap-client-debian:
+  hrzoo-ldap-client-debian11:
     env_file:
       - compose.env
-    image: $IMAGE_CLIENT_DEBIAN
+    image: $IMAGE_CLIENT_DEBIAN11
     cgroup: host
     command: /sbin/init
     privileged: true
