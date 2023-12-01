@@ -1,0 +1,18 @@
+#!/bin/sh
+#
+# Wrapper script for ssh-ldap-pubkey to be used as AuthorizedKeysCommand
+# in OpenSSHd.
+set -eu
+
+SSH_USER="$1"
+
+. /opt/hrzoo-accounts-hpc/bin/activate
+
+KEYS="$(ssh-ldap-pubkey list -q -u "$SSH_USER")"
+KEYS_COUNT="$(printf '%s\n' "$KEYS" | grep '^ssh' | wc -l)"
+
+logger -t sshd -p info \
+	"Loaded ${KEYS_COUNT} SSH public key(s) from LDAP for user: ${SSH_USER}"
+
+printf '%s\n' "$KEYS"
+
