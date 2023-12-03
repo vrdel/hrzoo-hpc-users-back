@@ -9,7 +9,7 @@ from accounts_hpc.db import Base, Project, User, SshKey  # type: ignore
 from accounts_hpc.httpconn import SessionWithRetry
 from accounts_hpc.exceptions import SyncHttpError
 from accounts_hpc.utils import only_alnum, all_none, contains_exception
-from accounts_hpc.shared import Shared
+from accounts_hpc.shared import Shared  # type: ignore
 
 from sqlalchemy import create_engine
 from sqlalchemy import and_
@@ -337,7 +337,6 @@ def main():
     args = parser.parse_args()
 
     shared = Shared(sys.argv[0])
-
     confopts = shared.confopts
     logger = shared.log.get()
 

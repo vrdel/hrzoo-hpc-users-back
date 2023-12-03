@@ -2,10 +2,9 @@
 
 import sys
 
-from accounts_hpc.config import parse_config  # type: ignore
-from accounts_hpc.log import Logger  # type: ignore
-from accounts_hpc.db import User # type: ignore
-from accounts_hpc.emailsend import EmailSend # type: ignore
+from accounts_hpc.shared import Shared  # type: ignore
+from accounts_hpc.db import User  # type: ignore
+from accounts_hpc.emailsend import EmailSend  # type: ignore
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -15,13 +14,12 @@ import signal
 
 
 def main():
-    lobj = Logger(sys.argv[0])
-    logger = lobj.get()
-
     parser = argparse.ArgumentParser(description="""Send email for newly opened user and added SSH keys""")
     args = parser.parse_args()
 
-    confopts = parse_config()
+    shared = Shared(sys.argv[0])
+    confopts = shared.confopts
+    logger = shared.log.get()
 
     engine = create_engine("sqlite:///{}".format(confopts['db']['path']))
     Session = sessionmaker(engine)

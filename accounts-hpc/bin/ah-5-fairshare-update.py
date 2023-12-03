@@ -3,9 +3,8 @@
 import sys
 import os
 
-from accounts_hpc.config import parse_config  # type: ignore
-from accounts_hpc.log import Logger  # type: ignore
 from accounts_hpc.db import Project  # type: ignore
+from accounts_hpc.shared import Shared  # type: ignore
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -41,15 +40,15 @@ def update_file(fsobj, projids, nlines):
 
 
 def main():
-    lobj = Logger(sys.argv[0])
-    logger = lobj.get()
     is_updated = False
 
     parser = argparse.ArgumentParser(description="""Update PBS fairshare resource_group""")
     parser.add_argument('--new', dest='new', action='store_true', help='create new resource_group from scratch')
     args = parser.parse_args()
 
-    confopts = parse_config()
+    shared = Shared(sys.argv[0])
+    confopts = shared.confopts
+    logger = shared.log.get()
 
     engine = create_engine("sqlite:///{}".format(confopts['db']['path']))
     Session = sessionmaker(engine)

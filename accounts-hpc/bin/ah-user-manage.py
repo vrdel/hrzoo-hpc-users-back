@@ -3,8 +3,7 @@
 import sys
 import argparse
 
-from accounts_hpc.config import parse_config  # type: ignore
-from accounts_hpc.log import Logger  # type: ignore
+from accounts_hpc.shared import Shared  # type: ignore
 from accounts_hpc.db import Base, Project, User, SshKey  # type: ignore
 from accounts_hpc.utils import only_alnum, all_none, contains_exception, get_ssh_key_fingerprint
 
@@ -651,10 +650,9 @@ def main():
 
     args = parser.parse_args()
 
-    lobj = Logger(sys.argv[0])
-    logger = lobj.get()
-
-    confopts = parse_config()
+    shared = Shared(sys.argv[0])
+    confopts = shared.confopts
+    logger = shared.log.get()
 
     engine = create_engine("sqlite:///{}".format(confopts['db']['path']))
     Session = sessionmaker(engine)

@@ -3,10 +3,8 @@
 import sys
 import argparse
 
-
-from accounts_hpc.config import parse_config  # type: ignore
-from accounts_hpc.log import Logger  # type: ignore
 from accounts_hpc.db import Base  # type: ignore
+from accounts_hpc.shared import Shared  # type: ignore
 
 from sqlalchemy import create_engine
 
@@ -18,10 +16,8 @@ def main():
 
     args = parser.parse_args()
 
-    lobj = Logger(sys.argv[0])
-    logger = lobj.get()
-
-    confopts = parse_config()
+    shared = Shared(sys.argv[0])
+    confopts = shared.confopts
 
     engine = create_engine("sqlite:///{}".format(confopts['db']['path']), echo=True)
 

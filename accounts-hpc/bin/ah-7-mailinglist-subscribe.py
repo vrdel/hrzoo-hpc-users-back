@@ -2,8 +2,7 @@
 
 import sys
 
-from accounts_hpc.config import parse_config  # type: ignore
-from accounts_hpc.log import Logger  # type: ignore
+from accounts_hpc.shared import Shared  # type: ignore
 from accounts_hpc.db import User  # type: ignore
 from accounts_hpc.exceptions import SyncHttpError
 from accounts_hpc.httpconn import SessionWithRetry
@@ -103,13 +102,12 @@ async def run(logger, session, confopts):
 
 
 def main():
-    lobj = Logger(sys.argv[0])
-    logger = lobj.get()
-
     parser = argparse.ArgumentParser(description="""Subscribe new users to mailing list""")
     args = parser.parse_args()
 
-    confopts = parse_config()
+    shared = Shared(sys.argv[0])
+    confopts = shared.confopts
+    logger = shared.log.get()
 
     engine = create_engine("sqlite:///{}".format(confopts['db']['path']))
     Session = sessionmaker(engine)

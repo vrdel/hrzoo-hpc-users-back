@@ -4,9 +4,8 @@ import bonsai
 import sys
 import json
 
-from accounts_hpc.config import parse_config
-from accounts_hpc.log import Logger
 from accounts_hpc.db import Base, Project, User, SshKey  # type: ignore
+from accounts_hpc.shared import Shared  # type: ignore
 
 from sqlalchemy import create_engine
 from sqlalchemy import and_
@@ -273,13 +272,12 @@ def create_resource_groups(confopts, conn, logger):
 
 
 def main():
-    lobj = Logger(sys.argv[0])
-    logger = lobj.get()
-
     parser = argparse.ArgumentParser(description="""Create, read and update ou=People and ou=Group entries in LDAP""")
     args = parser.parse_args()
 
-    confopts = parse_config()
+    shared = Shared(sys.argv[0])
+    confopts = shared.confopts
+    logger = shared.log.get()
 
     try:
         client = bonsai.LDAPClient(confopts['ldap']['server'])
@@ -302,7 +300,6 @@ def main():
     engine = create_engine("sqlite:///{}".format(confopts['db']['path']))
     Session = sessionmaker(engine)
     session = Session()
-
 
     users = session.query(User).all()
 
