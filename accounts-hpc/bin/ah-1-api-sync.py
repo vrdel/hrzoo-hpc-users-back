@@ -5,12 +5,11 @@ import json
 import sys
 import timeit
 
-from accounts_hpc.config import parse_config  # type: ignore
-from accounts_hpc.log import Logger  # type: ignore
 from accounts_hpc.db import Base, Project, User, SshKey  # type: ignore
 from accounts_hpc.httpconn import SessionWithRetry
 from accounts_hpc.exceptions import SyncHttpError
 from accounts_hpc.utils import only_alnum, all_none, contains_exception
+from accounts_hpc.shared import Shared
 
 from sqlalchemy import create_engine
 from sqlalchemy import and_
@@ -333,14 +332,14 @@ async def run(logger, args, confopts):
 
 
 def main():
-    lobj = Logger(sys.argv[0])
-    logger = lobj.get()
-
     parser = argparse.ArgumentParser(description="""Sync projects and users from HRZOO-SIGNUP-API to SQLite cache""")
     parser.add_argument('--init-set', dest='initset', action='store_true', help='initial sync with all associations and flags set so no further tools in the pipeline will be triggered')
     args = parser.parse_args()
 
-    confopts = parse_config()
+    shared = Shared(sys.argv[0])
+
+    confopts = shared.confopts
+    logger = shared.log.get()
 
     loop = asyncio.new_event_loop()
 

@@ -151,9 +151,17 @@ def user_update(logger, args, session):
             user.is_staff = True
             logger.info(f"Promote user {args.username} to staff")
 
+        if args.nullgid:
+            user.ldap_gid = 0
+            logger.info(f"Setting user {args.username} LDAP GID=0")
+
+        if args.nulluid:
+            user.ldap_uid = 0
+            logger.info(f"Setting user {args.username} LDAP UID=0")
+
         if args.uid:
-            user.uid = args.uid
-            logger.info(f"Setting user {args.username} UID={args.uid}")
+            user.ldap_uid = args.uid
+            logger.info(f"Setting user {args.username} LDAP UID={args.uid}")
 
         if args.project:
             try:
@@ -617,6 +625,10 @@ def main():
                                required=False, help='Set type_create')
     parser_update.add_argument('--sso-uid', dest='ssouid', type=str,
                                required=False, help='Set SSO UID')
+    parser_update.add_argument('--null-gid', dest='nullgid', default=False, action='store_true',
+                               required=False, help='Set LDAP GID for user to 0')
+    parser_update.add_argument('--null-uid', dest='nulluid', default=False, action='store_true',
+                               required=False, help='Set LDAP UID for user to 0')
 
     parser_delete = subparsers.add_parser('delete', help='Delete user metadata')
     parser_delete.add_argument('--username', dest='username', type=str,
