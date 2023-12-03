@@ -33,7 +33,7 @@ class ApiSync(object):
         self.dbsession = shared.dbsession
         self.args = args
 
-    def sshkeys_del(self, args, session, logger, projects_users, sshkeys):
+    def sshkeys_del(self, projects_users, sshkeys):
         interested_users = [up['user']['id'] for up in projects_users]
         hzsi_api_user_keys = dict()
 
@@ -46,7 +46,7 @@ class ApiSync(object):
 
             hzsi_api_user_keys[key['user']['username']].append(key['fingerprint'])
 
-        users = session.query(User).filter(User.type_create == 'api').all()
+        users = self.dbsession.query(User).filter(User.type_create == 'api').all()
 
         for us in users:
             if us.person_uniqueid not in hzsi_api_user_keys.keys():
@@ -57,17 +57,17 @@ class ApiSync(object):
                     set(us.sshkeys_api)
                     .difference(hzsi_api_user_keys[us.person_uniqueid]))
                 us.sshkeys_api = hzsi_api_user_keys[us.person_uniqueid]
-                if args.initset:
-                    rem_keys_db = session.query(SshKey).filter(
+                if self.args.initset:
+                    rem_keys_db = self.dbsession.query(SshKey).filter(
                         and_(
                             SshKey.fingerprint.in_(rem_keys),
                             SshKey.user_id == us.id
                         ))
                     for key in rem_keys_db:
                         us.sshkey.remove(key)
-                        session.delete(key)
+                        self.dbsession.delete(key)
 
-    def sshkeys_add(self, args, session, logger, projects_users, sshkeys):
+    def sshkeys_add(self, projects_users, sshkeys):
         interested_users = set([up['user']['id'] for up in projects_users])
 
         for key in sshkeys:
@@ -75,11 +75,11 @@ class ApiSync(object):
                 continue
 
             try:
-                us = session.query(User).filter(User.person_uniqueid == key['user']['username']).one()
+                us = self.dbsession.query(User).filter(User.person_uniqueid == key['user']['username']).one()
 
             except MultipleResultsFound as exc:
-                logger.error(exc)
-                logger.error('{} - Troublesome DB entry: {}'.format(self.sshkeys_add.__name__, repr(key)))
+                self.logger.error(exc)
+                self.logger.error('{} - Troublesome DB entry: {}'.format(self.sshkeys_add.__name__, repr(key)))
                 raise SystemExit(1)
 
             if key['fingerprint'] not in us.sshkeys_api:
@@ -88,7 +88,7 @@ class ApiSync(object):
             # same key unfortunately can be added from two
             # different users, that's why we require uid_api as well
             try:
-                dbkey = session.query(SshKey).filter(
+                dbkey = self.dbsession.query(SshKey).filter(
                     and_(
                         SshKey.fingerprint == key['fingerprint'],
                         SshKey.uid_api == key['user']['id']
@@ -99,14 +99,14 @@ class ApiSync(object):
                                public_key=key['public_key'],
                                uid_api=key['user']['id'])
 
-            if dbkey not in us.sshkey and args.initset:
+            if dbkey not in us.sshkey and self.args.initset:
                 us.sshkey.append(dbkey)
-                session.add(us)
+                self.dbsession.add(us)
             else:
-                session.add(dbkey)
-                session.add(us)
+                self.dbsession.add(dbkey)
+                self.dbsession.add(us)
 
-    def users_projects_del(self, args, session, logger, projects_users):
+    def users_projects_del(self, projects_users):
         hzsi_api_user_projects = dict()
 
         for uspr in projects_users:
@@ -124,31 +124,31 @@ class ApiSync(object):
                 continue
 
             try:
-                us = session.query(User).filter(User.person_oib == uspr['user']['person_oib']).one()
+                us = self.dbsession.query(User).filter(User.person_oib == uspr['user']['person_oib']).one()
 
             except MultipleResultsFound as exc:
-                logger.error(exc)
-                logger.error('{} - Troublesome DB entry: {}'.format(self.users_projects_del.__name__, repr(uspr)))
+                self.logger.error(exc)
+                self.logger.error('{} - Troublesome DB entry: {}'.format(self.users_projects_del.__name__, repr(uspr)))
                 raise SystemExit(1)
 
             if len(us.projects_api) > len(hzsi_api_user_projects[uspr['user']['username']]):
                 us.projects_api = hzsi_api_user_projects[uspr['user']['username']]
-                if args.initset:
+                if self.args.initset:
                     prjs_diff = list(
                         set(us.projects_api)
                         .difference(
                             set(hzsi_api_user_projects[uspr['user']['username']])
                         ))
-                    prjs_diff_db = session.query(Project).filter(Project.identifier.in_(prjs_diff)).all()
+                    prjs_diff_db = self.dbsession.query(Project).filter(Project.identifier.in_(prjs_diff)).all()
                     for pr in prjs_diff_db:
                         us.project.remove(pr)
 
             visited_users.update([uspr['user']['id']])
 
-    def users_projects_add(self, args, session, logger, projects_users):
+    def users_projects_add(self, projects_users):
         for uspr in projects_users:
             try:
-                pr = session.query(Project).filter(
+                pr = self.dbsession.query(Project).filter(
                     Project.identifier == uspr['project']['identifier']).one()
                 # update staff_resources_type with latest value
                 pr.staff_resources_type_api = uspr['project']['staff_resources_type']
@@ -157,14 +157,14 @@ class ApiSync(object):
                              identifier=uspr['project']['identifier'],
                              prjid_api=uspr['project']['id'],
                              type=uspr['project']['project_type'],
-                             is_dir_created=True if args.initset else False,
-                             is_pbsfairshare_added=True if args.initset else False,
+                             is_dir_created=True if self.args.initset else False,
+                             is_pbsfairshare_added=True if self.args.initset else False,
                              staff_resources_type_api=uspr['project']['staff_resources_type'],
                              ldap_gid=0)
 
             try:
                 # use person_oib as unique identifier of user
-                us = session.query(User).filter(
+                us = self.dbsession.query(User).filter(
                     User.person_oib == uspr['user']['person_oib']).one()
                 projects_api = us.projects_api
                 # always up-to-date projects_api field with project associations
@@ -182,12 +182,12 @@ class ApiSync(object):
             except NoResultFound:
                 us = User(first_name=only_alnum(unidecode(uspr['user']['first_name'])),
                           is_active=uspr['user']['status'],
-                          is_opened=True if args.initset else False,
-                          is_dir_created=True if args.initset else False,
-                          is_deactivated=True if args.initset else False,
-                          mail_is_opensend=True if args.initset else False,
-                          mail_is_subscribed=True if args.initset else False,
-                          mail_is_sshkeyadded=True if args.initset else False,
+                          is_opened=True if self.args.initset else False,
+                          is_dir_created=True if self.args.initset else False,
+                          is_deactivated=True if self.args.initset else False,
+                          mail_is_opensend=True if self.args.initset else False,
+                          mail_is_subscribed=True if self.args.initset else False,
+                          mail_is_sshkeyadded=True if self.args.initset else False,
                           mail_name_sshkey=list(),
                           is_staff=uspr['user']['is_staff'],
                           last_name=only_alnum(unidecode(uspr['user']['last_name'])),
@@ -203,20 +203,20 @@ class ApiSync(object):
                           type_create='api')
 
             except MultipleResultsFound as exc:
-                logger.error(exc)
-                logger.error('{} - Troublesome DB entry: {}'.format(self.users_projects_add.__name__, repr(uspr)))
+                self.logger.error(exc)
+                self.logger.error('{} - Troublesome DB entry: {}'.format(self.users_projects_add.__name__, repr(uspr)))
 
             # sync (user, project) relations to cache
             # only if --init-set
-            if us not in pr.user and args.initset:
+            if us not in pr.user and self.args.initset:
                 pr.user.append(us)
-                session.add(pr)
-            elif not args.initset:
-                session.add(pr)
-                session.add(us)
+                self.dbsession.add(pr)
+            elif not self.args.initset:
+                self.dbsession.add(pr)
+                self.dbsession.add(us)
 
-    def check_users_without_projects(self, args, session, logger, apiusers):
-        users_db = session.query(User)
+    def check_users_without_projects(self, apiusers):
+        users_db = self.dbsession.query(User)
         uids_db = [user.uid_api for user in users_db.all()
                    if not user.is_deactivated and not user.type_create == 'manual']
         uids_not_onapi = set()
@@ -226,10 +226,10 @@ class ApiSync(object):
 
         if uids_not_onapi:
             user_without_projects = users_db.filter(User.uid_api.in_(uids_not_onapi))
-            logger.info("Found users in local DB without any registered project on HRZOO-SIGNUP-API: {}"
-                        .format(', '.join([user.ldap_username for user in user_without_projects])))
-            logger.info("Nullifying user.projects_api and setting user.is_active=0,ldap_gid=0 for such")
-            session.execute(
+            self.logger.info("Found users in local DB without any registered project on HRZOO-SIGNUP-API: {}"
+                             .format(', '.join([user.ldap_username for user in user_without_projects])))
+            self.logger.info("Nullifying user.projects_api and setting user.is_active=0,ldap_gid=0 for such")
+            self.dbsession.execute(
                 update(User),
                 [{"id": user.id, "projects_api": [], "ldap_gid": 0, "is_active": 0} for user in user_without_projects]
             )
