@@ -8,9 +8,6 @@ from accounts_hpc.exceptions import SyncHttpError
 from accounts_hpc.httpconn import SessionWithRetry
 from accounts_hpc.utils import contains_exception
 
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-
 from urllib.parse import urlencode
 
 import asyncio
@@ -108,21 +105,18 @@ def main():
     shared = Shared(sys.argv[0])
     confopts = shared.confopts
     logger = shared.log.get()
-
-    engine = create_engine("sqlite:///{}".format(confopts['db']['path']))
-    Session = sessionmaker(engine)
-    session = Session()
+    dbsession = shared.dbsession
 
     loop = asyncio.new_event_loop()
 
     try:
-        loop.run_until_complete(run(logger, session, confopts))
+        loop.run_until_complete(run(logger, dbsession, confopts))
 
     except (SyncHttpError, KeyboardInterrupt):
         pass
 
-    session.commit()
-    session.close()
+    dbsession.commit()
+    dbsession.close()
 
 
 if __name__ == '__main__':

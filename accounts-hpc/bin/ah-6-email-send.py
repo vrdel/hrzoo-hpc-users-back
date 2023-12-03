@@ -6,9 +6,6 @@ from accounts_hpc.shared import Shared  # type: ignore
 from accounts_hpc.db import User  # type: ignore
 from accounts_hpc.emailsend import EmailSend  # type: ignore
 
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-
 import argparse
 import signal
 
@@ -20,13 +17,10 @@ def main():
     shared = Shared(sys.argv[0])
     confopts = shared.confopts
     logger = shared.log.get()
-
-    engine = create_engine("sqlite:///{}".format(confopts['db']['path']))
-    Session = sessionmaker(engine)
-    session = Session()
+    dbsession = shared.dbsession
 
     users_opened = set()
-    users = session.query(User).filter(User.mail_is_opensend == False).all()
+    users = dbsession.query(User).filter(User.mail_is_opensend == False).all()
     for user in users:
         email = EmailSend(logger, confopts, user.person_mail,
                           username=user.ldap_username)
@@ -35,7 +29,7 @@ def main():
             users_opened.add(user.ldap_username)
             logger.info(f"Send email for created account {user.ldap_username} @ {user.person_mail}")
 
-    users = session.query(User).filter(User.mail_is_sshkeyadded == False).all()
+    users = dbsession.query(User).filter(User.mail_is_sshkeyadded == False).all()
     for user in users:
         # skip for new users that are just created
         # as they will receive previous email
@@ -54,8 +48,8 @@ def main():
             user.mail_is_sshkeyadded = True
             user.mail_name_sshkey = list()
 
-    session.commit()
-    session.close()
+    dbsession.commit()
+    dbsession.close()
 
 
 if __name__ == '__main__':

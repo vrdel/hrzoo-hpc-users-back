@@ -5,9 +5,7 @@ import sys
 from accounts_hpc.db import Project, User  # type: ignore
 from accounts_hpc.shared import Shared  # type: ignore
 
-from sqlalchemy import create_engine
 from sqlalchemy import and_
-from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import NoResultFound
 
 import argparse
@@ -42,10 +40,7 @@ def main():
     shared = Shared(sys.argv[0])
     confopts = shared.confopts
     logger = shared.log.get()
-
-    engine = create_engine("sqlite:///{}".format(confopts['db']['path']))
-    Session = sessionmaker(engine)
-    session = Session()
+    dbsession = shared.dbsession
 
     mapuser = list()
 
@@ -53,12 +48,12 @@ def main():
         with open(confopts['usersetup']['usermap'], mode='r') as fp:
             mapuser = json.loads(fp.read())
 
-    projects = session.query(Project).all()
+    projects = dbsession.query(Project).all()
     for project in projects:
         if not project.ldap_gid:
             project.ldap_gid = confopts['usersetup']['gid_offset'] + project.prjid_api
 
-    users = session.query(User).all()
+    users = dbsession.query(User).all()
 
     all_usernames = [user.ldap_username for user in users if user.ldap_username]
     for user in users:
@@ -111,8 +106,8 @@ def main():
         if set_metadata:
             logger.info(f"{user.first_name} {user.last_name} set username={user.ldap_username} UID={user.ldap_uid} GID={user.ldap_gid}")
 
-    session.commit()
-    session.close()
+    dbsession.commit()
+    dbsession.close()
 
 
 if __name__ == '__main__':

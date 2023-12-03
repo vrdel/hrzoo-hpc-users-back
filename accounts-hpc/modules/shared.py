@@ -1,5 +1,7 @@
 from accounts_hpc.config import parse_config  # type: ignore
-from accounts_hpc.log import Logger # type: ignore
+from accounts_hpc.log import Logger  # type: ignore
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
 
 
 class Shared(object):
@@ -15,7 +17,11 @@ class Shared(object):
             return cls.sharedobj
 
     def __init__(self, caller):
-        if not getattr(self.__class__, '_confopts', False):
+        self.__class__.log = Logger(caller)
+        if not getattr(self.__class__, 'confopts', False):
             confopts = parse_config()
             self.__class__.confopts = confopts
-        self.__class__.log = Logger(caller)
+        if not getattr(self.__class__, 'dbsession', False):
+            engine = create_engine("sqlite:///{}".format(confopts['db']['path']))
+            Session = sessionmaker(engine)
+            self.__class__.dbsession = Session()

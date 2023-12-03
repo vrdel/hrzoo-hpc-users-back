@@ -15,10 +15,8 @@ from rich.table import Table
 from rich.console import Console
 from rich.pretty import pprint
 
-from sqlalchemy import create_engine
 from sqlalchemy import and_
 from sqlalchemy import update
-from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.exc import StaleDataError
 from sqlalchemy.exc import NoResultFound, IntegrityError, MultipleResultsFound
 from unidecode import unidecode
@@ -232,24 +230,21 @@ def main():
     shared = Shared(sys.argv[0])
     confopts = shared.confopts
     logger = shared.log.get()
-
-    engine = create_engine("sqlite:///{}".format(confopts['db']['path']))
-    Session = sessionmaker(engine)
-    session = Session()
+    dbsession = shared.dbsession
 
     if args.command == "create":
-        new_project = project_add(logger, args, session, confopts)
+        new_project = project_add(logger, args, dbsession, confopts)
         logger.info(f"Created project \"{new_project.name}\" with ID {new_project.identifier}")
     elif args.command == "delete":
-        project_delete(logger, args, session)
+        project_delete(logger, args, dbsession)
     elif args.command == "update":
-        project_update(logger, args, session)
+        project_update(logger, args, dbsession)
     elif args.command == "list":
-        project_list(logger, args, session)
+        project_list(logger, args, dbsession)
 
     try:
-        session.commit()
-        session.close()
+        dbsession.commit()
+        dbsession.close()
     except (IntegrityError, StaleDataError) as exc:
         logger.error(f"Error with {args.command}")
         logger.error(exc)

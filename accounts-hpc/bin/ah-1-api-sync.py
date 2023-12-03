@@ -11,10 +11,8 @@ from accounts_hpc.exceptions import SyncHttpError
 from accounts_hpc.utils import only_alnum, all_none, contains_exception
 from accounts_hpc.shared import Shared  # type: ignore
 
-from sqlalchemy import create_engine
 from sqlalchemy import and_
 from sqlalchemy import update
-from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import NoResultFound, MultipleResultsFound
 
 from unidecode import unidecode
@@ -272,7 +270,7 @@ async def fetch_data(logger, confopts):
         return sshkeys, userproject
 
 
-async def run(logger, args, confopts):
+async def run(logger, args, confopts, dbsession):
     try:
         sshkeys, userproject = await fetch_data(logger, confopts)
 
@@ -317,18 +315,14 @@ async def run(logger, args, confopts):
 
     logger.info(f"Interested in ({','.join(confopts['hzsiapi']['project_resources'])}) projects={len(stats['projects'])}/{len(stats['fullprojects'])}  users={len(stats['users'])}/{len(stats['fullusers'])} keys={len(stats['keys'])}")
 
-    engine = create_engine("sqlite:///{}".format(confopts['db']['path']))
-    Session = sessionmaker(engine)
-    session = Session()
+    check_users_without_projects(args, dbsession, logger, interested_users_api)
+    users_projects_add(args, dbsession, logger, projects_users)
+    users_projects_del(args, dbsession, logger, projects_users)
+    sshkeys_add(args, dbsession, logger, projects_users, sshkeys)
+    sshkeys_del(args, dbsession, logger, projects_users, sshkeys)
 
-    check_users_without_projects(args, session, logger, interested_users_api)
-    users_projects_add(args, session, logger, projects_users)
-    users_projects_del(args, session, logger, projects_users)
-    sshkeys_add(args, session, logger, projects_users, sshkeys)
-    sshkeys_del(args, session, logger, projects_users, sshkeys)
-
-    session.commit()
-    session.close()
+    dbsession.commit()
+    dbsession.close()
 
 
 def main():
@@ -339,11 +333,12 @@ def main():
     shared = Shared(sys.argv[0])
     confopts = shared.confopts
     logger = shared.log.get()
+    dbsession = shared.dbsession
 
     loop = asyncio.new_event_loop()
 
     try:
-        loop.run_until_complete(run(logger, args, confopts))
+        loop.run_until_complete(run(logger, args, confopts, dbsession))
 
     except KeyboardInterrupt:
         pass

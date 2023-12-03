@@ -24,12 +24,9 @@ def main():
     shared = Shared(sys.argv[0])
     confopts = shared.confopts
     logger = shared.log.get()
+    dbsession = shared.dbsession
 
-    engine = create_engine("sqlite:///{}".format(confopts['db']['path']))
-    Session = sessionmaker(engine)
-    session = Session()
-
-    users = session.query(User).all()
+    users = dbsession.query(User).all()
     for user in users:
         if not user.is_dir_created:
             completed = 0
@@ -54,12 +51,12 @@ def main():
             if completed == len(confopts['usersetup']['userdirs_in']):
                 try:
                     user.is_dir_created = True
-                    project_info = session.query(Project).filter(Project.ldap_gid == user.ldap_gid).one()
+                    project_info = dbsession.query(Project).filter(Project.ldap_gid == user.ldap_gid).one()
                     logger.info(f"Created {dir + user.ldap_username} with perm {user.ldap_uid}:{user.ldap_gid} ({user.ldap_username}:{project_info.identifier})")
                 except sqlalchemy.exc.NoResultFound:
                     logger.info(f"Created {dir + user.ldap_username} with perm {user.ldap_uid}:{user.ldap_gid}")
 
-    projects = session.query(Project).all()
+    projects = dbsession.query(Project).all()
     for project in projects:
         if not project.is_dir_created:
             completed = 0
@@ -93,8 +90,8 @@ def main():
                 for dir in confopts['usersetup']['groupdirs_in']:
                     logger.info(f"Created {dir + project.identifier} with perm {userown.ldap_uid}:{project.ldap_gid} ({userown.ldap_username}:{project.identifier})")
 
-    session.commit()
-    session.close()
+    dbsession.commit()
+    dbsession.close()
 
 
 if __name__ == '__main__':

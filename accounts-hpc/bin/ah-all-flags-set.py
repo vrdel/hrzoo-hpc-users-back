@@ -5,31 +5,24 @@ import sys
 from accounts_hpc.db import Project, User  # type: ignore
 from accounts_hpc.shared import Shared  # type: ignore
 
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-
 import argparse
 
 
 def main():
     shared = Shared(sys.argv[0])
-    confopts = shared.confopts
+    dbsession = shared.dbsession
 
     parser = argparse.ArgumentParser(description="""Helper tool to set all flags to true""")
     args = parser.parse_args()
 
-    engine = create_engine("sqlite:///{}".format(confopts['db']['path']))
-    Session = sessionmaker(engine)
-    session = Session()
-
-    projects = session.query(Project).all()
+    projects = dbsession.query(Project).all()
     for project in projects:
         if not project.is_dir_created:
             project.is_dir_created = True
         if not project.is_pbsfairshare_added:
             project.is_pbsfairshare_added = True
 
-    users = session.query(User).all()
+    users = dbsession.query(User).all()
     for user in users:
         if not user.is_opened:
             user.is_opened = True
@@ -43,8 +36,8 @@ def main():
             user.mail_is_sshkeyadded = True
             user.mail_name_sshkey = []
 
-    session.commit()
-    session.close()
+    dbsession.commit()
+    dbsession.close()
 
 
 if __name__ == '__main__':

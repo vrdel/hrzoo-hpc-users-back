@@ -13,10 +13,8 @@ from rich.table import Table
 from rich.console import Console
 from rich.pretty import pprint
 
-from sqlalchemy import create_engine
 from sqlalchemy import and_
 from sqlalchemy import update
-from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.exc import StaleDataError
 from sqlalchemy.exc import NoResultFound, IntegrityError, MultipleResultsFound
 from unidecode import unidecode
@@ -653,31 +651,28 @@ def main():
     shared = Shared(sys.argv[0])
     confopts = shared.confopts
     logger = shared.log.get()
-
-    engine = create_engine("sqlite:///{}".format(confopts['db']['path']))
-    Session = sessionmaker(engine)
-    session = Session()
+    dbsession = shared.dbsession
 
     if args.command == "create":
-        new_user = user_project_add(logger, args, session)
-        key_fingerprint = user_key_add(logger, args, session, new_user, args.pubkey)
+        new_user = user_project_add(logger, args, dbsession)
+        key_fingerprint = user_key_add(logger, args, dbsession, new_user, args.pubkey)
         logger.info(f"Created user {args.first} {args.last} with key {key_fingerprint} and added to project {args.project}")
     elif args.command == "update":
-        user_update(logger, args, session)
+        user_update(logger, args, dbsession)
     elif args.command == "delete":
-        user_delete(logger, args, session)
+        user_delete(logger, args, dbsession)
     elif args.command == "list":
-        user_project_list(logger, args, session)
+        user_project_list(logger, args, dbsession)
 
     if args.flushkeys:
-        flush_sshkeys(logger, session)
+        flush_sshkeys(logger, dbsession)
 
     if args.flushusers:
-        flush_users(logger, session)
+        flush_users(logger, dbsession)
 
     try:
-        session.commit()
-        session.close()
+        dbsession.commit()
+        dbsession.close()
     except (IntegrityError, StaleDataError) as exc:
         logger.error(f"Error with {args.command}")
         logger.error(exc)

@@ -6,9 +6,6 @@ import os
 from accounts_hpc.db import Project  # type: ignore
 from accounts_hpc.shared import Shared  # type: ignore
 
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-
 import argparse
 import psutil
 import signal
@@ -49,10 +46,7 @@ def main():
     shared = Shared(sys.argv[0])
     confopts = shared.confopts
     logger = shared.log.get()
-
-    engine = create_engine("sqlite:///{}".format(confopts['db']['path']))
-    Session = sessionmaker(engine)
-    session = Session()
+    dbsession = shared.dbsession
 
     fairshare_path = confopts['usersetup']['pbsfairshare_path']
     pbsprocname = confopts['usersetup']['pbsprocname']
@@ -69,7 +63,7 @@ def main():
             logger.error(exc)
             raise SystemExit(1)
 
-        projects = session.query(Project).all()
+        projects = dbsession.query(Project).all()
         all_projids = list()
         for project in projects:
             all_projids.append(project.identifier)
@@ -96,8 +90,8 @@ def main():
             logger.info("Created new PBS fairshare, sending SIGHUP...")
             send_sighup(pbsprocname)
 
-    session.commit()
-    session.close()
+    dbsession.commit()
+    dbsession.close()
 
 
 if __name__ == '__main__':

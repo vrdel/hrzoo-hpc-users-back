@@ -7,9 +7,7 @@ import json
 from accounts_hpc.db import Base, Project, User, SshKey  # type: ignore
 from accounts_hpc.shared import Shared  # type: ignore
 
-from sqlalchemy import create_engine
 from sqlalchemy import and_
-from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import NoResultFound, MultipleResultsFound
 
 import argparse
@@ -278,6 +276,7 @@ def main():
     shared = Shared(sys.argv[0])
     confopts = shared.confopts
     logger = shared.log.get()
+    dbsession = shared.dbsession
 
     try:
         client = bonsai.LDAPClient(confopts['ldap']['server'])
@@ -297,11 +296,7 @@ def main():
         logger.error(exc)
         raise SystemExit(1)
 
-    engine = create_engine("sqlite:///{}".format(confopts['db']['path']))
-    Session = sessionmaker(engine)
-    session = Session()
-
-    users = session.query(User).all()
+    users = dbsession.query(User).all()
 
     for user in users:
         if not user.ldap_username:
@@ -311,16 +306,16 @@ def main():
             try:
                 if not ldap_user or not user.is_opened:
                     ldap_user = new_user_ldap_add(confopts, conn, user)
-                    user_ldap_update(confopts, session, logger, user, [ldap_user])
-                    user_key_update(confopts, session, logger, user, [ldap_user])
+                    user_ldap_update(confopts, dbsession, logger, user, [ldap_user])
+                    user_key_update(confopts, dbsession, logger, user, [ldap_user])
                 else:
-                    user_ldap_update(confopts, session, logger, user, ldap_user)
-                    user_key_update(confopts, session, logger, user, ldap_user)
+                    user_ldap_update(confopts, dbsession, logger, user, ldap_user)
+                    user_key_update(confopts, dbsession, logger, user, ldap_user)
                 user.is_opened = True
             except bonsai.errors.AlreadyExists as exc:
                 logger.warning(f'LDAP user {user.ldap_username} - {repr(exc)}')
-                user_ldap_update(confopts, session, logger, user, ldap_user)
-                user_key_update(confopts, session, logger, user, ldap_user)
+                user_ldap_update(confopts, dbsession, logger, user, ldap_user)
+                user_key_update(confopts, dbsession, logger, user, ldap_user)
                 user.is_opened = True
             except bonsai.errors.LDAPError as exc:
                 logger.error(f'Error adding/updating LDAP user {user.ldap_username} - {repr(exc)}')
@@ -333,21 +328,21 @@ def main():
                 try:
                     if not ldap_user or not user.is_opened:
                         ldap_user = new_user_ldap_add(confopts, conn, user, identifier)
-                        user_ldap_update(confopts, session, logger, user, [ldap_user])
-                        user_key_update(confopts, session, logger, user, [ldap_user])
+                        user_ldap_update(confopts, dbsession, logger, user, [ldap_user])
+                        user_key_update(confopts, dbsession, logger, user, [ldap_user])
                     else:
-                        user_ldap_update(confopts, session, logger, user, ldap_user)
-                        user_key_update(confopts, session, logger, user, ldap_user)
+                        user_ldap_update(confopts, dbsession, logger, user, ldap_user)
+                        user_key_update(confopts, dbsession, logger, user, ldap_user)
                     user.is_opened = True
                 except bonsai.errors.AlreadyExists as exc:
                     logger.warning(f'LDAP user {user.ldap_username} - {repr(exc)}')
-                    user_ldap_update(confopts, session, logger, user, ldap_user)
-                    user_key_update(confopts, session, logger, user, ldap_user)
+                    user_ldap_update(confopts, dbsession, logger, user, ldap_user)
+                    user_key_update(confopts, dbsession, logger, user, ldap_user)
                     user.is_opened = True
                 except bonsai.errors.LDAPError as exc:
                     logger.error(f'Error adding/updating LDAP user {user.ldap_username} - {repr(exc)}')
 
-    projects = session.query(Project).all()
+    projects = dbsession.query(Project).all()
     for project in projects:
         if not confopts['ldap']['project_organisation']:
             ldap_project = conn.search(f"cn={project.identifier},ou=Group,{confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
@@ -356,9 +351,9 @@ def main():
         try:
             if not ldap_project:
                 ldap_project = new_group_ldap_add(confopts, conn, project)
-                group_ldap_update(confopts, session, logger, project, [ldap_project])
+                group_ldap_update(confopts, dbsession, logger, project, [ldap_project])
             else:
-                group_ldap_update(confopts, session, logger, project, ldap_project)
+                group_ldap_update(confopts, dbsession, logger, project, ldap_project)
         except bonsai.errors.LDAPError as exc:
             logger.error(f'Error adding/updating LDAP group {project.identifier} - {repr(exc)}')
 
@@ -371,8 +366,8 @@ def main():
         update_resource_groups(confopts, conn, logger, users, "hpc-bigmem")
         update_resource_groups(confopts, conn, logger, users, "hpc-gpu")
 
-    session.commit()
-    session.close()
+    dbsession.commit()
+    dbsession.close()
 
 
 if __name__ == '__main__':
