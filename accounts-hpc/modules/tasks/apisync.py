@@ -314,11 +314,11 @@ class ApiSync(object):
 
         self.logger.info(f"Interested in ({','.join(self.confopts['hzsiapi']['project_resources'])}) projects={len(stats['projects'])}/{len(stats['fullprojects'])}  users={len(stats['users'])}/{len(stats['fullusers'])} keys={len(stats['keys'])}")
 
-        self.check_users_without_projects(self.args, self.dbsession, self.logger, interested_users_api)
-        self.users_projects_add(self.args, self.dbsession, self.logger, projects_users)
-        self.users_projects_del(self.args, self.dbsession, self.logger, projects_users)
-        self.sshkeys_add(self.args, self.dbsession, self.logger, projects_users, sshkeys)
-        self.sshkeys_del(self.args, self.dbsession, self.logger, projects_users, sshkeys)
+        self.check_users_without_projects(interested_users_api)
+        self.users_projects_add(projects_users)
+        self.users_projects_del(projects_users)
+        self.sshkeys_add(projects_users, sshkeys)
+        self.sshkeys_del(projects_users, sshkeys)
 
         self.dbsession.commit()
         self.dbsession.close()
