@@ -55,8 +55,9 @@ setup(
         ('', ['requirements.txt', 'alembic.ini']),
     ],
     include_package_data=True,
-    packages=['accounts_hpc'],
+    packages=['accounts_hpc', 'accounts_hpc.tasks'],
     package_dir={
         'accounts_hpc': 'modules/',
+        'accounts_hpc.tasks': 'modules/tasks'
     }
 )
