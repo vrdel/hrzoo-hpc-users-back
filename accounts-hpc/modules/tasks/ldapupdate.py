@@ -247,32 +247,32 @@ class LdapUpdate(object):
             ldap_project[0].modify()
             self.logger.info(f"Updating memberUid for LDAP cn={project.identifier},ou=Group new members: {', '.join(project_new_members)}")
 
-    def create_default_groups(self, conn):
+    def create_default_groups(self):
         numgroup = 1
         for gr in self.confopts['usersetup']['default_groups']:
-            group_ldap = conn.search(f"cn={gr},ou=Group,{self.confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
+            group_ldap = self.conn.search(f"cn={gr},ou=Group,{self.confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
             if not group_ldap:
                 ldap_gid = self.confopts['usersetup']['gid_manual_offset'] + numgroup
                 ldap_project = bonsai.LDAPEntry(f"cn={gr},ou=Group,{self.confopts['ldap']['basedn']}")
                 ldap_project['cn'] = [gr]
                 ldap_project['objectClass'] = ['top', 'posixGroup']
                 ldap_project['gidNumber'] = [ldap_gid]
-                conn.add(ldap_project)
+                self.conn.add(ldap_project)
                 self.logger.info(f"Created default group {gr} with gid={ldap_gid}")
                 numgroup += 1
 
-    def create_resource_groups(self, conn):
+    def create_resource_groups(self):
         numgroup = 1
         num_defgroups = len(self.confopts['usersetup']['default_groups'])
         for gr in self.confopts['usersetup']['resource_groups']:
-            group_ldap = conn.search(f"cn={gr},ou=Group,{self.confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
+            group_ldap = self.conn.search(f"cn={gr},ou=Group,{self.confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
             if not group_ldap:
                 ldap_gid = self.confopts['usersetup']['gid_manual_offset'] + numgroup + num_defgroups
                 ldap_project = bonsai.LDAPEntry(f"cn={gr},ou=Group,{self.confopts['ldap']['basedn']}")
                 ldap_project['cn'] = [gr]
                 ldap_project['objectClass'] = ['top', 'posixGroup']
                 ldap_project['gidNumber'] = [ldap_gid]
-                conn.add(ldap_project)
+                self.conn.add(ldap_project)
                 self.logger.info(f"Created resource group {gr} with gid={ldap_gid}")
                 numgroup += 1
 
@@ -281,8 +281,8 @@ class LdapUpdate(object):
 
         # default and resource groups are created only for flat hierarchies
         if not self.confopts['ldap']['project_organisation']:
-            self.create_default_groups(self.confopts, self.logger)
-            self.create_resource_groups(self.confopts, self.logger)
+            self.create_default_groups()
+            self.create_resource_groups()
 
         for user in users:
             if not user.ldap_username:
