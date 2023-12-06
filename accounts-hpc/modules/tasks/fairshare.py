@@ -38,7 +38,7 @@ class FairshareUpdate(object):
         self.confopts = shared.confopts
         self.logger = shared.log.get()
         self.dbsession = shared.dbsession
-        self.args
+        self.args = args
 
     def run(self):
         is_updated = False

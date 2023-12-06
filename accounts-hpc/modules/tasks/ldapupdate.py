@@ -291,7 +291,7 @@ class LdapUpdate(object):
                 ldap_user = self.conn.search(f"cn={user.ldap_username},ou=People,{self.confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
                 try:
                     if not ldap_user or not user.is_opened:
-                        ldap_user = self.new_user_ldap_add(self.confopts, user)
+                        ldap_user = self.new_user_ldap_add(user)
                         self.user_ldap_update(user, [ldap_user])
                         self.user_key_update(user, [ldap_user])
                     else:
