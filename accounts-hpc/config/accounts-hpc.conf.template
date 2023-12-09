@@ -52,6 +52,7 @@ ssl = False
 timeout = 15
 template_newuser = %(VENV)s/etc/accounts-hpc/email-template-new-user.txt
 template_newkey = %(VENV)s/etc/accounts-hpc/email-template-new-key.txt
+project_email = False
 
 [mailinglist]
 name = computing-users@srce.hr
