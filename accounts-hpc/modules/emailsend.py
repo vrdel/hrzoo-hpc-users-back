@@ -16,23 +16,20 @@ import ssl
 
 
 class EmailSend(object):
-    def __init__(self, logger, confopts, emailto, username=None, sshkeyname=None):
+    def __init__(self, logger, confopts, emailto, username=None, sshkeyname=None, project=None):
         self.username = username
         self.sshkeyname = sshkeyname
-        import ipdb; ipdb.set_trace()
-
+        self.project = project
         if username:
             if confopts['email']['project_email']:
-                last_pr = latest_project(username)
                 self.template = confopts['email']['template_newuser']
-                self.template = self.template.replace('.', f'_{last_pr.identifier}.')
+                self.template = self.template.replace('.', f'_{self.project}.')
             else:
                 self.template = confopts['email']['template_newuser']
         else:
             if confopts['email']['project_email']:
-                last_pr = latest_project(username)
                 self.template = confopts['email']['template_newkey']
-                self.template = self.template.replace('.', f'_{last_pr.identifier}.')
+                self.template = self.template.replace('.', f'_{self.project}.')
             else:
                 self.template = confopts['email']['template_newkey']
         self.smtpserver = confopts['email']['smtp']
