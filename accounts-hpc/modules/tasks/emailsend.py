@@ -23,17 +23,17 @@ class SendEmail(object):
                         email = EmailSend(self.logger, self.confopts, user.person_mail,
                                           username=user.ldap_username, project=project)
                         if email.send():
-                            user.mail_is_opensend = True
+                            user.mail_project_is_opensend[project] = True
                             users_opened.add(user.ldap_username)
                             self.logger.info(f"Send email for created account {user.ldap_username} - {project} @ {user.person_mail}")
 
-            users = self.dbsession.query(User).filter(User.mail_is_sshkeyadded == False).all()
             for user in users:
                 # skip for new users that are just created
                 # as they will receive previous email
                 if user.ldap_username in users_opened:
-                    user.mail_is_sshkeyadded = True
-                    user.mail_name_sshkey = list()
+                    for project in user.mail_project_is_sshkeyadded.keys():
+                        user.mail_project_is_sshkeyadded[project] = True
+                        user.mail_name_sshkey = list()
                     continue
                 nmail = 0
                 for sshkeyname in user.mail_name_sshkey:
