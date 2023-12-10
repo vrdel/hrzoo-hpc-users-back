@@ -197,7 +197,14 @@ class LdapUpdate(object):
                         )).one()
                 user.sshkey.append(target_key)
                 user.mail_name_sshkey.append(target_key.name)
-                user.mail_is_sshkeyadded = False
+                if self.confopts['email']['project_email']:
+                    mp = user.mail_project_is_sshkeyadded
+                    for prj in mp.keys():
+                        if mp[prj]:
+                            mp[prj] = False
+                    user.mail_project_is_sshkeyadded = mp
+                else:
+                    user.mail_is_sshkeyadded = False
                 self.logger.info(f"Added key {target_key.name} for user {user.person_uniqueid}")
 
         keys_diff_del = set(keys_db).difference(set(user.sshkeys_api))
