@@ -118,10 +118,11 @@ def user_update(logger, args, session):
                 raise SystemExit(1)
 
             except NoResultFound:
+                key_uid_api = user.uid_api if user.uid_api else 0
                 dbkey = SshKey(name=f'{user.first_name}{user.last_name}-additional-key',
                                fingerprint=key_fingerprint,
                                public_key=key_content,
-                               uid_api=0)
+                               uid_api=key_uid_api)
 
                 sshkeys_api = user.sshkeys_api
                 if key_fingerprint not in sshkeys_api:

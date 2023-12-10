@@ -132,16 +132,23 @@ class ApiSync(object):
                 raise SystemExit(1)
 
             if len(us.projects_api) > len(hzsi_api_user_projects[uspr['user']['username']]):
+                prjs_diff = list(
+                    set(us.projects_api)
+                    .difference(
+                        set(hzsi_api_user_projects[uspr['user']['username']])
+                    ))
+                prjs_diff_db = self.dbsession.query(Project).filter(Project.identifier.in_(prjs_diff)).all()
+
                 us.projects_api = hzsi_api_user_projects[uspr['user']['username']]
+
                 if self.args.initset:
-                    prjs_diff = list(
-                        set(us.projects_api)
-                        .difference(
-                            set(hzsi_api_user_projects[uspr['user']['username']])
-                        ))
-                    prjs_diff_db = self.dbsession.query(Project).filter(Project.identifier.in_(prjs_diff)).all()
                     for pr in prjs_diff_db:
                         us.project.remove(pr)
+
+                for pr in prjs_diff_db:
+                    del us.mail_project_is_opensend[pr.identifier]
+                    del us.mail_project_is_sshkeyadded[pr.identifier]
+
 
             visited_users.update([uspr['user']['id']])
 
@@ -173,6 +180,21 @@ class ApiSync(object):
                 if uspr['project']['identifier'] not in projects_api:
                     projects_api.append(uspr['project']['identifier'])
                 us.projects_api = projects_api
+                if self.confopts['email']['project_email'] == True:
+                    mail_project_is_opensend = us.mail_project_is_opensend
+                    if uspr['project']['identifier'] not in mail_project_is_opensend.keys():
+                        mail_project_is_opensend.update(
+                            {
+                                uspr['project']['identifier']: True if self.args.initset else False
+                            }
+                        )
+                    mail_project_is_sshkeyadded = us.mail_project_is_sshkeyadded
+                    if uspr['project']['identifier'] not in mail_project_is_sshkeyadded.keys():
+                        mail_project_is_sshkeyadded.update(
+                            {
+                                uspr['project']['identifier']: True if self.args.initset else False
+                            }
+                        )
                 # always up to date fields
                 us.person_mail = uspr['user']['person_mail']
                 us.person_uniqueid = uspr['user']['username']
@@ -180,27 +202,56 @@ class ApiSync(object):
                 us.uid_api = uspr['user']['id']
 
             except NoResultFound:
-                us = User(first_name=only_alnum(unidecode(uspr['user']['first_name'])),
-                          is_active=uspr['user']['status'],
-                          is_opened=True if self.args.initset else False,
-                          is_dir_created=True if self.args.initset else False,
-                          is_deactivated=True if self.args.initset else False,
-                          mail_is_opensend=True if self.args.initset else False,
-                          mail_is_subscribed=True if self.args.initset else False,
-                          mail_is_sshkeyadded=True if self.args.initset else False,
-                          mail_name_sshkey=list(),
-                          is_staff=uspr['user']['is_staff'],
-                          last_name=only_alnum(unidecode(uspr['user']['last_name'])),
-                          person_mail=uspr['user']['person_mail'],
-                          projects_api=[uspr['project']['identifier']],
-                          sshkeys_api=list(),
-                          person_uniqueid=uspr['user']['username'],
-                          person_oib=uspr['user']['person_oib'],
-                          uid_api=uspr['user']['id'],
-                          ldap_uid=0,
-                          ldap_gid=0,
-                          ldap_username='',
-                          type_create='api')
+                if self.confopts['email']['project_email'] == True:
+                    us = User(first_name=only_alnum(unidecode(uspr['user']['first_name'])),
+                              is_active=uspr['user']['status'],
+                              is_opened=True if self.args.initset else False,
+                              is_dir_created=True if self.args.initset else False,
+                              is_deactivated=True if self.args.initset else False,
+                              mail_is_opensend=False,
+                              mail_is_subscribed=False,
+                              mail_is_sshkeyadded=False,
+                              mail_project_is_opensend={uspr['project']['identifier']: True if self.args.initset else False},
+                              mail_project_is_sshkeyadded={uspr['project']['identifier']: True if self.args.initset else False},
+                              mail_project_name_sshkey=dict(),
+                              mail_name_sshkey=list(),
+                              is_staff=uspr['user']['is_staff'],
+                              last_name=only_alnum(unidecode(uspr['user']['last_name'])),
+                              person_mail=uspr['user']['person_mail'],
+                              projects_api=[uspr['project']['identifier']],
+                              sshkeys_api=list(),
+                              person_uniqueid=uspr['user']['username'],
+                              person_oib=uspr['user']['person_oib'],
+                              uid_api=uspr['user']['id'],
+                              ldap_uid=0,
+                              ldap_gid=0,
+                              ldap_username='',
+                              type_create='api')
+                else:
+                    us = User(first_name=only_alnum(unidecode(uspr['user']['first_name'])),
+                              is_active=uspr['user']['status'],
+                              is_opened=True if self.args.initset else False,
+                              is_dir_created=True if self.args.initset else False,
+                              is_deactivated=True if self.args.initset else False,
+                              mail_is_opensend=True if self.args.initset else False,
+                              mail_is_subscribed=True if self.args.initset else False,
+                              mail_is_sshkeyadded=True if self.args.initset else False,
+                              mail_project_is_opensend=dict(),
+                              mail_project_is_sshkeyadded=dict(),
+                              mail_project_name_sshkey=dict(),
+                              mail_name_sshkey=list(),
+                              is_staff=uspr['user']['is_staff'],
+                              last_name=only_alnum(unidecode(uspr['user']['last_name'])),
+                              person_mail=uspr['user']['person_mail'],
+                              projects_api=[uspr['project']['identifier']],
+                              sshkeys_api=list(),
+                              person_uniqueid=uspr['user']['username'],
+                              person_oib=uspr['user']['person_oib'],
+                              uid_api=uspr['user']['id'],
+                              ldap_uid=0,
+                              ldap_gid=0,
+                              ldap_username='',
+                              type_create='api')
 
             except MultipleResultsFound as exc:
                 self.logger.error(exc)

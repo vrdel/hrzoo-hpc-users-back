@@ -6,6 +6,8 @@ from email.headerregistry import Address
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
+from accounts_hpc.utils import latest_project
+
 import datetime
 import re
 import smtplib
@@ -14,13 +16,22 @@ import ssl
 
 
 class EmailSend(object):
-    def __init__(self, logger, confopts, emailto, username=None, sshkeyname=None):
+    def __init__(self, logger, confopts, emailto, username=None, sshkeyname=None, project=None):
         self.username = username
         self.sshkeyname = sshkeyname
+        self.project = project
         if username:
-            self.template = confopts['email']['template_newuser']
+            if confopts['email']['project_email']:
+                self.template = confopts['email']['template_newuser']
+                self.template = self.template.replace('.', f'_{self.project}.')
+            else:
+                self.template = confopts['email']['template_newuser']
         else:
-            self.template = confopts['email']['template_newkey']
+            if confopts['email']['project_email']:
+                self.template = confopts['email']['template_newkey']
+                self.template = self.template.replace('.', f'_{self.project}.')
+            else:
+                self.template = confopts['email']['template_newkey']
         self.smtpserver = confopts['email']['smtp']
         self.port = confopts['email']['port']
         self.tls = confopts['email']['tls']
@@ -40,9 +51,13 @@ class EmailSend(object):
     def _construct_email(self):
         text = None
 
-        with open(self.template, encoding='utf-8') as fp:
-            text = fp.readlines()
-            self.subject = text[0].strip()
+        try:
+            with open(self.template, encoding='utf-8') as fp:
+                text = fp.readlines()
+                self.subject = text[0].strip()
+        except FileNotFoundError as exc:
+            self.logger.error(f'{exc.filename} - {repr(exc)}')
+            raise SystemExit(1)
 
         # first line - subject
         # second line - separator
