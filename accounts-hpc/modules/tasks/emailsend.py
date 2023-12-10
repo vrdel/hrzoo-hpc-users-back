@@ -37,14 +37,16 @@ class SendEmail(object):
                     continue
                 nmail = 0
                 for sshkeyname in user.mail_name_sshkey:
-                    email = EmailSend(self.logger, self.confopts, user.person_mail,
-                                      sshkeyname=sshkeyname)
-                    if email.send():
-                        nmail += 1
-                        self.logger.info(f"Send email for added key {sshkeyname} of {user.ldap_username}")
-                if nmail == len(user.mail_name_sshkey):
-                    user.mail_is_sshkeyadded = True
-                    user.mail_name_sshkey = list()
+                    for project in user.mail_project_is_sshkeyadded.keys():
+                        if user.mail_project_is_sshkeyadded[project] == False:
+                            email = EmailSend(self.logger, self.confopts, user.person_mail,
+                                              sshkeyname=sshkeyname, project=project)
+                            if email.send():
+                                nmail += 1
+                                self.logger.info(f"Send email for added key {sshkeyname} of {user.ldap_username} - {project}")
+                                user.mail_project_is_sshkeyadded[project] = True
+                    if nmail == len(user.mail_name_sshkey) * len(user.mail_project_is_sshkeyadded.keys()):
+                        user.mail_name_sshkey = list()
         else:
             users = self.dbsession.query(User).filter(User.mail_is_opensend == False).all()
             for user in users:
