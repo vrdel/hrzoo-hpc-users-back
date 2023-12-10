@@ -51,9 +51,13 @@ class EmailSend(object):
     def _construct_email(self):
         text = None
 
-        with open(self.template, encoding='utf-8') as fp:
-            text = fp.readlines()
-            self.subject = text[0].strip()
+        try:
+            with open(self.template, encoding='utf-8') as fp:
+                text = fp.readlines()
+                self.subject = text[0].strip()
+        except FileNotFoundError as exc:
+            self.logger.error(f'{exc.filename} - {repr(exc)}')
+            raise SystemExit(1)
 
         # first line - subject
         # second line - separator
