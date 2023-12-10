@@ -132,16 +132,23 @@ class ApiSync(object):
                 raise SystemExit(1)
 
             if len(us.projects_api) > len(hzsi_api_user_projects[uspr['user']['username']]):
+                prjs_diff = list(
+                    set(us.projects_api)
+                    .difference(
+                        set(hzsi_api_user_projects[uspr['user']['username']])
+                    ))
+                prjs_diff_db = self.dbsession.query(Project).filter(Project.identifier.in_(prjs_diff)).all()
+
                 us.projects_api = hzsi_api_user_projects[uspr['user']['username']]
+
                 if self.args.initset:
-                    prjs_diff = list(
-                        set(us.projects_api)
-                        .difference(
-                            set(hzsi_api_user_projects[uspr['user']['username']])
-                        ))
-                    prjs_diff_db = self.dbsession.query(Project).filter(Project.identifier.in_(prjs_diff)).all()
                     for pr in prjs_diff_db:
                         us.project.remove(pr)
+
+                for pr in prjs_diff_db:
+                    del us.mail_project_is_opensend[pr.identifier]
+                    del us.mail_project_is_sshkeyadded[pr.identifier]
+
 
             visited_users.update([uspr['user']['id']])
 
@@ -206,7 +213,7 @@ class ApiSync(object):
                               mail_is_sshkeyadded=False,
                               mail_project_is_opensend={uspr['project']['identifier']: True if self.args.initset else False},
                               mail_project_is_sshkeyadded={uspr['project']['identifier']: True if self.args.initset else False},
-                              mail_project_name_sshkey=list(),
+                              mail_project_name_sshkey=dict(),
                               mail_name_sshkey=list(),
                               is_staff=uspr['user']['is_staff'],
                               last_name=only_alnum(unidecode(uspr['user']['last_name'])),
@@ -229,9 +236,9 @@ class ApiSync(object):
                               mail_is_opensend=True if self.args.initset else False,
                               mail_is_subscribed=True if self.args.initset else False,
                               mail_is_sshkeyadded=True if self.args.initset else False,
-                              mail_project_is_opensend=list(),
-                              mail_project_is_sshkeyadded=list(),
-                              mail_project_name_sshkey=list(),
+                              mail_project_is_opensend=dict(),
+                              mail_project_is_sshkeyadded=dict(),
+                              mail_project_name_sshkey=dict(),
                               mail_name_sshkey=list(),
                               is_staff=uspr['user']['is_staff'],
                               last_name=only_alnum(unidecode(uspr['user']['last_name'])),
