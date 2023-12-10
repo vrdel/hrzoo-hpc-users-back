@@ -43,7 +43,6 @@ class User(Base):
     mail_name_sshkey: Mapped[List[str]] = mapped_column(MutableJson)
     mail_project_is_opensend: Mapped[List[dict]] = mapped_column(MutableJson)
     mail_project_is_sshkeyadded: Mapped[List[dict]] = mapped_column(MutableJson)
-    mail_project_name_sshkey: Mapped[List[str]] = mapped_column(MutableJson)
     sshkey: Mapped[List["SshKey"]] = relationship(back_populates="user")
     sshkeys_api: Mapped[List[str]] = mapped_column(MutableJson)
     ldap_username: Mapped[str] = mapped_column(String(8))
