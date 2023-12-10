@@ -1,4 +1,14 @@
 from typing import Any, Union
+from accounts_hpc.shared import Shared  # type: ignore
+from accounts_hpc.db import User  # type: ignore
+
+
+def latest_project(username):
+    shared = Shared('utils.latest_project()')
+    dbsession = shared.dbsession
+    user = dbsession.query(User).filter(User.ldap_username == username).one()
+    last_project = user.project[-1]
+    return last_project
 
 
 def get_ssh_key_fingerprint(ssh_key):
