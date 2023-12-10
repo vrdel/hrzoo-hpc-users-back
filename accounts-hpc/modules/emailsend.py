@@ -6,6 +6,8 @@ from email.headerregistry import Address
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
+from accounts_hpc.utils import latest_project
+
 import datetime
 import re
 import smtplib
@@ -17,10 +19,22 @@ class EmailSend(object):
     def __init__(self, logger, confopts, emailto, username=None, sshkeyname=None):
         self.username = username
         self.sshkeyname = sshkeyname
+        import ipdb; ipdb.set_trace()
+
         if username:
-            self.template = confopts['email']['template_newuser']
+            if confopts['email']['project_email']:
+                last_pr = latest_project(username)
+                self.template = confopts['email']['template_newuser']
+                self.template = self.template.replace('.', f'_{last_pr.identifier}.')
+            else:
+                self.template = confopts['email']['template_newuser']
         else:
-            self.template = confopts['email']['template_newkey']
+            if confopts['email']['project_email']:
+                last_pr = latest_project(username)
+                self.template = confopts['email']['template_newkey']
+                self.template = self.template.replace('.', f'_{last_pr.identifier}.')
+            else:
+                self.template = confopts['email']['template_newkey']
         self.smtpserver = confopts['email']['smtp']
         self.port = confopts['email']['port']
         self.tls = confopts['email']['tls']
