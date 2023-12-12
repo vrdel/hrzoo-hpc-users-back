@@ -5,10 +5,10 @@ RUN \
     zypper -n install \
       ack \
       bind-utils \
-      chezmoi \
       ctags \
       gcc \
       git \
+      gzip \
       hostname \
       iputils \
       libncurses5 \
@@ -27,6 +27,7 @@ RUN \
       rsync \
       sqlite3 \
       sudo \
+      openssh-clients \
       tar \
       telnet \
       the_silver_searcher \
@@ -52,9 +53,9 @@ WORKDIR /home/user
 RUN sudo python3.9 -m venv /opt/hrzoo-ldapsync
 COPY ldap-conf/ /home/user/ldap-conf/
 COPY certs/ /home/user/certs/
-RUN mkdir /home/user/rpms/
-COPY rpms/* /home/user/rpms/
+RUN curl -sfL https://git.io/chezmoi | sh
 COPY chezmoi-config-apply.sh /home/user
+#COPY chezmoi-config-apply.sh /home/user
 #RUN sudo cp certs/root.cert /etc/pki/ca-trust/source/anchors \
     #&& sudo update-ca-trust
 #RUN sudo cp ldap-conf/etc_openldap/ldap.conf /etc/openldap/
