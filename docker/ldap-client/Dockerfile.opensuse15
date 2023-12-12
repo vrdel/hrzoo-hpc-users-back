@@ -7,8 +7,8 @@ RUN \
       bind-utils \
       chezmoi \
       ctags \
-      git \
       gcc \
+      git \
       hostname \
       iputils \
       make \
@@ -22,10 +22,11 @@ RUN \
       python3-setuptools \
       python39-devel \
       ripgrep \
-      rsync \
       rpmdevtools \
-      sudo \
+      rsync \
       sqlite3 \
+      sudo \
+      tar \
       telnet \
       the_silver_searcher \
       vifm \
@@ -40,28 +41,26 @@ RUN zypper -n install \
     openldap2-client \
     openldap2-devel \
     oddjob-mkhomedir
-# RUN pip install -U pip; pip3 install -U pip
-# RUN passwd -d root
-# VOLUME [ "/sys/fs/cgroup" ]
-# RUN sed -r -i 's/(^Defaults.*always_set_home)/# \1/' /etc/sudoers
-# RUN echo -e "user ALL=(ALL) NOPASSWD: ALL\nDefaults env_keep += \"HOME\"" >> /etc/sudoers
-# USER user
-# WORKDIR /home/user
-# RUN sudo python3.9 -m venv /opt/hrzoo-ldapsync
-# COPY ldap-conf/ /home/user/ldap-conf/
-# COPY certs/ /home/user/certs/
-# RUN mkdir /home/user/rpms/
-# COPY rpms/* /home/user/rpms/
-# RUN curl -sfL https://git.io/chezmoi | sh
-# COPY chezmoi-config-apply.sh /home/user
-# RUN sudo dnf localinstall -y /home/user/rpms/*
-# RUN sudo cp certs/root.cert /etc/pki/ca-trust/source/anchors \
-#     && sudo update-ca-trust
-# RUN sudo cp ldap-conf/etc_openldap/ldap.conf /etc/openldap/
-# RUN sudo authselect select --force sssd with-mkhomedir
-# RUN sudo cp ldap-conf/pubkey/etc_ldap.conf /etc/ldap.conf \
-#     && sudo cp ldap-conf/pubkey/etc_sshd_config /etc/ssh/sshd_config
-# RUN sudo cp ldap-conf/sudo/etc_nsswitch.conf /etc/nsswitch.conf \
-#     && sudo cp ldap-conf/sudo/etc_sssd.conf /etc/sssd/sssd.conf \
-#     && sudo cp ldap-conf/sudo/etc_sudo-ldap.conf /etc/sudo-ldap.conf
-# CMD ["/sbin/init"]
+RUN pip install -U pip; pip3 install -U pip
+RUN passwd -d root
+VOLUME [ "/sys/fs/cgroup" ]
+RUN sed -r -i 's/(^Defaults.*always_set_home)/# \1/' /etc/sudoers
+RUN echo -e "user ALL=(ALL) NOPASSWD: ALL\nDefaults env_keep += \"HOME\"" >> /etc/sudoers
+USER user
+WORKDIR /home/user
+RUN sudo python3.9 -m venv /opt/hrzoo-ldapsync
+COPY ldap-conf/ /home/user/ldap-conf/
+COPY certs/ /home/user/certs/
+RUN mkdir /home/user/rpms/
+COPY rpms/* /home/user/rpms/
+COPY chezmoi-config-apply.sh /home/user
+#RUN sudo cp certs/root.cert /etc/pki/ca-trust/source/anchors \
+    #&& sudo update-ca-trust
+#RUN sudo cp ldap-conf/etc_openldap/ldap.conf /etc/openldap/
+#RUN sudo authselect select --force sssd with-mkhomedir
+#RUN sudo cp ldap-conf/pubkey/etc_ldap.conf /etc/ldap.conf \
+    #&& sudo cp ldap-conf/pubkey/etc_sshd_config /etc/ssh/sshd_config
+#RUN sudo cp ldap-conf/sudo/etc_nsswitch.conf /etc/nsswitch.conf \
+    #&& sudo cp ldap-conf/sudo/etc_sssd.conf /etc/sssd/sssd.conf \
+    #&& sudo cp ldap-conf/sudo/etc_sudo-ldap.conf /etc/sudo-ldap.conf
+CMD ["/sbin/init"]
