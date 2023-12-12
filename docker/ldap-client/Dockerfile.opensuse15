@@ -27,6 +27,7 @@ RUN \
       rsync \
       sqlite3 \
       sudo \
+      systemd-sysvinit \
       openssh-clients \
       tar \
       telnet \
