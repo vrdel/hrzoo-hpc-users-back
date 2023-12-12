@@ -11,6 +11,7 @@ RUN \
       git \
       hostname \
       iputils \
+      libncurses5 \
       make \
       man \
       mc \
