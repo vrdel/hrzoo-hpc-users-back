@@ -145,10 +145,10 @@ class ApiSync(object):
                     for pr in prjs_diff_db:
                         us.project.remove(pr)
 
-                for pr in prjs_diff_db:
-                    del us.mail_project_is_opensend[pr.identifier]
-                    del us.mail_project_is_sshkeyadded[pr.identifier]
-
+                if self.confopts['email']['project_email']:
+                    for pr in prjs_diff_db:
+                        del us.mail_project_is_opensend[pr.identifier]
+                        del us.mail_project_is_sshkeyadded[pr.identifier]
 
             visited_users.update([uspr['user']['id']])
 
