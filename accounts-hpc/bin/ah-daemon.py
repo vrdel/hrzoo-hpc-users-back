@@ -30,6 +30,9 @@ def main():
     except KeyboardInterrupt:
         pass
 
+    finally:
+        loop.close()
+
 
 if __name__ == '__main__':
     main()
