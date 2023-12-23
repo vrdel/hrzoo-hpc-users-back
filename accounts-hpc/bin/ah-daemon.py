@@ -4,6 +4,10 @@ import asyncio
 import sys
 
 from accounts_hpc.tasks.apisync import ApiSync
+from accounts_hpc.shared import Shared
+
+
+CALLER_NAME="ah-daemon"
 
 
 class FakeArgs(object):
@@ -14,10 +18,14 @@ class FakeArgs(object):
 class AhDaemon(object):
     def __init__(self):
         self.fakeargs = FakeArgs()
+        shared = Shared(CALLER_NAME)
+        self.confopts = shared.confopts
+        self.logger = shared.log.get()
+
 
     async def run(self):
-        await ApiSync('ah-daemon', self.fakeargs).run()
-        import ipdb; ipdb.set_trace()
+        if 'apisync' in self.confopts['tasks']['call_list']:
+            await ApiSync(CALLER_NAME, self.fakeargs).run()
 
 
 def main():
