@@ -4,6 +4,7 @@ import asyncio
 import sys
 
 from accounts_hpc.tasks.apisync import ApiSync
+from accounts_hpc.tasks.usermetadata import UserMetadata
 from accounts_hpc.shared import Shared
 
 
@@ -25,7 +26,12 @@ class AhDaemon(object):
 
     async def run(self):
         if 'apisync' in self.confopts['tasks']['call_list']:
+            self.logger.info("Calling apisync task")
             await ApiSync(CALLER_NAME, self.fakeargs).run()
+
+        if 'usermetadata' in self.confopts['tasks']['call_list']:
+            self.logger.info("Calling usermetadata task")
+            UserMetadata(CALLER_NAME, self.fakeargs).run()
 
 
 def main():
