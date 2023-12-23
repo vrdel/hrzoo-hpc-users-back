@@ -23,6 +23,10 @@ def parse_config(logger=None):
                 if section.startswith('db'):
                     confopts['db'] = ({'path': config.get(section, 'path')})
 
+                if section.startswith('tasks'):
+                    confopts['tasks'] = ({'call_list': config.get(section, 'call_list')})
+                    confopts['tasks'] = ({'every_sec': config.get(section, 'every_sec')})
+
                 if section.startswith('hzsiapi'):
                     confopts['hzsiapi'] = ({'sshkeys': config.get(section, 'sshkeys')})
                     confopts['hzsiapi'].update({'userproject': config.get(section, 'userproject')})

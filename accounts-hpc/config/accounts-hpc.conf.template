@@ -1,6 +1,10 @@
 [DEFAULT]
 VENV = /opt/hrzoo-accounts-hpc
 
+[tasks]
+call_list = apisync, usermetadata
+every_sec = 60
+
 [connection]
 timeout = 180
 retry = 3
