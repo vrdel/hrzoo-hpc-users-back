@@ -18,10 +18,13 @@ class Shared(object):
 
     def __init__(self, caller):
         self.__class__.log = Logger(caller)
+
         if not getattr(self.__class__, 'confopts', False):
             confopts = parse_config()
             self.__class__.confopts = confopts
+
+        engine = create_engine("sqlite:///{}".format(self.__class__.confopts['db']['path']))
+        Session = sessionmaker(engine)
         if not getattr(self.__class__, 'dbsession', False):
-            engine = create_engine("sqlite:///{}".format(confopts['db']['path']))
-            Session = sessionmaker(engine)
-            self.__class__.dbsession = Session()
+            self.__class__.dbsession = dict()
+        self.__class__.dbsession[caller] = Session()
