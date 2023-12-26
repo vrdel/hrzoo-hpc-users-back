@@ -8,7 +8,7 @@ from accounts_hpc.tasks.usermetadata import UserMetadata
 from accounts_hpc.shared import Shared
 
 
-CALLER_NAME="ah-daemon"
+CALLER_NAME = "ah-daemon"
 
 
 class FakeArgs(object):
@@ -27,11 +27,11 @@ class AhDaemon(object):
     async def run(self):
         if 'apisync' in self.confopts['tasks']['call_list']:
             self.logger.info("Calling apisync task")
-            await ApiSync(CALLER_NAME, self.fakeargs).run()
+            await ApiSync(f'{CALLER_NAME}.apisync', self.fakeargs).run()
 
         if 'usermetadata' in self.confopts['tasks']['call_list']:
             self.logger.info("Calling usermetadata task")
-            UserMetadata(CALLER_NAME, self.fakeargs).run()
+            UserMetadata(f'{CALLER_NAME}.usermetadata', self.fakeargs).run()
 
 
 def main():
