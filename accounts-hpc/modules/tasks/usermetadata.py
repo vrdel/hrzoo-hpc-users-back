@@ -33,7 +33,8 @@ class UserMetadata(object):
         self.confopts = shared.confopts
         self.confopts = shared.confopts
         self.logger = shared.log.get()
-        self.dbsession = shared.dbsession
+        import ipdb; ipdb.set_trace()
+        self.dbsession = shared.dbsession[caller]
         self.args = args
 
     def run(self):
