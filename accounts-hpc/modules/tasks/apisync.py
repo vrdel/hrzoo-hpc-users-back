@@ -369,7 +369,5 @@ class ApiSync(object):
         self.sshkeys_add(projects_users, sshkeys)
         self.sshkeys_del(projects_users, sshkeys)
 
-        self.logger.info(f"APISYNC {id(self.logger)} {self.logger}")
-
         self.dbsession.commit()
         self.dbsession.close()

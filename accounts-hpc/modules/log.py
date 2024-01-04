@@ -30,6 +30,10 @@ class Logger(object):
         lf = logging.Formatter(lfs)
         lv = logging.INFO
 
+        if not self.logger:
+            logging.basicConfig(format=lfs, level=lv)
+            self.logger = logging.getLogger(self._caller)
+
         sh = logging.handlers.SysLogHandler('/dev/log', logging.handlers.SysLogHandler.LOG_USER)
         sh.setFormatter(lf)
         sh.setLevel(lv)
@@ -54,8 +58,8 @@ class Logger(object):
         self._daemon = daemon
         try:
             self._init_stdout()
-            self._init_filelog()
             self._init_syslog()
+            self._init_filelog()
         except (OSError, IOError) as e:
             sys.stderr.write('ERROR ' + self._caller + ' - ' + str(e) + '\n')
             raise SystemExit(1)
