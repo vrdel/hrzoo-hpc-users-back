@@ -29,7 +29,7 @@ class ApiSync(object):
     def __init__(self, caller, args):
         shared = Shared(caller)
         self.confopts = shared.confopts
-        self.logger = shared.log.get()
+        self.logger = shared.log[caller].get()
         self.dbsession = shared.dbsession[caller]
         self.args = args
 

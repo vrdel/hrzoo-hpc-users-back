@@ -17,7 +17,9 @@ class Shared(object):
             return cls.sharedobj
 
     def __init__(self, caller):
-        self.__class__.log = Logger(caller)
+        if not getattr(self.__class__, 'log', False):
+            self.__class__.log = dict()
+        self.__class__.log[caller] = Logger(caller)
 
         if not getattr(self.__class__, 'confopts', False):
             confopts = parse_config()
