@@ -10,8 +10,8 @@ import json
 
 
 class LdapUpdate(object):
-    def __init__(self, caller, args):
-        shared = Shared(caller)
+    def __init__(self, caller, args, daemon=False):
+        shared = Shared(caller, daemon)
         self.confopts = shared.confopts
         self.logger = shared.log[caller].get()
         self.dbsession = shared.dbsession[caller]

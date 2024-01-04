@@ -28,8 +28,8 @@ def gen_username(first: str, last: str, existusers: list[str]) -> str:
 
 
 class UserMetadata(object):
-    def __init__(self, caller, args):
-        shared = Shared(caller)
+    def __init__(self, caller, args, daemon=False):
+        shared = Shared(caller, daemon)
         self.confopts = shared.confopts
         self.confopts = shared.confopts
         self.logger = shared.log[caller].get()
@@ -103,3 +103,5 @@ class UserMetadata(object):
 
         self.dbsession.commit()
         self.dbsession.close()
+
+        self.logger.info(f"USERMETADATA {id(self.logger)} {self.logger}")

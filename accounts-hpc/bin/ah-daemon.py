@@ -20,7 +20,7 @@ class FakeArgs(object):
 class AhDaemon(object):
     def __init__(self):
         self.fakeargs = FakeArgs()
-        shared = Shared(CALLER_NAME)
+        shared = Shared(CALLER_NAME, daemon=True)
         self.confopts = shared.confopts
         self.logger = shared.log[CALLER_NAME].get()
 
@@ -30,15 +30,15 @@ class AhDaemon(object):
             self.logger.info('* Scheduled tasks...')
             if 'apisync' in self.confopts['tasks']['call_list']:
                 self.logger.info("> Calling apisync task")
-                await ApiSync(f'{CALLER_NAME}.apisync', self.fakeargs).run()
+                await ApiSync(f'{CALLER_NAME}.apisync', self.fakeargs, daemon=True).run()
 
             if 'usermetadata' in self.confopts['tasks']['call_list']:
                 self.logger.info("> Calling usermetadata task")
-                UserMetadata(f'{CALLER_NAME}.usermetadata', self.fakeargs).run()
+                UserMetadata(f'{CALLER_NAME}.usermetadata', self.fakeargs, daemon=True).run()
 
             if 'ldapupdate' in self.confopts['tasks']['call_list']:
                 self.logger.info("> Calling ldapupdate task")
-                LdapUpdate(f'{CALLER_NAME}.ldapupdate', self.fakeargs).run()
+                LdapUpdate(f'{CALLER_NAME}.ldapupdate', self.fakeargs, daemon=True).run()
 
             await asyncio.sleep(float(self.confopts['tasks']['every_sec']))
 

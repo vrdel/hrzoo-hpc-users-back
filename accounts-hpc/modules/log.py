@@ -12,7 +12,10 @@ class Logger(object):
     logfile = f"{os.environ['VIRTUAL_ENV']}/var/log/accounts-hpc.log"
 
     def _init_stdout(self):
-        lfs = '%(levelname)s ' + self._caller + ' - %(message)s'
+        if self._daemon:
+            lfs = '%(levelname)s - %(message)s'
+        else:
+            lfs = '%(levelname)s ' + self._caller + ' - %(message)s'
         lf = logging.Formatter(lfs)
         lv = logging.INFO
 
@@ -20,7 +23,10 @@ class Logger(object):
         self.logger = logging.getLogger(self._caller)
 
     def _init_syslog(self):
-        lfs = '%(name)s[%(process)s]: %(levelname)s ' + self._caller + ' - %(message)s'
+        if self._daemon:
+            lfs = '%(name)s[%(process)s]: %(levelname)s - %(message)s'
+        else:
+            lfs = '%(name)s[%(process)s]: %(levelname)s ' + self._caller + ' - %(message)s'
         lf = logging.Formatter(lfs)
         lv = logging.INFO
 
@@ -30,7 +36,10 @@ class Logger(object):
         self.logger.addHandler(sh)
 
     def _init_filelog(self):
-        lfs = '%(asctime)s %(name)s[%(process)s]: %(levelname)s ' + self._caller + ' - %(message)s'
+        if self._daemon:
+            lfs = '%(asctime)s %(name)s[%(process)s]: %(levelname)s - %(message)s'
+        else:
+            lfs = '%(asctime)s %(name)s[%(process)s]: %(levelname)s ' + self._caller + ' - %(message)s'
         lf = logging.Formatter(fmt=lfs, datefmt='%Y-%m-%d %H:%M:%S')
         lv = logging.INFO
 
@@ -40,8 +49,9 @@ class Logger(object):
         sf.setLevel(lv)
         self.logger.addHandler(sf)
 
-    def __init__(self, caller):
+    def __init__(self, caller, daemon):
         self._caller = os.path.basename(caller)
+        self._daemon = daemon
         try:
             self._init_stdout()
             self._init_filelog()

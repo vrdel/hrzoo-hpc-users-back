@@ -16,17 +16,19 @@ class Shared(object):
             setattr(cls, 'sharedobj', object.__new__(cls))
             return cls.sharedobj
 
-    def __init__(self, caller):
+    def __init__(self, caller, daemon=False):
         if not getattr(self.__class__, 'log', False):
             self.__class__.log = dict()
-        self.__class__.log[caller] = Logger(caller)
+        if caller not in self.__class__.log.keys():
+            self.__class__.log[caller] = Logger(caller, daemon)
 
         if not getattr(self.__class__, 'confopts', False):
             confopts = parse_config()
             self.__class__.confopts = confopts
 
-        engine = create_engine("sqlite:///{}".format(self.__class__.confopts['db']['path']))
-        Session = sessionmaker(engine)
         if not getattr(self.__class__, 'dbsession', False):
             self.__class__.dbsession = dict()
-        self.__class__.dbsession[caller] = Session()
+        if caller not in self.__class__.dbsession:
+            engine = create_engine("sqlite:///{}".format(self.__class__.confopts['db']['path']))
+            Session = sessionmaker(engine)
+            self.__class__.dbsession[caller] = Session()

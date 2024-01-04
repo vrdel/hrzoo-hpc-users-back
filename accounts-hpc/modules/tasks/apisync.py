@@ -26,8 +26,8 @@ def replace_projectsapi_fields(projectsfields, userproject):
 
 
 class ApiSync(object):
-    def __init__(self, caller, args):
-        shared = Shared(caller)
+    def __init__(self, caller, args, daemon=False):
+        shared = Shared(caller, daemon)
         self.confopts = shared.confopts
         self.logger = shared.log[caller].get()
         self.dbsession = shared.dbsession[caller]
@@ -368,6 +368,8 @@ class ApiSync(object):
         self.users_projects_del(projects_users)
         self.sshkeys_add(projects_users, sshkeys)
         self.sshkeys_del(projects_users, sshkeys)
+
+        self.logger.info(f"APISYNC {id(self.logger)} {self.logger}")
 
         self.dbsession.commit()
         self.dbsession.close()
