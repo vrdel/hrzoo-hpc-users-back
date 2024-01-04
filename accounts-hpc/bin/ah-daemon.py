@@ -5,6 +5,7 @@ import sys
 
 from accounts_hpc.tasks.apisync import ApiSync
 from accounts_hpc.tasks.usermetadata import UserMetadata
+from accounts_hpc.tasks.ldapupdate import LdapUpdate
 from accounts_hpc.shared import Shared
 
 
@@ -21,32 +22,33 @@ class AhDaemon(object):
         self.fakeargs = FakeArgs()
         shared = Shared(CALLER_NAME)
         self.confopts = shared.confopts
-        self.logger = shared.log.get()
+        self.logger = shared.log[CALLER_NAME].get()
 
 
     async def run(self):
-        if 'apisync' in self.confopts['tasks']['call_list']:
-            self.logger.info("Calling apisync task")
-            await ApiSync(f'{CALLER_NAME}.apisync', self.fakeargs).run()
+        while True:
+            self.logger.info('* Scheduled tasks...')
+            if 'apisync' in self.confopts['tasks']['call_list']:
+                self.logger.info("> Calling apisync task")
+                await ApiSync(f'{CALLER_NAME}.apisync', self.fakeargs).run()
 
-        if 'usermetadata' in self.confopts['tasks']['call_list']:
-            self.logger.info("Calling usermetadata task")
-            UserMetadata(f'{CALLER_NAME}.usermetadata', self.fakeargs).run()
+            if 'usermetadata' in self.confopts['tasks']['call_list']:
+                self.logger.info("> Calling usermetadata task")
+                UserMetadata(f'{CALLER_NAME}.usermetadata', self.fakeargs).run()
+
+            if 'ldapupdate' in self.confopts['tasks']['call_list']:
+                self.logger.info("> Calling ldapupdate task")
+                LdapUpdate(f'{CALLER_NAME}.ldapupdate', self.fakeargs).run()
+
+            await asyncio.sleep(float(self.confopts['tasks']['every_sec']))
 
 
 def main():
     ahd = AhDaemon()
-    loop = asyncio.new_event_loop()
-
     try:
-        loop.run_until_complete(ahd.run())
-
+        asyncio.run(ahd.run())
     except KeyboardInterrupt:
-        pass
-
-    finally:
-        loop.close()
-
+        ahd.logger.info("* Stopping")
 
 if __name__ == '__main__':
     main()
