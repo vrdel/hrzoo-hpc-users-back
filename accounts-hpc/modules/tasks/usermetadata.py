@@ -103,5 +103,3 @@ class UserMetadata(object):
 
         self.dbsession.commit()
         self.dbsession.close()
-
-        self.logger.info(f"USERMETADATA {id(self.logger)} {self.logger}")
