@@ -24,7 +24,6 @@ class AhDaemon(object):
         self.confopts = shared.confopts
         self.logger = shared.log[CALLER_NAME].get()
 
-
     async def run(self):
         while True:
             calls_str = ', '.join(self.confopts['tasks']['call_list'])
@@ -50,6 +49,7 @@ def main():
         asyncio.run(ahd.run())
     except KeyboardInterrupt:
         ahd.logger.info("* Stopping")
+
 
 if __name__ == '__main__':
     main()
