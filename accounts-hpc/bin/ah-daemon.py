@@ -27,7 +27,8 @@ class AhDaemon(object):
 
     async def run(self):
         while True:
-            self.logger.info('* Scheduled tasks...')
+            calls_str = ', '.join(self.confopts['tasks']['call_list'])
+            self.logger.info(f"* Scheduled tasks ({calls_str})...")
             if 'apisync' in self.confopts['tasks']['call_list']:
                 self.logger.info("> Calling apisync task")
                 await ApiSync(f'{CALLER_NAME}.apisync', self.fakeargs, daemon=True).run()
