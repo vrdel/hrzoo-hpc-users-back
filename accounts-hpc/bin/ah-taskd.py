@@ -55,7 +55,8 @@ def main():
 
     def clean_exit(sigstr):
         ahd.logger.info(f"* Exiting on {sigstr}...")
-        for task in asyncio.all_tasks(loop=loop):
+        scheduled_tasks = asyncio.all_tasks(loop=loop)
+        for task in scheduled_tasks:
             task.cancel()
 
     loop.add_signal_handler(signal.SIGINT, clean_exit, 'SIGINT')
