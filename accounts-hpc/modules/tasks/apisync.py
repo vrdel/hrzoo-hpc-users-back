@@ -286,6 +286,7 @@ class ApiSync(object):
     async def fetch_data(self):
         token = self.confopts['hzsiapi']['token']
         session = SessionWithRetry(self.logger, self.confopts, token=token, handle_session_close=True)
+        self.httpsession = session
 
         coros = [
             session.http_get(
@@ -325,6 +326,11 @@ class ApiSync(object):
         except SyncHttpError:
             self.logger.error('Data fetch did not succeed')
             raise SystemExit(1)
+
+        except asyncio.CancelledError as exc:
+            self.logger.info('* Cancelling apisync...')
+            await self.httpsession.close()
+            raise exc
 
         if self.confopts['hzsiapi']['replacestring_map']:
             with open(self.confopts['hzsiapi']['replacestring_map'], mode='r') as fp:
