@@ -39,7 +39,8 @@ setup(
     scripts=['bin/ah-1-api-sync.py', 'bin/ah-2-user-metadata-setup.py', 'bin/ah-3-ldap-update.py',
              'bin/ah-4-directories-create.py', 'bin/ah-5-fairshare-update.py', 'bin/ah-6-email-send.py',
              'bin/ah-db-tool.py', 'bin/ah-all-flags-set.py',
-             'bin/ah-user-manage.py', 'bin/ah-project-manage.py'],
+             'bin/ah-user-manage.py', 'bin/ah-project-manage.py',
+             'bin/ah-daemon.py'],
     data_files=[
         ('bin/', glob.glob('bin/*')),
         ('etc/accounts-hpc', ['config/email-template-new-key.txt',
