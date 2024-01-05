@@ -2,6 +2,7 @@
 
 import asyncio
 import sys
+import signal
 
 from accounts_hpc.tasks.apisync import ApiSync
 from accounts_hpc.tasks.usermetadata import UserMetadata
@@ -9,7 +10,7 @@ from accounts_hpc.tasks.ldapupdate import LdapUpdate
 from accounts_hpc.shared import Shared
 
 
-CALLER_NAME = "ah-daemon"
+CALLER_NAME = "ah-taskd"
 
 
 class FakeArgs(object):
@@ -25,30 +26,45 @@ class AhDaemon(object):
         self.logger = shared.log[CALLER_NAME].get()
 
     async def run(self):
-        while True:
-            calls_str = ', '.join(self.confopts['tasks']['call_list'])
-            self.logger.info(f"* Scheduled tasks ({calls_str})...")
-            if 'apisync' in self.confopts['tasks']['call_list']:
-                self.logger.info("> Calling apisync task")
-                await ApiSync(f'{CALLER_NAME}.apisync', self.fakeargs, daemon=True).run()
+        try:
+            while True:
+                calls_str = ', '.join(self.confopts['tasks']['call_list'])
+                self.logger.info(f"* Scheduled tasks ({calls_str})...")
+                if 'apisync' in self.confopts['tasks']['call_list']:
+                    self.logger.info("> Calling apisync task")
+                    task_apisync = asyncio.create_task(ApiSync(f'{CALLER_NAME}.apisync', self.fakeargs, daemon=True).run())
+                    await task_apisync
 
-            if 'usermetadata' in self.confopts['tasks']['call_list']:
-                self.logger.info("> Calling usermetadata task")
-                UserMetadata(f'{CALLER_NAME}.usermetadata', self.fakeargs, daemon=True).run()
+                if 'usermetadata' in self.confopts['tasks']['call_list']:
+                    self.logger.info("> Calling usermetadata task")
+                    UserMetadata(f'{CALLER_NAME}.usermetadata', self.fakeargs, daemon=True).run()
 
-            if 'ldapupdate' in self.confopts['tasks']['call_list']:
-                self.logger.info("> Calling ldapupdate task")
-                LdapUpdate(f'{CALLER_NAME}.ldapupdate', self.fakeargs, daemon=True).run()
+                if 'ldapupdate' in self.confopts['tasks']['call_list']:
+                    self.logger.info("> Calling ldapupdate task")
+                    LdapUpdate(f'{CALLER_NAME}.ldapupdate', self.fakeargs, daemon=True).run()
 
-            await asyncio.sleep(float(self.confopts['tasks']['every_sec']))
+                await asyncio.sleep(float(self.confopts['tasks']['every_sec']))
+
+        except asyncio.CancelledError:
+            self.logger.info("* Stopping task runner...")
 
 
 def main():
     ahd = AhDaemon()
+    loop = asyncio.get_event_loop()
+
+    def clean_exit(sigstr):
+        ahd.logger.info(f"* Exiting on {sigstr}...")
+        for task in asyncio.all_tasks(loop=loop):
+            task.cancel()
+
+    loop.add_signal_handler(signal.SIGINT, clean_exit, 'SIGINT')
+    loop.add_signal_handler(signal.SIGTERM, clean_exit, 'SIGTERM')
+
     try:
-        asyncio.run(ahd.run())
-    except KeyboardInterrupt:
-        ahd.logger.info("* Stopping")
+        loop.run_until_complete(ahd.run())
+    finally:
+        loop.close()
 
 
 if __name__ == '__main__':
