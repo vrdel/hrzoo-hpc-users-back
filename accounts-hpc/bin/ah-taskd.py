@@ -46,6 +46,7 @@ class AhDaemon(object):
                 await asyncio.sleep(float(self.confopts['tasks']['every_sec']))
 
         except asyncio.CancelledError:
+            task_apisync.cancel()
             self.logger.info("* Stopping task runner...")
 
 

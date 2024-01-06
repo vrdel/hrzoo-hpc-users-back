@@ -330,6 +330,7 @@ class ApiSync(object):
         except asyncio.CancelledError as exc:
             self.logger.info('* Cancelling apisync...')
             await self.httpsession.close()
+            self.dbsession.close()
             raise exc
 
         if self.confopts['hzsiapi']['replacestring_map']:
