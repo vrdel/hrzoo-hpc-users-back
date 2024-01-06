@@ -27,17 +27,24 @@ class AhDaemon(object):
 
     async def run(self):
         try:
+            task_apisync, task_usermetadata = None, None
+
             while True:
                 calls_str = ', '.join(self.confopts['tasks']['call_list'])
                 self.logger.info(f"* Scheduled tasks ({calls_str})...")
                 if 'apisync' in self.confopts['tasks']['call_list']:
                     self.logger.info("> Calling apisync task")
-                    task_apisync = asyncio.create_task(ApiSync(f'{CALLER_NAME}.apisync', self.fakeargs, daemon=True).run())
+                    task_apisync = asyncio.create_task(
+                        ApiSync(f'{CALLER_NAME}.apisync', self.fakeargs, daemon=True).run()
+                    )
                     await task_apisync
 
                 if 'usermetadata' in self.confopts['tasks']['call_list']:
                     self.logger.info("> Calling usermetadata task")
-                    UserMetadata(f'{CALLER_NAME}.usermetadata', self.fakeargs, daemon=True).run()
+                    task_usermetadata = asyncio.create_task(
+                        UserMetadata(f'{CALLER_NAME}.usermetadata', self.fakeargs, daemon=True).run()
+                    )
+                    await task_usermetadata
 
                 if 'ldapupdate' in self.confopts['tasks']['call_list']:
                     self.logger.info("> Calling ldapupdate task")
@@ -46,7 +53,10 @@ class AhDaemon(object):
                 await asyncio.sleep(float(self.confopts['tasks']['every_sec']))
 
         except asyncio.CancelledError:
-            task_apisync.cancel()
+            if task_apisync:
+                task_apisync.cancel()
+            if task_usermetadata:
+                task_usermetadata.cancel()
             self.logger.info("* Stopping task runner...")
 
 
