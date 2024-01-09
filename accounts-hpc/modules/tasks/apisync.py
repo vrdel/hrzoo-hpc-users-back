@@ -396,5 +396,5 @@ class ApiSync(object):
         except asyncio.CancelledError as exc:
             self.logger.info('* Cancelling apisync...')
             await self.httpsession.close()
-            self.dbsession.close()
+            await self.dbsession.close()
             raise exc
