@@ -1,9 +1,8 @@
 from accounts_hpc.config import parse_config  # type: ignore
 from accounts_hpc.log import Logger  # type: ignore
 from sqlalchemy.ext.asyncio import create_async_engine
-from sqlalchemy.ext.asyncio import async_sessionmaker
-
-
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import sessionmaker
 
 
 class Shared(object):
@@ -32,5 +31,5 @@ class Shared(object):
             self.__class__.dbsession = dict()
         if caller not in self.__class__.dbsession:
             engine = create_async_engine("sqlite+aiosqlite:///{}".format(self.__class__.confopts['db']['path']))
-            async_session = async_sessionmaker(engine, expire_on_commit=False)
-            self.__class__.dbsession[caller] = async_session
+            async_session = sessionmaker(bind=engine, expire_on_commit=False, class_=AsyncSession)
+            self.__class__.dbsession[caller] = async_session()
