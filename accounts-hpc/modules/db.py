@@ -6,9 +6,9 @@ from sqlalchemy import (JSON, Boolean, Column, Date, DateTime, ForeignKey,
                         Integer, String, Table)
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy_json import MutableJson
+from sqlalchemy.ext.asyncio import AsyncAttrs
 
-
-class Base(DeclarativeBase):
+class Base(AsyncAttrs, DeclarativeBase):
     pass
 
 

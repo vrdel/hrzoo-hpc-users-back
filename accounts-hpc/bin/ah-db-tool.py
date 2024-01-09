@@ -2,14 +2,17 @@
 
 import sys
 import argparse
+import asyncio
 
 from accounts_hpc.db import Base  # type: ignore
 from accounts_hpc.shared import Shared  # type: ignore
 
 from sqlalchemy import create_engine
+from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy.ext.asyncio import async_sessionmaker
 
 
-def main():
+async def main():
     parser = argparse.ArgumentParser(description='DB tool that help with initial create and evolution of database')
     parser.add_argument('--init', dest='init', action='store_true',
                         help='Create database with table structure')
@@ -19,11 +22,14 @@ def main():
     shared = Shared(sys.argv[0])
     confopts = shared.confopts
 
-    engine = create_engine("sqlite:///{}".format(confopts['db']['path']), echo=True)
+    engine = create_async_engine("sqlite+aiosqlite:///{}".format(confopts['db']['path']), echo=True)
 
     if args.init:
-        Base.metadata.create_all(engine)
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
 
 
 if __name__ == '__main__':
-    main()
+    asyncio.run(
+        main()
+    )

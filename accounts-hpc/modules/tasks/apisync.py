@@ -1,3 +1,4 @@
+import aiofiles
 import asyncio
 import json
 import sys
@@ -11,6 +12,7 @@ from accounts_hpc.shared import Shared  # type: ignore
 
 from sqlalchemy import and_
 from sqlalchemy import update
+from sqlalchemy import select
 from sqlalchemy.exc import NoResultFound, MultipleResultsFound
 
 from unidecode import unidecode
@@ -33,7 +35,7 @@ class ApiSync(object):
         self.dbsession = shared.dbsession[caller]
         self.args = args
 
-    def sshkeys_del(self, projects_users, sshkeys):
+    async def sshkeys_del(self, projects_users, sshkeys):
         interested_users = [up['user']['id'] for up in projects_users]
         hzsi_api_user_keys = dict()
 
@@ -46,28 +48,33 @@ class ApiSync(object):
 
             hzsi_api_user_keys[key['user']['username']].append(key['fingerprint'])
 
-        users = self.dbsession.query(User).filter(User.type_create == 'api').all()
+        stmt = select(User).where(User.type_create == 'api')
+        users = await self.dbsession.execute(stmt)
+        users = users.scalars().all()
 
         for us in users:
             if us.person_uniqueid not in hzsi_api_user_keys.keys():
                 hzsi_api_user_keys[us.person_uniqueid] = list()
 
-            if len(us.sshkey) > len(hzsi_api_user_keys[us.person_uniqueid]):
+            if len(await us.awaitable_attrs.sshkey) > len(hzsi_api_user_keys[us.person_uniqueid]):
                 rem_keys = list(
                     set(us.sshkeys_api)
                     .difference(hzsi_api_user_keys[us.person_uniqueid]))
                 us.sshkeys_api = hzsi_api_user_keys[us.person_uniqueid]
                 if self.args.initset:
-                    rem_keys_db = self.dbsession.query(SshKey).filter(
+                    stmt = select(SshKey).where(
                         and_(
                             SshKey.fingerprint.in_(rem_keys),
                             SshKey.user_id == us.id
-                        ))
+                        )
+                    )
+                    rem_keys_db = await self.dbsession.execute(stmt)
+                    rem_keys_db = rem_keys_db.scalars().all()
                     for key in rem_keys_db:
                         us.sshkey.remove(key)
                         self.dbsession.delete(key)
 
-    def sshkeys_add(self, projects_users, sshkeys):
+    async def sshkeys_add(self, projects_users, sshkeys):
         interested_users = set([up['user']['id'] for up in projects_users])
 
         for key in sshkeys:
@@ -75,7 +82,9 @@ class ApiSync(object):
                 continue
 
             try:
-                us = self.dbsession.query(User).filter(User.person_uniqueid == key['user']['username']).one()
+                stmt = select(User).where(User.person_uniqueid == key['user']['username'])
+                us = await self.dbsession.execute(stmt)
+                us = us.scalars().one()
 
             except MultipleResultsFound as exc:
                 self.logger.error(exc)
@@ -88,25 +97,29 @@ class ApiSync(object):
             # same key unfortunately can be added from two
             # different users, that's why we require uid_api as well
             try:
-                dbkey = self.dbsession.query(SshKey).filter(
+                stmt = select(SshKey).where(
                     and_(
                         SshKey.fingerprint == key['fingerprint'],
                         SshKey.uid_api == key['user']['id']
-                    )).one()
+                    )
+                )
+                dbkey = await self.dbsession.execute(stmt)
+                dbkey = dbkey.scalars().one()
+
             except NoResultFound:
                 dbkey = SshKey(name=key['name'],
                                fingerprint=key['fingerprint'],
                                public_key=key['public_key'],
                                uid_api=key['user']['id'])
 
-            if dbkey not in us.sshkey and self.args.initset:
+            if dbkey not in await us.awaitable_attrs.sshkey and self.args.initset:
                 us.sshkey.append(dbkey)
                 self.dbsession.add(us)
             else:
                 self.dbsession.add(dbkey)
                 self.dbsession.add(us)
 
-    def users_projects_del(self, projects_users):
+    async def users_projects_del(self, projects_users):
         hzsi_api_user_projects = dict()
 
         for uspr in projects_users:
@@ -124,8 +137,9 @@ class ApiSync(object):
                 continue
 
             try:
-                us = self.dbsession.query(User).filter(User.person_oib == uspr['user']['person_oib']).one()
-
+                stmt = select(User).where(User.person_oib == uspr['user']['person_oib'])
+                us = await self.dbsession.execute(stmt)
+                us = us.scalars().one()
             except MultipleResultsFound as exc:
                 self.logger.error(exc)
                 self.logger.error('{} - Troublesome DB entry: {}'.format(self.users_projects_del.__name__, repr(uspr)))
@@ -137,7 +151,9 @@ class ApiSync(object):
                     .difference(
                         set(hzsi_api_user_projects[uspr['user']['username']])
                     ))
-                prjs_diff_db = self.dbsession.query(Project).filter(Project.identifier.in_(prjs_diff)).all()
+                stmt = select(Project).where(Project.identifier.in_(prjs_diff))
+                prjs_diff_db = await self.dbsession.execute(stmt)
+                prjs_diff_db = prjs_diff_db.scalars().all()
 
                 us.projects_api = hzsi_api_user_projects[uspr['user']['username']]
 
@@ -152,11 +168,13 @@ class ApiSync(object):
 
             visited_users.update([uspr['user']['id']])
 
-    def users_projects_add(self, projects_users):
+    async def users_projects_add(self, projects_users):
+
         for uspr in projects_users:
             try:
-                pr = self.dbsession.query(Project).filter(
-                    Project.identifier == uspr['project']['identifier']).one()
+                stmt = select(Project).where(Project.identifier == uspr['project']['identifier'])
+                pr = await self.dbsession.execute(stmt)
+                pr = pr.scalars().one()
                 # update staff_resources_type with latest value
                 pr.staff_resources_type_api = uspr['project']['staff_resources_type']
             except NoResultFound:
@@ -171,8 +189,9 @@ class ApiSync(object):
 
             try:
                 # use person_oib as unique identifier of user
-                us = self.dbsession.query(User).filter(
-                    User.person_oib == uspr['user']['person_oib']).one()
+                stmt = select(User).where(User.person_oib == uspr['user']['person_oib'])
+                us = await self.dbsession.execute(stmt)
+                us = us.scalars().one()
                 projects_api = us.projects_api
                 # always up-to-date projects_api field with project associations
                 if not projects_api:
@@ -257,16 +276,17 @@ class ApiSync(object):
 
             # sync (user, project) relations to cache
             # only if --init-set
-            if us not in pr.user and self.args.initset:
+            if us not in await pr.awaitable_attrs.user and self.args.initset:
                 pr.user.append(us)
                 self.dbsession.add(pr)
             elif not self.args.initset:
                 self.dbsession.add(pr)
                 self.dbsession.add(us)
 
-    def check_users_without_projects(self, apiusers):
-        users_db = self.dbsession.query(User)
-        uids_db = [user.uid_api for user in users_db.all()
+    async def check_users_without_projects(self, apiusers):
+        users_db = await self.dbsession.execute(select(User))
+        users_db = users_db.scalars().all()
+        uids_db = [user.uid_api for user in users_db
                    if not user.is_deactivated and not user.type_create == 'manual']
         uids_not_onapi = set()
         for uid in uids_db:
@@ -322,6 +342,52 @@ class ApiSync(object):
     async def run(self):
         try:
             sshkeys, userproject = await self.fetch_data()
+
+            if self.confopts['hzsiapi']['replacestring_map']:
+                async with aiofiles.open(self.confopts['hzsiapi']['replacestring_map'], mode='r') as fp:
+                    fieldsreplace = json.loads(await fp.read())
+                projectsfields = [field for field in fieldsreplace if field.get('field').startswith('project.')]
+
+            stats = dict({'users': set(), 'fullusers': set(), 'fullprojects': set(), 'projects': set(), 'keys': set()})
+            projects_users = list()
+            visited_users, interested_users_api = set(), set()
+            # build of projects_users association list
+            # user has at least one key added - enough at this point
+            # filter project according to interested state and approved
+            # resources
+            for key in sshkeys:
+                stats['keys'].add('{}{}'.format(key['fingerprint'], key['user']['id']))
+                stats['fullusers'].add(key['user']['id'])
+                for up in userproject:
+                    if (up['project']['state']
+                            not in self.confopts['hzsiapi']['project_state']):
+                        continue
+                    stats['fullprojects'].add(up['project']['id'])
+                    if projectsfields:
+                        replace_projectsapi_fields(projectsfields, up)
+                    rt_found = False
+                    for rt in up['project']['staff_resources_type']:
+                        if rt in self.confopts['hzsiapi']['project_resources']:
+                            rt_found = True
+                    if not rt_found:
+                        continue
+                    if up['user']['id'] == key['user']['id']:
+                        projects_users.append(up)
+                        stats['users'].add(key['user']['id'])
+                    stats['projects'].add(up['project']['id'])
+                    interested_users_api.add(up['user']['id'])
+                visited_users.update([key['user']['id']])
+
+            self.logger.info(f"Interested in ({','.join(self.confopts['hzsiapi']['project_resources'])}) projects={len(stats['projects'])}/{len(stats['fullprojects'])}  users={len(stats['users'])}/{len(stats['fullusers'])} keys={len(stats['keys'])}")
+
+            await self.check_users_without_projects(interested_users_api)
+            await self.users_projects_add(projects_users)
+            await self.users_projects_del(projects_users)
+            await self.sshkeys_add(projects_users, sshkeys)
+            await self.sshkeys_del(projects_users, sshkeys)
+
+            await self.dbsession.commit()
+            await self.dbsession.close()
 
         except SyncHttpError:
             self.logger.error('Data fetch did not succeed')
