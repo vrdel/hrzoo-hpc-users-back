@@ -78,7 +78,7 @@ class UserMetadata(object):
                     else:
                         user.ldap_uid = self.confopts['usersetup']['uid_offset'] + user.uid_api
                     set_metadata = True
-                if not user.ldap_gid and not user.is_staff and user.project:
+                if not user.ldap_gid and not user.is_staff and await user.awaitable_attrs.project:
                     # user GID is always set to GID of last assigned project
                     # we assume here that --init-set is run and relation between user,project is set
                     user.ldap_gid = self.confopts['usersetup']['gid_offset'] + user.project[-1].prjid_api
