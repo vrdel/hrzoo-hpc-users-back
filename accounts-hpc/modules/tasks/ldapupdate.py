@@ -48,7 +48,7 @@ class LdapUpdate(object):
         ldap_org_proj_group['ou'] = 'Group'
         self.conn.add(ldap_org_proj_group)
 
-    def new_user_ldap_add(self, user, identifier=None):
+    async def new_user_ldap_add(self, user, identifier=None):
         if identifier:
             ldap_user = bonsai.LDAPEntry(f"cn={user.ldap_username},ou=People,o=PROJECT-{identifier},{self.confopts['ldap']['basedn']}")
         else:
@@ -63,7 +63,7 @@ class LdapUpdate(object):
         ldap_user['gecos'] = [f"{user.first_name} {user.last_name}"]
         ldap_user['userPassword'] = ['']
         # ssh keys relations are set if we synced with --init-set
-        keys = [sshkey.public_key for sshkey in user.sshkey]
+        keys = [sshkey.public_key for sshkey in await user.awaitable_attrs.sshkey]
         if keys:
             ldap_user['sshPublicKey'] = keys
         else:
@@ -125,7 +125,7 @@ class LdapUpdate(object):
         """
 
         projects_diff_add, projects_diff_del = set(), set()
-        projects_db = [pr.identifier for pr in user.project]
+        projects_db = [pr.identifier for pr in await user.awaitable_attrs.project]
         projects_diff_add = set(user.projects_api).difference(set(projects_db))
         # add user to project
         if projects_diff_add:
@@ -133,7 +133,8 @@ class LdapUpdate(object):
                 stmt = select(Project).where(Project.identifier == project)
                 target_project = await self.dbsession.execute(stmt)
                 target_project = target_project.scalars().one()
-                await target_project.awaitable_attrs.user.append(user)
+                target_project_user = await target_project.awaitable_attrs.user
+                target_project_user.append(user)
                 self.dbsession.add(target_project)
                 self.logger.info(f"User {user.person_uniqueid} added to project {project}")
         # remove user from project
@@ -180,7 +181,7 @@ class LdapUpdate(object):
             check if sshkeys are added or removed
         """
         keys_diff_add, keys_diff_del = set(), set()
-        keys_db = [key.fingerprint for key in user.sshkey]
+        keys_db = [key.fingerprint for key in await user.awaitable_attrs.sshkey]
         keys_diff_add = set(user.sshkeys_api).difference(set(keys_db))
         if keys_diff_add:
             for key in keys_diff_add:
@@ -212,7 +213,8 @@ class LdapUpdate(object):
                         )
                         target_key = await self.dbsession.execute(stmt)
                         target_key = target_key.scalars().one()
-                await user.awaitable_attrs.sshkey.append(target_key)
+                user_sshkey = await user.awaitable_attrs.sshkey
+                user_sshkey.append(target_key)
                 user.mail_name_sshkey.append(target_key.name)
                 if self.confopts['email']['project_email']:
                     mp = user.mail_project_is_sshkeyadded
@@ -254,13 +256,13 @@ class LdapUpdate(object):
         self.conn.add(ldap_project)
         return ldap_project
 
-    def group_ldap_update(self, project, ldap_project):
+    async def group_ldap_update(self, project, ldap_project):
         project_members_changed = False
         try:
             users_project_ldap = ldap_project[0]['memberUid']
         except KeyError:
             users_project_ldap = []
-        if set(users_project_ldap).difference(set([user.ldap_username for user in project.user])):
+        if set(users_project_ldap).difference(set([user.ldap_username for user in await project.awaitable_attrs.user])):
             project_members_changed = True
         elif set([user.ldap_username for user in project.user]).difference(set(users_project_ldap)):
             project_members_changed = True
@@ -319,17 +321,17 @@ class LdapUpdate(object):
                 ldap_user = self.conn.search(f"cn={user.ldap_username},ou=People,{self.confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
                 try:
                     if not ldap_user or not user.is_opened:
-                        ldap_user = self.new_user_ldap_add(user)
+                        ldap_user = await self.new_user_ldap_add(user)
                         await self.user_ldap_update(user, [ldap_user])
-                        self.user_key_update(user, [ldap_user])
+                        await self.user_key_update(user, [ldap_user])
                     else:
                         await self.user_ldap_update(user, ldap_user)
-                        self.user_key_update(user, ldap_user)
+                        await self.user_key_update(user, ldap_user)
                     user.is_opened = True
                 except bonsai.errors.AlreadyExists as exc:
                     self.logger.warning(f'LDAP user {user.ldap_username} - {repr(exc)}')
                     await self.user_ldap_update(user, ldap_user)
-                    self.user_key_update(user, ldap_user)
+                    await self.user_key_update(user, ldap_user)
                     user.is_opened = True
                 except bonsai.errors.LDAPError as exc:
                     self.logger.error(f'Error adding/updating LDAP user {user.ldap_username} - {repr(exc)}')
@@ -341,17 +343,17 @@ class LdapUpdate(object):
                     ldap_user = self.conn.search(f"cn={user.ldap_username},ou=People,o=PROJECT-{identifier},{self.confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
                     try:
                         if not ldap_user or not user.is_opened:
-                            ldap_user = self.new_user_ldap_add(user, identifier)
+                            ldap_user = await self.new_user_ldap_add(user, identifier)
                             await self.user_ldap_update(user, [ldap_user])
-                            self.user_key_update(user, [ldap_user])
+                            await self.user_key_update(user, [ldap_user])
                         else:
                             await self.user_ldap_update(user, ldap_user)
-                            self.user_key_update(user, ldap_user)
+                            await self.user_key_update(user, ldap_user)
                         user.is_opened = True
                     except bonsai.errors.AlreadyExists as exc:
                         self.logger.warning(f'LDAP user {user.ldap_username} - {repr(exc)}')
                         await self.user_ldap_update(user, ldap_user)
-                        self.user_key_update(user, ldap_user)
+                        await self.user_key_update(user, ldap_user)
                         user.is_opened = True
                     except bonsai.errors.LDAPError as exc:
                         self.logger.error(f'Error adding/updating LDAP user {user.ldap_username} - {repr(exc)}')
@@ -368,9 +370,9 @@ class LdapUpdate(object):
             try:
                 if not ldap_project:
                     ldap_project = self.new_group_ldap_add(project)
-                    self.group_ldap_update(project, [ldap_project])
+                    await self.group_ldap_update(project, [ldap_project])
                 else:
-                    self.group_ldap_update(project, ldap_project)
+                    await self.group_ldap_update(project, ldap_project)
             except bonsai.errors.LDAPError as exc:
                 self.logger.error(f'Error adding/updating LDAP group {project.identifier} - {repr(exc)}')
 
