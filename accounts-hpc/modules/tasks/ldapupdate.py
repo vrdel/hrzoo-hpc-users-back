@@ -2,6 +2,7 @@ from accounts_hpc.shared import Shared  # type: ignore
 from accounts_hpc.db import Base, Project, User, SshKey  # type: ignore
 
 from sqlalchemy import and_
+from sqlalchemy import select
 from sqlalchemy.exc import NoResultFound, MultipleResultsFound
 
 import bonsai
@@ -117,7 +118,7 @@ class LdapUpdate(object):
                     diff_res = set(existing_members).difference(set(all_usernames))
                 self.logger.info(f"Updated resource group {group} because of difference: {', '.join(diff_res)}")
 
-    def user_ldap_update(self, user, ldap_user):
+    async def user_ldap_update(self, user, ldap_user):
         """
             check if there are differencies between user's project just
             synced from API and ones already registered in cache
@@ -129,16 +130,20 @@ class LdapUpdate(object):
         # add user to project
         if projects_diff_add:
             for project in projects_diff_add:
-                target_project = self.dbsession.query(Project).filter(Project.identifier == project).one()
-                target_project.user.append(user)
+                stmt = select(Project).where(Project.identifier == project)
+                target_project = await self.dbsession.execute(stmt)
+                target_project = target_project.scalars().one()
+                await target_project.awaitable_attrs.user.append(user)
                 self.dbsession.add(target_project)
                 self.logger.info(f"User {user.person_uniqueid} added to project {project}")
         # remove user from project
         projects_diff_del = set(projects_db).difference(set(user.projects_api))
         if projects_diff_del:
             for project in projects_diff_del:
-                target_project = self.dbsession.query(Project).filter(Project.identifier == project).one()
-                target_project.user.remove(user)
+                stmt = select(Project).where(Project.identifier == project)
+                target_project = await self.dbsession.execute(stmt)
+                target_project = target_project.scalars().one()
+                await target_project.awaitable_attrs.user.remove(user)
                 self.dbsession.add(target_project)
                 self.logger.info(f"User {user.person_uniqueid} removed from project {project}")
         try:
@@ -283,8 +288,10 @@ class LdapUpdate(object):
                 self.logger.info(f"Created resource group {gr} with gid={ldap_gid}")
                 numgroup += 1
 
-    def run(self):
-        users = self.dbsession.query(User).all()
+    async def run(self):
+        stmt = select(User)
+        users = await self.dbsession.execute(stmt)
+        users = users.scalars().all()
 
         # default and resource groups are created only for flat hierarchies
         if not self.confopts['ldap']['project_organisation']:
@@ -299,15 +306,15 @@ class LdapUpdate(object):
                 try:
                     if not ldap_user or not user.is_opened:
                         ldap_user = self.new_user_ldap_add(user)
-                        self.user_ldap_update(user, [ldap_user])
+                        await self.user_ldap_update(user, [ldap_user])
                         self.user_key_update(user, [ldap_user])
                     else:
-                        self.user_ldap_update(user, ldap_user)
+                        await self.user_ldap_update(user, ldap_user)
                         self.user_key_update(user, ldap_user)
                     user.is_opened = True
                 except bonsai.errors.AlreadyExists as exc:
                     self.logger.warning(f'LDAP user {user.ldap_username} - {repr(exc)}')
-                    self.user_ldap_update(user, ldap_user)
+                    await self.user_ldap_update(user, ldap_user)
                     self.user_key_update(user, ldap_user)
                     user.is_opened = True
                 except bonsai.errors.LDAPError as exc:
@@ -321,21 +328,24 @@ class LdapUpdate(object):
                     try:
                         if not ldap_user or not user.is_opened:
                             ldap_user = self.new_user_ldap_add(user, identifier)
-                            self.user_ldap_update(user, [ldap_user])
+                            await self.user_ldap_update(user, [ldap_user])
                             self.user_key_update(user, [ldap_user])
                         else:
-                            self.user_ldap_update(user, ldap_user)
+                            await self.user_ldap_update(user, ldap_user)
                             self.user_key_update(user, ldap_user)
                         user.is_opened = True
                     except bonsai.errors.AlreadyExists as exc:
                         self.logger.warning(f'LDAP user {user.ldap_username} - {repr(exc)}')
-                        self.user_ldap_update(user, ldap_user)
+                        await self.user_ldap_update(user, ldap_user)
                         self.user_key_update(user, ldap_user)
                         user.is_opened = True
                     except bonsai.errors.LDAPError as exc:
                         self.logger.error(f'Error adding/updating LDAP user {user.ldap_username} - {repr(exc)}')
 
-        projects = self.dbsession.query(Project).all()
+        stmt = select(Project)
+        projects = await self.dbsession.execute(stmt)
+        projects = projects.scalars().all()
+
         for project in projects:
             if not self.confopts['ldap']['project_organisation']:
                 ldap_project = self.conn.search(f"cn={project.identifier},ou=Group,{self.confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
@@ -359,5 +369,5 @@ class LdapUpdate(object):
             self.update_resource_groups(users, "hpc-bigmem")
             self.update_resource_groups(users, "hpc-gpu")
 
-        self.dbsession.commit()
-        self.dbsession.close()
+        await self.dbsession.commit()
+        await self.dbsession.close()
