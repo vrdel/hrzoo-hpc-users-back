@@ -112,5 +112,5 @@ class UserMetadata(object):
 
         except asyncio.CancelledError as exc:
             self.logger.info('* Cancelling usermetadata...')
-            self.dbsession.close()
+            await self.dbsession.close()
             raise exc

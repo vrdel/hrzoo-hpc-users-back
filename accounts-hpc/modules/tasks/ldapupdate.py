@@ -5,6 +5,7 @@ from sqlalchemy import and_
 from sqlalchemy import select
 from sqlalchemy.exc import NoResultFound, MultipleResultsFound
 
+import asyncio
 import bonsai
 import sys
 import json
@@ -25,7 +26,7 @@ class LdapUpdate(object):
                 user=self.confopts['ldap']['user'],
                 password=self.confopts['ldap']['password']
             )
-            self.conn = client.connect()
+            self.conn = client.connect(is_async=True)
 
         except bonsai.errors.AuthenticationError as exc:
             self.logger.error(exc)
@@ -305,45 +306,24 @@ class LdapUpdate(object):
                 numgroup += 1
 
     async def run(self):
-        stmt = select(User)
-        users = await self.dbsession.execute(stmt)
-        users = users.scalars().all()
+        try:
+            stmt = select(User)
+            users = await self.dbsession.execute(stmt)
+            users = users.scalars().all()
 
-        # default and resource groups are created only for flat hierarchies
-        if not self.confopts['ldap']['project_organisation']:
-            self.create_default_groups()
-            self.create_resource_groups()
-
-        for user in users:
-            if not user.ldap_username:
-                continue
+            # default and resource groups are created only for flat hierarchies
             if not self.confopts['ldap']['project_organisation']:
-                ldap_user = self.conn.search(f"cn={user.ldap_username},ou=People,{self.confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
-                try:
-                    if not ldap_user or not user.is_opened:
-                        ldap_user = await self.new_user_ldap_add(user)
-                        await self.user_ldap_update(user, [ldap_user])
-                        await self.user_key_update(user, [ldap_user])
-                    else:
-                        await self.user_ldap_update(user, ldap_user)
-                        await self.user_key_update(user, ldap_user)
-                    user.is_opened = True
-                except bonsai.errors.AlreadyExists as exc:
-                    self.logger.warning(f'LDAP user {user.ldap_username} - {repr(exc)}')
-                    await self.user_ldap_update(user, ldap_user)
-                    await self.user_key_update(user, ldap_user)
-                    user.is_opened = True
-                except bonsai.errors.LDAPError as exc:
-                    self.logger.error(f'Error adding/updating LDAP user {user.ldap_username} - {repr(exc)}')
-            else:
-                for identifier in user.projects_api:
-                    ldap_org_proj = self.conn.search(f"o=PROJECT-{identifier},{self.confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
-                    if not ldap_org_proj:
-                        self.new_organisation_project(identifier)
-                    ldap_user = self.conn.search(f"cn={user.ldap_username},ou=People,o=PROJECT-{identifier},{self.confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
+                self.create_default_groups()
+                self.create_resource_groups()
+
+            for user in users:
+                if not user.ldap_username:
+                    continue
+                if not self.confopts['ldap']['project_organisation']:
+                    ldap_user = self.conn.search(f"cn={user.ldap_username},ou=People,{self.confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
                     try:
                         if not ldap_user or not user.is_opened:
-                            ldap_user = await self.new_user_ldap_add(user, identifier)
+                            ldap_user = await self.new_user_ldap_add(user)
                             await self.user_ldap_update(user, [ldap_user])
                             await self.user_key_update(user, [ldap_user])
                         else:
@@ -357,33 +337,60 @@ class LdapUpdate(object):
                         user.is_opened = True
                     except bonsai.errors.LDAPError as exc:
                         self.logger.error(f'Error adding/updating LDAP user {user.ldap_username} - {repr(exc)}')
-
-        stmt = select(Project)
-        projects = await self.dbsession.execute(stmt)
-        projects = projects.scalars().all()
-
-        for project in projects:
-            if not self.confopts['ldap']['project_organisation']:
-                ldap_project = self.conn.search(f"cn={project.identifier},ou=Group,{self.confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
-            else:
-                ldap_project = self.conn.search(f"cn={project.identifier},ou=Group,o=PROJECT-{project.identifier},{self.confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
-            try:
-                if not ldap_project:
-                    ldap_project = self.new_group_ldap_add(project)
-                    await self.group_ldap_update(project, [ldap_project])
                 else:
-                    await self.group_ldap_update(project, ldap_project)
-            except bonsai.errors.LDAPError as exc:
-                self.logger.error(f'Error adding/updating LDAP group {project.identifier} - {repr(exc)}')
+                    for identifier in user.projects_api:
+                        ldap_org_proj = self.conn.search(f"o=PROJECT-{identifier},{self.confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
+                        if not ldap_org_proj:
+                            self.new_organisation_project(identifier)
+                        ldap_user = self.conn.search(f"cn={user.ldap_username},ou=People,o=PROJECT-{identifier},{self.confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
+                        try:
+                            if not ldap_user or not user.is_opened:
+                                ldap_user = await self.new_user_ldap_add(user, identifier)
+                                await self.user_ldap_update(user, [ldap_user])
+                                await self.user_key_update(user, [ldap_user])
+                            else:
+                                await self.user_ldap_update(user, ldap_user)
+                                await self.user_key_update(user, ldap_user)
+                            user.is_opened = True
+                        except bonsai.errors.AlreadyExists as exc:
+                            self.logger.warning(f'LDAP user {user.ldap_username} - {repr(exc)}')
+                            await self.user_ldap_update(user, ldap_user)
+                            await self.user_key_update(user, ldap_user)
+                            user.is_opened = True
+                        except bonsai.errors.LDAPError as exc:
+                            self.logger.error(f'Error adding/updating LDAP user {user.ldap_username} - {repr(exc)}')
 
-        if not self.confopts['ldap']['project_organisation']:
-            # handle default groups associations
-            self.update_default_groups(users, "hpc-users")
-            # update_default_groups(self.confopts, conn, self.logger, users, "hpc", onlyops=True)
+            stmt = select(Project)
+            projects = await self.dbsession.execute(stmt)
+            projects = projects.scalars().all()
 
-            # handle resource groups associations
-            self.update_resource_groups(users, "hpc-bigmem")
-            self.update_resource_groups(users, "hpc-gpu")
+            for project in projects:
+                if not self.confopts['ldap']['project_organisation']:
+                    ldap_project = self.conn.search(f"cn={project.identifier},ou=Group,{self.confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
+                else:
+                    ldap_project = self.conn.search(f"cn={project.identifier},ou=Group,o=PROJECT-{project.identifier},{self.confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
+                try:
+                    if not ldap_project:
+                        ldap_project = self.new_group_ldap_add(project)
+                        await self.group_ldap_update(project, [ldap_project])
+                    else:
+                        await self.group_ldap_update(project, ldap_project)
+                except bonsai.errors.LDAPError as exc:
+                    self.logger.error(f'Error adding/updating LDAP group {project.identifier} - {repr(exc)}')
 
-        await self.dbsession.commit()
-        await self.dbsession.close()
+            if not self.confopts['ldap']['project_organisation']:
+                # handle default groups associations
+                self.update_default_groups(users, "hpc-users")
+                # update_default_groups(self.confopts, conn, self.logger, users, "hpc", onlyops=True)
+
+                # handle resource groups associations
+                self.update_resource_groups(users, "hpc-bigmem")
+                self.update_resource_groups(users, "hpc-gpu")
+
+            await self.dbsession.commit()
+            await self.dbsession.close()
+
+        except asyncio.CancelledError as exc:
+            self.logger.info('* Cancelling ldapupdate...')
+            await self.dbsession.close()
+            raise exc
