@@ -1,17 +1,17 @@
 #!/usr/bin/env python
 
-from accounts_hpc.tasks.ldapupdate import LdapUpdate  # type: ignore
-
+import asyncio
 import argparse
 import sys
 
+from accounts_hpc.tasks.ldapupdate import LdapUpdate  # type: ignore
 
-def main():
+
+async def main():
     parser = argparse.ArgumentParser(description="""Create, read and update ou=People and ou=Group entries in LDAP""")
     args = parser.parse_args()
 
-    LdapUpdate(sys.argv[0], args).run()
-
+    await LdapUpdate(sys.argv[0], args).run()
 
 if __name__ == '__main__':
-    main()
+    asyncio.run(main())
