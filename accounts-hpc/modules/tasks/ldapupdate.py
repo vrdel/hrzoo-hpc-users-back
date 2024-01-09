@@ -175,7 +175,7 @@ class LdapUpdate(object):
             self.logger.info(f"Activating {user.ldap_username}, setting default shell=/bin/bash")
             user.is_deactivated = 0
 
-    def user_key_update(self, user, ldap_user):
+    async def user_key_update(self, user, ldap_user):
         """
             check if sshkeys are added or removed
         """
@@ -185,22 +185,34 @@ class LdapUpdate(object):
         if keys_diff_add:
             for key in keys_diff_add:
                 try:
-                    target_key = self.dbsession.query(SshKey).filter(and_(
-                        SshKey.fingerprint == key,
-                        SshKey.uid_api == user.uid_api,
-                    )).one()
+                    stmt = select(SshKey).where(
+                        and_(
+                            SshKey.fingerprint == key,
+                            SshKey.uid_api == user.uid_api,
+                        )
+                    )
+                    target_key = await self.dbsession.execute(stmt)
+                    target_key = target_key.scalars().one()
                 except MultipleResultsFound:
                     try:
-                        target_key = self.dbsession.query(SshKey).filter(and_(
-                            SshKey.fingerprint == key,
-                            SshKey.user_id == user.id,
-                        )).one()
+                        stmt = select(SshKey).where(
+                            and_(
+                                SshKey.fingerprint == key,
+                                SshKey.user_id == user.id,
+                            )
+                        )
+                        target_key = await self.dbsession.execute(stmt)
+                        target_key = target_key.scalars().one()
                     except NoResultFound:
-                        target_key = self.dbsession.query(SshKey).filter(and_(
-                            SshKey.fingerprint == key,
-                            SshKey.user_id == None
-                        )).one()
-                user.sshkey.append(target_key)
+                        stmt = select(SshKey).where(
+                            and_(
+                                SshKey.fingerprint == key,
+                                SshKey.user_id == None
+                            )
+                        )
+                        target_key = await self.dbsession.execute(stmt)
+                        target_key = target_key.scalars().one()
+                await user.awaitable_attrs.sshkey.append(target_key)
                 user.mail_name_sshkey.append(target_key.name)
                 if self.confopts['email']['project_email']:
                     mp = user.mail_project_is_sshkeyadded
@@ -215,8 +227,10 @@ class LdapUpdate(object):
         keys_diff_del = set(keys_db).difference(set(user.sshkeys_api))
         if keys_diff_del:
             for key in keys_diff_del:
-                target_key = self.dbsession.query(SshKey).filter(SshKey.fingerprint == key).one()
-                user.sshkey.remove(target_key)
+                stmt = select(SshKey).where(SshKey.fingerprint == key)
+                target_key = await self.dbsession.execute(stmt)
+                target_key = target_key.scalars().one()
+                await user.awaitable_attrs.sshkey.remove(target_key)
                 self.logger.info(f"Removed key {target_key.name} for user {user.person_uniqueid}")
         if keys_diff_add or keys_diff_del:
             updated_keys = [sshkey.public_key for sshkey in user.sshkey]
