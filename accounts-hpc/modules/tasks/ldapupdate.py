@@ -396,9 +396,10 @@ class LdapUpdate(object):
                 await self.update_resource_groups(users, "hpc-gpu")
 
             await self.dbsession.commit()
-            await self.dbsession.close()
 
         except asyncio.CancelledError as exc:
             self.logger.info('* Cancelling ldapupdate...')
-            await self.dbsession.close()
             raise exc
+
+        finally:
+            await self.dbsession.close()

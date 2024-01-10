@@ -387,7 +387,6 @@ class ApiSync(object):
             await self.sshkeys_del(projects_users, sshkeys)
 
             await self.dbsession.commit()
-            await self.dbsession.close()
 
         except SyncHttpError:
             self.logger.error('Data fetch did not succeed')
@@ -395,6 +394,8 @@ class ApiSync(object):
 
         except asyncio.CancelledError as exc:
             self.logger.info('* Cancelling apisync...')
+            raise exc
+
+        finally:
             await self.httpsession.close()
             await self.dbsession.close()
-            raise exc

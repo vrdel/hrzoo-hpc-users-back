@@ -108,9 +108,10 @@ class UserMetadata(object):
                     self.logger.info(f"{user.first_name} {user.last_name} set username={user.ldap_username} UID={user.ldap_uid} GID={user.ldap_gid}")
 
             await self.dbsession.commit()
-            await self.dbsession.close()
 
         except asyncio.CancelledError as exc:
             self.logger.info('* Cancelling usermetadata...')
-            await self.dbsession.close()
             raise exc
+
+        finally:
+            await self.dbsession.close()
