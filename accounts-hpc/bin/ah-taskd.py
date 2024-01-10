@@ -8,6 +8,8 @@ import timeit
 from accounts_hpc.tasks.apisync import ApiSync
 from accounts_hpc.tasks.usermetadata import UserMetadata
 from accounts_hpc.tasks.ldapupdate import LdapUpdate
+from accounts_hpc.tasks.createdirectories import DirectoriesCreate
+from accounts_hpc.tasks.fairshare import FairshareUpdate
 from accounts_hpc.shared import Shared
 
 
@@ -62,6 +64,25 @@ class AhDaemon(object):
                     await task_ldapupdate
                     end = timeit.default_timer()
                     self.logger.info(f"> Ended ldapupdate in {format(end - start, '.2f')} seconds")
+
+                coros, scheduled = [], []
+                if 'fairshare' in self.confopts['tasks']['call_list']:
+                    coros.append(
+                        FairshareUpdate(f'{CALLER_NAME}.fairshare', self.fakeargs, daemon=True).run()
+                    )
+                    scheduled.append('fairshare')
+
+                if 'createdirectories' in self.confopts['tasks']['call_list']:
+                    coros.append(
+                        DirectoriesCreate(f'{CALLER_NAME}.createdirectories', self.fakeargs, daemon=True).run()
+                    )
+                    scheduled.append('createdirectories')
+
+                self.logger.info(f"> Calling {', '.join(scheduled)} tasks")
+                start = timeit.default_timer()
+                coros_ret = await asyncio.gather(*coros, return_exceptions=True)
+                end = timeit.default_timer()
+                self.logger.info(f"> Ended {', '.join(scheduled)} in {format(end - start, '.2f')} seconds")
 
                 await asyncio.sleep(float(self.confopts['tasks']['every_sec']))
 

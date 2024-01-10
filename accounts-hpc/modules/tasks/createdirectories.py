@@ -18,12 +18,13 @@ from sqlalchemy.exc import NoResultFound
 
 
 class DirectoriesCreate(object):
-    def __init__(self, caller, args):
+    def __init__(self, caller, args, daemon=False):
         shared = Shared(caller)
         self.confopts = shared.confopts
         self.logger = shared.log[caller].get()
         self.dbsession = shared.dbsession[caller]
         self.args = args
+        self.daemon = daemon
 
     async def run(self):
         try:
