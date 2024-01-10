@@ -3,6 +3,7 @@
 import asyncio
 import sys
 import signal
+import timeit
 
 from accounts_hpc.tasks.apisync import ApiSync
 from accounts_hpc.tasks.usermetadata import UserMetadata
@@ -34,24 +35,33 @@ class AhDaemon(object):
                 self.logger.info(f"* Scheduled tasks ({calls_str})...")
                 if 'apisync' in self.confopts['tasks']['call_list']:
                     self.logger.info("> Calling apisync task")
+                    start = timeit.default_timer()
                     task_apisync = asyncio.create_task(
                         ApiSync(f'{CALLER_NAME}.apisync', self.fakeargs, daemon=True).run()
                     )
                     await task_apisync
+                    end = timeit.default_timer()
+                    self.logger.info(f"> Ended apisync in {format(end - start, '.2f')} seconds")
 
                 if 'usermetadata' in self.confopts['tasks']['call_list']:
                     self.logger.info("> Calling usermetadata task")
+                    start = timeit.default_timer()
                     task_usermetadata = asyncio.create_task(
                         UserMetadata(f'{CALLER_NAME}.usermetadata', self.fakeargs, daemon=True).run()
                     )
                     await task_usermetadata
+                    end = timeit.default_timer()
+                    self.logger.info(f"> Ended usermetadata in {format(end - start, '.2f')} seconds")
 
                 if 'ldapupdate' in self.confopts['tasks']['call_list']:
                     self.logger.info("> Calling ldapupdate task")
+                    start = timeit.default_timer()
                     task_ldapupdate = asyncio.create_task(
                         LdapUpdate(f'{CALLER_NAME}.ldapupdate', self.fakeargs, daemon=True).run()
                     )
                     await task_ldapupdate
+                    end = timeit.default_timer()
+                    self.logger.info(f"> Ended ldapupdate in {format(end - start, '.2f')} seconds")
 
                 await asyncio.sleep(float(self.confopts['tasks']['every_sec']))
 
