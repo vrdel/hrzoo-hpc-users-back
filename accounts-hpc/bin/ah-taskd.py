@@ -27,7 +27,7 @@ class AhDaemon(object):
 
     async def run(self):
         try:
-            task_apisync, task_usermetadata = None, None
+            task_apisync, task_usermetadata, task_ldapupdate = None, None, None
 
             while True:
                 calls_str = ', '.join(self.confopts['tasks']['call_list'])
@@ -48,7 +48,10 @@ class AhDaemon(object):
 
                 if 'ldapupdate' in self.confopts['tasks']['call_list']:
                     self.logger.info("> Calling ldapupdate task")
-                    LdapUpdate(f'{CALLER_NAME}.ldapupdate', self.fakeargs, daemon=True).run()
+                    task_ldapupdate = asyncio.create_task(
+                        LdapUpdate(f'{CALLER_NAME}.ldapupdate', self.fakeargs, daemon=True).run()
+                    )
+                    await task_ldapupdate
 
                 await asyncio.sleep(float(self.confopts['tasks']['every_sec']))
 
@@ -57,6 +60,8 @@ class AhDaemon(object):
                 task_apisync.cancel()
             if task_usermetadata:
                 task_usermetadata.cancel()
+            if task_ldapupdate:
+                task_ldapupdate.cancel()
             self.logger.info("* Stopping task runner...")
 
 
