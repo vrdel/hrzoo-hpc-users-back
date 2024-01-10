@@ -1,18 +1,19 @@
 #!/usr/bin/env python
 
 import argparse
+import asyncio
 import sys
 import json
 
 from accounts_hpc.tasks.createdirectories import DirectoriesCreate
 
 
-def main():
+async def main():
     parser = argparse.ArgumentParser(description="""Create user and project directories""")
     args = parser.parse_args()
 
-    DirectoriesCreate(sys.argv[0], args).run()
+    await DirectoriesCreate(sys.argv[0], args).run()
 
 
 if __name__ == '__main__':
-    main()
+    asyncio.run(main())

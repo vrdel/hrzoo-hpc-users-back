@@ -3,10 +3,16 @@ from accounts_hpc.shared import Shared  # type: ignore
 
 import sys
 import os
+import aiofiles
+import aiofiles.os
+import asyncio
+import aioshutil
 import stat
 
 import sqlalchemy
+
 from sqlalchemy import and_
+from sqlalchemy import select
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import NoResultFound
 
@@ -15,74 +21,88 @@ class DirectoriesCreate(object):
     def __init__(self, caller, args):
         shared = Shared(caller)
         self.confopts = shared.confopts
-        self.logger = shared.log.get()
+        self.logger = shared.log[caller].get()
         self.dbsession = shared.dbsession[caller]
         self.args = args
 
-    def run(self):
-        users = self.dbsession.query(User).all()
-        for user in users:
-            if not user.is_dir_created:
-                completed = 0
+    async def run(self):
+        try:
+            users = await self.dbsession.execute(select(User))
+            users = users.scalars().all()
 
-                for dir in self.confopts['usersetup']['userdirs_in']:
-                    try:
-                        os.mkdir(dir + user.ldap_username, 0o700)
+            for user in users:
+                if not user.is_dir_created:
+                    completed = 0
 
-                    except FileExistsError:
-                        pass
-                    except (PermissionError, FileNotFoundError) as exc:
-                        self.logger.error(exc)
-                        break
+                    for dir in self.confopts['usersetup']['userdirs_in']:
+                        try:
+                            await aiofiles.os.mkdir(dir + user.ldap_username, 0o700)
 
-                    try:
-                        os.chown(dir + user.ldap_username, user.ldap_uid, user.ldap_gid)
-                        completed += 1
+                        except FileExistsError:
+                            pass
+                        except (PermissionError, FileNotFoundError) as exc:
+                            self.logger.error(exc)
+                            break
 
-                    except (PermissionError, OSError, FileNotFoundError) as exc:
-                        self.logger.error(exc)
+                        try:
+                            await aioshutil.chown(dir + user.ldap_username, user.ldap_uid, user.ldap_gid)
+                            completed += 1
 
-                if completed == len(self.confopts['usersetup']['userdirs_in']):
-                    try:
-                        user.is_dir_created = True
-                        project_info = self.dbsession.query(Project).filter(Project.ldap_gid == user.ldap_gid).one()
-                        self.logger.info(f"Created {dir + user.ldap_username} with perm {user.ldap_uid}:{user.ldap_gid} ({user.ldap_username}:{project_info.identifier})")
-                    except sqlalchemy.exc.NoResultFound:
-                        self.logger.info(f"Created {dir + user.ldap_username} with perm {user.ldap_uid}:{user.ldap_gid}")
+                        except (PermissionError, OSError, FileNotFoundError) as exc:
+                            self.logger.error(exc)
 
-        projects = self.dbsession.query(Project).all()
-        for project in projects:
-            if not project.is_dir_created:
-                completed = 0
+                    if completed == len(self.confopts['usersetup']['userdirs_in']):
+                        try:
+                            user.is_dir_created = True
 
-                for dir in self.confopts['usersetup']['groupdirs_in']:
-                    try:
-                        os.mkdir(dir + project.identifier)
+                            stmt = select(Project).where(Project.ldap_gid == user.ldap_gid)
+                            project_info = await self.dbsession.execute(stmt)
+                            project_info = project_info.scalars().one()
 
-                    except FileExistsError:
-                        pass
-                    except (PermissionError, FileNotFoundError) as exc:
-                        self.logger.error(exc)
-                        break
+                            self.logger.info(f"Created {dir + user.ldap_username} with perm {user.ldap_uid}:{user.ldap_gid} ({user.ldap_username}:{project_info.identifier})")
+                        except sqlalchemy.exc.NoResultFound:
+                            self.logger.info(f"Created {dir + user.ldap_username} with perm {user.ldap_uid}:{user.ldap_gid}")
 
-                    os.chmod(dir + project.identifier, 0o2770)
+            projects = await self.dbsession.execute(select(Project))
+            projects = projects.scalars().all()
+            for project in projects:
+                if not project.is_dir_created:
+                    completed = 0
 
-                    try:
-                        userown = project.user[0]
-                        os.chown(dir + project.identifier, userown.ldap_uid, project.ldap_gid)
-                        completed += 1
-
-                    except (PermissionError, OSError, FileNotFoundError) as exc:
-                        self.logger.error(exc)
-
-                    except IndexError as exc:
-                        self.logger.warning(f"Project {project.identifier} without users")
-                        self.logger.warning(exc)
-
-                if completed == len(self.confopts['usersetup']['groupdirs_in']):
-                    project.is_dir_created = True
                     for dir in self.confopts['usersetup']['groupdirs_in']:
-                        self.logger.info(f"Created {dir + project.identifier} with perm {userown.ldap_uid}:{project.ldap_gid} ({userown.ldap_username}:{project.identifier})")
+                        try:
+                            await aiofiles.os.mkdir(dir + project.identifier)
 
-        self.dbsession.commit()
-        self.dbsession.close()
+                        except FileExistsError:
+                            pass
+                        except (PermissionError, FileNotFoundError) as exc:
+                            self.logger.error(exc)
+                            break
+
+                        loop = asyncio.get_event_loop()
+                        await loop.run_in_executor(None, os.chmod, dir + project.identifier, 0o2770)
+
+                        try:
+                            userown_aw = await project.awaitable_attrs.user
+                            userown = userown_aw[0]
+                            await aioshutil.chown(dir + project.identifier, userown.ldap_uid, project.ldap_gid)
+                            completed += 1
+
+                        except (PermissionError, OSError, FileNotFoundError) as exc:
+                            self.logger.error(exc)
+
+                        except IndexError as exc:
+                            self.logger.warning(f"Project {project.identifier} without users")
+                            self.logger.warning(exc)
+
+                    if completed == len(self.confopts['usersetup']['groupdirs_in']):
+                        project.is_dir_created = True
+                        for dir in self.confopts['usersetup']['groupdirs_in']:
+                            self.logger.info(f"Created {dir + project.identifier} with perm {userown.ldap_uid}:{project.ldap_gid} ({userown.ldap_username}:{project.identifier})")
+
+        except PermissionError as exc:
+            self.logger.error(exc)
+
+        finally:
+            await self.dbsession.commit()
+            await self.dbsession.close()
