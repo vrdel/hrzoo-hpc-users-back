@@ -10,7 +10,8 @@ from accounts_hpc.utils import latest_project
 
 import datetime
 import re
-import smtplib
+import aiosmtplib
+import aiofiles
 import socket
 import ssl
 
@@ -48,12 +49,12 @@ class EmailSend(object):
         self.emailto = emailto
         self.logger = logger
 
-    def _construct_email(self):
+    async def _construct_email(self):
         text = None
 
         try:
-            with open(self.template, encoding='utf-8') as fp:
-                text = fp.readlines()
+            async with aiofiles.open(self.template, encoding='utf-8') as fp:
+                text = await fp.readlines()
                 self.subject = text[0].strip()
         except FileNotFoundError as exc:
             self.logger.error(f'{exc.filename} - {repr(exc)}')
@@ -85,8 +86,8 @@ class EmailSend(object):
         else:
             return None
 
-    def send(self):
-        email_text = self._construct_email()
+    async def send(self):
+        email_text = await self._construct_email()
 
         for part in [self.emailfrom, self.emailto, self.subject]:
             if not part:
@@ -99,17 +100,17 @@ class EmailSend(object):
         else:
             try:
                 if self.port == 25:
-                    s = smtplib.SMTP(self.smtpserver, self.port, timeout=self.timeout)
+                    s = aiosmtplib.SMTP(hostname=self.smtpserver, port=self.port, timeout=self.timeout)
                 else:
-                    s = smtplib.SMTP(self.smtpserver, self.port, timeout=self.timeout)
+                    s = aiosmtplib.SMTP(hostname=self.smtpserver, port=self.port, timeout=self.timeout)
                     context = ssl.create_default_context()
-                    s.starttls(context=context)
-                    s.login(self.user, self.password)
-                s.ehlo()
-                s.sendmail(self.emailfrom, [self.emailbcc, self.emailto], email_text)
-                s.quit()
+                    await s.starttls(tls_context=context)
+                    await s.login(self.user, self.password)
+                await s.connect()
+                await s.sendmail(self.emailfrom, [self.emailbcc, self.emailto], email_text)
+                await s.quit()
 
                 return True
 
-            except (socket.error, smtplib.SMTPException) as e:
+            except (socket.error, aiosmtplib.SMTPException) as e:
                 self.logger.error(repr(e))

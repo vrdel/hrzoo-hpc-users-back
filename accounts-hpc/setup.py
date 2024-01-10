@@ -34,7 +34,7 @@ setup(
         "License :: OSI Approved :: Apache Software License",
         "Operating System :: POSIX :: Linux",
     ),
-    install_requires=['aiohttp', 'aiofiles', 'aiosqlite', 'aioshutil',
+    install_requires=['aiohttp', 'aiofiles', 'aiosqlite', 'aioshutil', 'aiosmtplib',
                       'alembic', 'bonsai', 'psutil', 'requests', 'SQLAlchemy',
                       'sqlalchemy-json', 'Unidecode', 'rich'],
     scripts=['bin/ah-api-sync.py', 'bin/ah-user-metadata-setup.py', 'bin/ah-ldap-update.py',
