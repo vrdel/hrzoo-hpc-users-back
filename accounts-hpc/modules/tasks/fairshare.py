@@ -1,5 +1,6 @@
 import argparse
 import aiofiles
+import asyncio
 import psutil
 import signal
 import os
@@ -45,49 +46,55 @@ class FairshareUpdate(object):
         self.daemon = daemon
 
     async def run(self):
-        is_updated = False
-        fairshare_path = self.confopts['usersetup']['pbsfairshare_path']
-        pbsprocname = self.confopts['usersetup']['pbsprocname']
+        try:
+            is_updated = False
+            fairshare_path = self.confopts['usersetup']['pbsfairshare_path']
+            pbsprocname = self.confopts['usersetup']['pbsprocname']
 
-        if fairshare_path:
-            fsobj = None
+            if fairshare_path:
+                fsobj = None
 
-            try:
+                try:
+                    if self.args.new:
+                        fsobj = await aiofiles.open(fairshare_path, "x")
+                    else:
+                        fsobj = await aiofiles.open(fairshare_path, "r+")
+                except (FileNotFoundError, FileExistsError) as exc:
+                    self.logger.error(exc)
+                    raise SystemExit(1)
+
+                projects = await self.dbsession.execute(select(Project))
+                projects = projects.scalars().all()
+                all_projids = list()
+                for project in projects:
+                    all_projids.append(project.identifier)
+
                 if self.args.new:
-                    fsobj = await aiofiles.open(fairshare_path, "x")
-                else:
-                    fsobj = await aiofiles.open(fairshare_path, "r+")
-            except (FileNotFoundError, FileExistsError) as exc:
-                self.logger.error(exc)
-                raise SystemExit(1)
-
-            projects = await self.dbsession.execute(select(Project))
-            projects = projects.scalars().all()
-            all_projids = list()
-            for project in projects:
-                all_projids.append(project.identifier)
-
-            if self.args.new:
-                await update_file(fsobj, all_projids, 0)
-                update_cacheflag(projects)
-                is_updated = True
-            else:
-                fs_lines = await fsobj.readlines()
-                all_projids_infile = [line.split(' ')[0] for line in fs_lines]
-                new_projids = set(all_projids).difference(set(all_projids_infile))
-                if new_projids:
-                    await update_file(fsobj, new_projids, len(fs_lines))
+                    await update_file(fsobj, all_projids, 0)
                     update_cacheflag(projects)
                     is_updated = True
+                else:
+                    fs_lines = await fsobj.readlines()
+                    all_projids_infile = [line.split(' ')[0] for line in fs_lines]
+                    new_projids = set(all_projids).difference(set(all_projids_infile))
+                    if new_projids:
+                        await update_file(fsobj, new_projids, len(fs_lines))
+                        update_cacheflag(projects)
+                        is_updated = True
 
-            await fsobj.close()
+                await fsobj.close()
 
-            if is_updated and not self.args.new:
-                self.logger.info(f"PBS fairshare updated with {', '.join(new_projids)}, sending SIGHUP...")
-                send_sighup(pbsprocname)
-            elif is_updated and self.args.new:
-                self.logger.info("Created new PBS fairshare, sending SIGHUP...")
-                send_sighup(pbsprocname)
+                if is_updated and not self.args.new:
+                    self.logger.info(f"PBS fairshare updated with {', '.join(new_projids)}, sending SIGHUP...")
+                    send_sighup(pbsprocname)
+                elif is_updated and self.args.new:
+                    self.logger.info("Created new PBS fairshare, sending SIGHUP...")
+                    send_sighup(pbsprocname)
 
-        await self.dbsession.commit()
-        await self.dbsession.close()
+        except asyncio.CancelledError as exc:
+            self.logger.info('* Cancelling fairshare...')
+            raise exc
+
+        finally:
+            await self.dbsession.commit()
+            await self.dbsession.close()

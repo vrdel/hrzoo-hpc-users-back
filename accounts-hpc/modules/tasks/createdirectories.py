@@ -104,6 +104,10 @@ class DirectoriesCreate(object):
         except PermissionError as exc:
             self.logger.error(exc)
 
+        except asyncio.CancelledError as exc:
+            self.logger.info('* Cancelling createdirectories...')
+            raise exc
+
         finally:
             await self.dbsession.commit()
             await self.dbsession.close()
