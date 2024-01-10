@@ -19,6 +19,7 @@ CALLER_NAME = "ah-taskd"
 class FakeArgs(object):
     def __init__(self):
         self.initset = False
+        self.new = False
 
 
 class AhDaemon(object):
@@ -31,6 +32,7 @@ class AhDaemon(object):
     async def run(self):
         try:
             task_apisync, task_usermetadata, task_ldapupdate = None, None, None
+            task_fairshare, task_createdirectories = None, None
 
             while True:
                 calls_str = ', '.join(self.confopts['tasks']['call_list'])
@@ -65,22 +67,23 @@ class AhDaemon(object):
                     end = timeit.default_timer()
                     self.logger.info(f"> Ended ldapupdate in {format(end - start, '.2f')} seconds")
 
-                coros, scheduled = [], []
+                scheduled = []
                 if 'fairshare' in self.confopts['tasks']['call_list']:
-                    coros.append(
+                    task_fairshare = asyncio.create_task(
                         FairshareUpdate(f'{CALLER_NAME}.fairshare', self.fakeargs, daemon=True).run()
                     )
                     scheduled.append('fairshare')
 
                 if 'createdirectories' in self.confopts['tasks']['call_list']:
-                    coros.append(
+                    task_createdirectories = asyncio.create_task(
                         DirectoriesCreate(f'{CALLER_NAME}.createdirectories', self.fakeargs, daemon=True).run()
                     )
                     scheduled.append('createdirectories')
 
                 self.logger.info(f"> Calling {', '.join(scheduled)} tasks")
                 start = timeit.default_timer()
-                coros_ret = await asyncio.gather(*coros, return_exceptions=True)
+                await task_fairshare
+                await task_createdirectories
                 end = timeit.default_timer()
                 self.logger.info(f"> Ended {', '.join(scheduled)} in {format(end - start, '.2f')} seconds")
 

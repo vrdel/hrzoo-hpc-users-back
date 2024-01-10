@@ -42,6 +42,7 @@ class FairshareUpdate(object):
         self.logger = shared.log[caller].get()
         self.dbsession = shared.dbsession[caller]
         self.args = args
+        self.daemon = daemon
 
     async def run(self):
         is_updated = False
@@ -71,7 +72,7 @@ class FairshareUpdate(object):
                 update_cacheflag(projects)
                 is_updated = True
             else:
-                fs_lines = fsobj.readlines()
+                fs_lines = await fsobj.readlines()
                 all_projids_infile = [line.split(' ')[0] for line in fs_lines]
                 new_projids = set(all_projids).difference(set(all_projids_infile))
                 if new_projids:
