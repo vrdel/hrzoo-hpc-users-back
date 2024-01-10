@@ -9,6 +9,7 @@ from accounts_hpc.tasks.apisync import ApiSync
 from accounts_hpc.tasks.usermetadata import UserMetadata
 from accounts_hpc.tasks.ldapupdate import LdapUpdate
 from accounts_hpc.tasks.createdirectories import DirectoriesCreate
+from accounts_hpc.tasks.emailsend import SendEmail
 from accounts_hpc.tasks.fairshare import FairshareUpdate
 from accounts_hpc.shared import Shared
 
@@ -32,7 +33,7 @@ class AhDaemon(object):
     async def run(self):
         try:
             task_apisync, task_usermetadata, task_ldapupdate = None, None, None
-            task_fairshare, task_createdirectories = None, None
+            task_fairshare, task_createdirectories, task_emailsend = None, None, None
 
             while True:
                 calls_str = ', '.join(self.confopts['tasks']['call_list'])
@@ -80,10 +81,20 @@ class AhDaemon(object):
                     )
                     scheduled.append('createdirectories')
 
+                if 'emailsend' in self.confopts['tasks']['call_list']:
+                    task_emailsend = asyncio.create_task(
+                        SendEmail(f'{CALLER_NAME}.emailsend', self.fakeargs, daemon=True).run()
+                    )
+                    scheduled.append('emailsend')
+
                 self.logger.info(f"> Calling {', '.join(scheduled)} tasks")
                 start = timeit.default_timer()
-                await task_fairshare
-                await task_createdirectories
+                if task_fairshare:
+                    await task_fairshare
+                if task_createdirectories:
+                    await task_createdirectories
+                if task_emailsend:
+                    await task_emailsend
                 end = timeit.default_timer()
                 self.logger.info(f"> Ended {', '.join(scheduled)} in {format(end - start, '.2f')} seconds")
 
@@ -96,6 +107,12 @@ class AhDaemon(object):
                 task_usermetadata.cancel()
             if task_ldapupdate:
                 task_ldapupdate.cancel()
+            if task_fairshare:
+                task_fairshare.cancel()
+            if task_createdirectories:
+                task_createdirectories.cancel()
+            if task_emailsend:
+                task_emailsend.cancel()
             self.logger.info("* Stopping task runner...")
 
 
