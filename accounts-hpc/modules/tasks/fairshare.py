@@ -1,7 +1,10 @@
 import argparse
+import aiofiles
 import psutil
 import signal
 import os
+
+from sqlalchemy import select
 
 from accounts_hpc.db import Project  # type: ignore
 from accounts_hpc.shared import Shared  # type: ignore
@@ -19,7 +22,7 @@ def update_cacheflag(projectsdb):
             project.is_pbsfairshare_added = True
 
 
-def update_file(fsobj, projids, nlines):
+async def update_file(fsobj, projids, nlines):
     nline = nlines + 1
     fs_lines_write = list()
     if nlines == 0:
@@ -29,18 +32,18 @@ def update_file(fsobj, projids, nlines):
         line_to_write = '{0:<32} {1:03} root 100\n'.format(ident, nline)
         nline += 1
         fs_lines_write.append(line_to_write)
-    fsobj.writelines(fs_lines_write)
+    await fsobj.writelines(fs_lines_write)
 
 
 class FairshareUpdate(object):
-    def __init__(self, caller, args):
+    def __init__(self, caller, args, daemon=False):
         shared = Shared(caller)
         self.confopts = shared.confopts
-        self.logger = shared.log.get()
+        self.logger = shared.log[caller].get()
         self.dbsession = shared.dbsession[caller]
         self.args = args
 
-    def run(self):
+    async def run(self):
         is_updated = False
         fairshare_path = self.confopts['usersetup']['pbsfairshare_path']
         pbsprocname = self.confopts['usersetup']['pbsprocname']
@@ -50,20 +53,21 @@ class FairshareUpdate(object):
 
             try:
                 if self.args.new:
-                    fsobj = open(fairshare_path, "x")
+                    fsobj = await aiofiles.open(fairshare_path, "x")
                 else:
-                    fsobj = open(fairshare_path, "r+")
+                    fsobj = await aiofiles.open(fairshare_path, "r+")
             except (FileNotFoundError, FileExistsError) as exc:
                 self.logger.error(exc)
                 raise SystemExit(1)
 
-            projects = self.dbsession.query(Project).all()
+            projects = await self.dbsession.execute(select(Project))
+            projects = projects.scalars().all()
             all_projids = list()
             for project in projects:
                 all_projids.append(project.identifier)
 
             if self.args.new:
-                update_file(fsobj, all_projids, 0)
+                await update_file(fsobj, all_projids, 0)
                 update_cacheflag(projects)
                 is_updated = True
             else:
@@ -71,11 +75,11 @@ class FairshareUpdate(object):
                 all_projids_infile = [line.split(' ')[0] for line in fs_lines]
                 new_projids = set(all_projids).difference(set(all_projids_infile))
                 if new_projids:
-                    update_file(fsobj, new_projids, len(fs_lines))
+                    await update_file(fsobj, new_projids, len(fs_lines))
                     update_cacheflag(projects)
                     is_updated = True
 
-            fsobj.close()
+            await fsobj.close()
 
             if is_updated and not self.args.new:
                 self.logger.info(f"PBS fairshare updated with {', '.join(new_projids)}, sending SIGHUP...")
@@ -84,5 +88,5 @@ class FairshareUpdate(object):
                 self.logger.info("Created new PBS fairshare, sending SIGHUP...")
                 send_sighup(pbsprocname)
 
-        self.dbsession.commit()
-        self.dbsession.close()
+        await self.dbsession.commit()
+        await self.dbsession.close()
