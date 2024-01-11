@@ -4,6 +4,7 @@ VENV = /opt/hrzoo-accounts-hpc
 [tasks]
 call_list = apisync, usermetadata
 every_sec = 60
+db_chunks = 10
 
 [connection]
 timeout = 180
