@@ -318,8 +318,10 @@ class LdapUpdate(object):
 
             # default and resource groups are created only for flat hierarchies
             if not self.confopts['ldap']['project_organisation']:
-                await self.create_default_groups()
-                await self.create_resource_groups()
+                task_create_defgroups = asyncio.create_task(self.create_default_groups())
+                task_create_resgroups = asyncio.create_task(self.create_resource_groups())
+                await task_create_defgroups
+                await task_create_resgroups
 
             for user in users:
                 if not user.ldap_username:
@@ -333,13 +335,17 @@ class LdapUpdate(object):
                                 await self.user_ldap_update(user, [ldap_user])
                                 await self.user_key_update(user, [ldap_user])
                             else:
-                                await self.user_ldap_update(user, ldap_user)
-                                await self.user_key_update(user, ldap_user)
+                                task_user_ldapup = asyncio.create_task(self.user_ldap_update(user, ldap_user))
+                                task_user_keyup = asyncio.create_task(self.user_key_update(user, ldap_user))
+                                await task_user_ldapup
+                                await task_user_keyup
                             user.is_opened = True
                         except bonsai.errors.AlreadyExists as exc:
                             self.logger.warning(f'LDAP user {user.ldap_username} - {repr(exc)}')
-                            await self.user_ldap_update(user, ldap_user)
-                            await self.user_key_update(user, ldap_user)
+                            task_user_ldapup = asyncio.create_task(self.user_ldap_update(user, ldap_user))
+                            task_user_keyup = asyncio.create_task(self.user_key_update(user, ldap_user))
+                            await task_user_ldapup
+                            await task_user_keyup
                             user.is_opened = True
                         except bonsai.errors.LDAPError as exc:
                             self.logger.error(f'Error adding/updating LDAP user {user.ldap_username} - {repr(exc)}')
@@ -356,13 +362,17 @@ class LdapUpdate(object):
                                     await self.user_ldap_update(user, [ldap_user])
                                     await self.user_key_update(user, [ldap_user])
                                 else:
-                                    await self.user_ldap_update(user, ldap_user)
-                                    await self.user_key_update(user, ldap_user)
+                                    task_user_ldapup = asyncio.create_task(self.user_ldap_update(user, ldap_user))
+                                    task_user_keyup = asyncio.create_task(self.user_key_update(user, ldap_user))
+                                    await task_user_ldapup
+                                    await task_user_keyup
                                 user.is_opened = True
                             except bonsai.errors.AlreadyExists as exc:
                                 self.logger.warning(f'LDAP user {user.ldap_username} - {repr(exc)}')
-                                await self.user_ldap_update(user, ldap_user)
-                                await self.user_key_update(user, ldap_user)
+                                task_user_ldapup = asyncio.create_task(self.user_ldap_update(user, ldap_user))
+                                task_user_keyup = asyncio.create_task(self.user_key_update(user, ldap_user))
+                                await task_user_ldapup
+                                await task_user_keyup
                                 user.is_opened = True
                             except bonsai.errors.LDAPError as exc:
                                 self.logger.error(f'Error adding/updating LDAP user {user.ldap_username} - {repr(exc)}')
