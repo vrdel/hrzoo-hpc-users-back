@@ -302,7 +302,7 @@ class LdapUpdate(object):
                 group_ldap = await conn.search(f"cn={gr},ou=Group,{self.confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
                 if not group_ldap:
                     ldap_gid = self.confopts['usersetup']['gid_manual_offset'] + numgroup + num_defgroups
-                    ldap_project = await bonsai.LDAPEntry(f"cn={gr},ou=Group,{self.confopts['ldap']['basedn']}")
+                    ldap_project = bonsai.LDAPEntry(f"cn={gr},ou=Group,{self.confopts['ldap']['basedn']}")
                     ldap_project['cn'] = [gr]
                     ldap_project['objectClass'] = ['top', 'posixGroup']
                     ldap_project['gidNumber'] = [ldap_gid]
@@ -388,12 +388,16 @@ class LdapUpdate(object):
 
             if not self.confopts['ldap']['project_organisation']:
                 # handle default groups associations
-                await self.update_default_groups(users, "hpc-users")
+                task_update_defgroups = asyncio.create_task(self.update_default_groups(users, "hpc-users"))
                 # update_default_groups(self.confopts, conn, self.logger, users, "hpc", onlyops=True)
 
                 # handle resource groups associations
-                await self.update_resource_groups(users, "hpc-bigmem")
-                await self.update_resource_groups(users, "hpc-gpu")
+                task_update_resgroup1 = asyncio.create_task(self.update_resource_groups(users, "hpc-bigmem"))
+                task_update_resgroup2 = asyncio.create_task(self.update_resource_groups(users, "hpc-gpu"))
+
+                await task_update_defgroups
+                await task_update_resgroup1
+                await task_update_resgroup2
 
             await self.dbsession.commit()
 
