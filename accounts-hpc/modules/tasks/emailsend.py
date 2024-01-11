@@ -1,7 +1,7 @@
 from accounts_hpc.shared import Shared  # type: ignore
 from accounts_hpc.db import User  # type: ignore
 from accounts_hpc.emailsend import EmailSend  # type: ignore
-from accounts_hpc.utils import contains_exception
+from accounts_hpc.utils import contains_exception, chunk_list
 
 from sqlalchemy import select
 
@@ -17,10 +17,6 @@ class SendEmail(object):
         self.dbsession = shared.dbsession[caller]
         self.args = args
         self.daemon = daemon
-
-    def _chunk_list(self, lst, size):
-        for i in range(0, len(lst), size):
-            yield lst[i:i + size]
 
     async def _email_project_account(self, users, users_opened):
         for user in users:
@@ -91,7 +87,7 @@ class SendEmail(object):
                 users = users.scalars().all()
 
                 coros = []
-                for chunk in self._chunk_list(users, 10):
+                for chunk in chunk_list(users, 10):
                     coros.append(self._email_project_account(chunk, users_opened))
                 calrets = await asyncio.gather(*coros, return_exceptions=True)
                 exc_raised, exc = contains_exception(calrets)

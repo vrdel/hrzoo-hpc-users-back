@@ -19,7 +19,7 @@ from sqlalchemy.exc import NoResultFound
 
 class DirectoriesCreate(object):
     def __init__(self, caller, args, daemon=False):
-        shared = Shared(caller)
+        shared = Shared(caller, daemon)
         self.confopts = shared.confopts
         self.logger = shared.log[caller].get()
         self.dbsession = shared.dbsession[caller]

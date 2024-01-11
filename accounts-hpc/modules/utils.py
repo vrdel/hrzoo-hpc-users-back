@@ -11,6 +11,11 @@ def latest_project(username):
     return last_project
 
 
+def chunk_list(self, lst, size):
+    for i in range(0, len(lst), size):
+        yield lst[i:i + size]
+
+
 def get_ssh_key_fingerprint(ssh_key):
     # How to get fingerprint from ssh key:
     # http://stackoverflow.com/a/6682934/175349
