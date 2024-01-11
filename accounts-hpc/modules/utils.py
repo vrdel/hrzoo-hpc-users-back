@@ -11,9 +11,11 @@ def latest_project(username):
     return last_project
 
 
-def chunk_list(self, lst, size):
-    for i in range(0, len(lst), size):
-        yield lst[i:i + size]
+def chunk_list(lst):
+    shared = Shared('utils.chunk_list()')
+
+    for i in range(0, len(lst), shared.confopts['tasks']['db_chunks']):
+        yield lst[i:i + shared.confopts['tasks']['db_chunks']]
 
 
 def get_ssh_key_fingerprint(ssh_key):

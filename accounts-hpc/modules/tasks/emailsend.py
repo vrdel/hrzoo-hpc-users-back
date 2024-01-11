@@ -87,7 +87,7 @@ class SendEmail(object):
                 users = users.scalars().all()
 
                 coros = []
-                for chunk in chunk_list(users, 10):
+                for chunk in chunk_list(users):
                     coros.append(self._email_project_account(chunk, users_opened))
                 calrets = await asyncio.gather(*coros, return_exceptions=True)
                 exc_raised, exc = contains_exception(calrets)
@@ -96,7 +96,7 @@ class SendEmail(object):
 
                 # await self.email_project_account(users, users_opened)
                 coros = []
-                for chunk in self._chunk_list(users, 10):
+                for chunk in chunk_list(users):
                     coros.append(self._email_project_key(chunk, users_opened))
                 calrets = await asyncio.gather(*coros, return_exceptions=True)
                 exc_raised, exc = contains_exception(calrets)
@@ -109,7 +109,7 @@ class SendEmail(object):
                 users = users.scalars().all()
 
                 coros = []
-                for chunk in self._chunk_list(users, 10):
+                for chunk in chunk_list(users):
                     coros.append(self._email_account(chunk, users_opened))
                 calrets = await asyncio.gather(*coros, return_exceptions=True)
                 exc_raised, exc = contains_exception(calrets)
@@ -121,7 +121,7 @@ class SendEmail(object):
                 users = users.scalars().all()
 
                 coros = []
-                for chunk in self._chunk_list(users, 10):
+                for chunk in chunk_list(users):
                     coros.append(self._email_key(chunk, users_opened))
                 calrets = await asyncio.gather(*coros, return_exceptions=True)
                 exc_raised, exc = contains_exception(calrets)
