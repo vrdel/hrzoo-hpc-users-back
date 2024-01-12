@@ -235,7 +235,8 @@ class LdapUpdate(object):
                 stmt = select(SshKey).where(SshKey.fingerprint == key)
                 target_key = await self.dbsession.execute(stmt)
                 target_key = target_key.scalars().one()
-                await user.awaitable_attrs.sshkey.remove(target_key)
+                user_target_key = await user.awaitable_attrs.sshkey
+                user_target_key.remove(target_key)
                 self.logger.info(f"Removed key {target_key.name} for user {user.person_uniqueid}")
         if keys_diff_add or keys_diff_del:
             updated_keys = [sshkey.public_key for sshkey in user.sshkey]
@@ -336,15 +337,15 @@ class LdapUpdate(object):
                                 await self.user_key_update(user, [ldap_user])
                             else:
                                 task_user_ldapup = asyncio.create_task(self.user_ldap_update(user, ldap_user))
-                                task_user_keyup = asyncio.create_task(self.user_key_update(user, ldap_user))
                                 await task_user_ldapup
+                                task_user_keyup = asyncio.create_task(self.user_key_update(user, ldap_user))
                                 await task_user_keyup
                             user.is_opened = True
                         except bonsai.errors.AlreadyExists as exc:
                             self.logger.warning(f'LDAP user {user.ldap_username} - {repr(exc)}')
                             task_user_ldapup = asyncio.create_task(self.user_ldap_update(user, ldap_user))
-                            task_user_keyup = asyncio.create_task(self.user_key_update(user, ldap_user))
                             await task_user_ldapup
+                            task_user_keyup = asyncio.create_task(self.user_key_update(user, ldap_user))
                             await task_user_keyup
                             user.is_opened = True
                         except bonsai.errors.LDAPError as exc:
@@ -363,15 +364,15 @@ class LdapUpdate(object):
                                     await self.user_key_update(user, [ldap_user])
                                 else:
                                     task_user_ldapup = asyncio.create_task(self.user_ldap_update(user, ldap_user))
-                                    task_user_keyup = asyncio.create_task(self.user_key_update(user, ldap_user))
                                     await task_user_ldapup
+                                    task_user_keyup = asyncio.create_task(self.user_key_update(user, ldap_user))
                                     await task_user_keyup
                                 user.is_opened = True
                             except bonsai.errors.AlreadyExists as exc:
                                 self.logger.warning(f'LDAP user {user.ldap_username} - {repr(exc)}')
                                 task_user_ldapup = asyncio.create_task(self.user_ldap_update(user, ldap_user))
-                                task_user_keyup = asyncio.create_task(self.user_key_update(user, ldap_user))
                                 await task_user_ldapup
+                                task_user_keyup = asyncio.create_task(self.user_key_update(user, ldap_user))
                                 await task_user_keyup
                                 user.is_opened = True
                             except bonsai.errors.LDAPError as exc:
