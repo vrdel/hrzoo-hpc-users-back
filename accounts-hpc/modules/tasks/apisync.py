@@ -33,6 +33,7 @@ class ApiSync(object):
         self.confopts = shared.confopts
         self.logger = shared.log[caller].get()
         self.dbsession = shared.dbsession[caller]
+        self.daemon = daemon
         self.args = args
 
     async def sshkeys_del(self, projects_users, sshkeys):
@@ -390,7 +391,8 @@ class ApiSync(object):
 
         except SyncHttpError:
             self.logger.error('Data fetch did not succeed')
-            raise SystemExit(1)
+            if not self.daemon:
+                raise SystemExit(1)
 
         except asyncio.CancelledError as exc:
             self.logger.info('* Cancelling apisync...')
