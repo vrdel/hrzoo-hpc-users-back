@@ -127,6 +127,8 @@ services:
       - ../docker/ldap-client/pypath.sh:/home/user/pypath.sh
       - ../docker/ldap-client/pysitepkg:/home/user/pysitepkg
       - ../accounts-hpc/:/home/user/accounts-hpc-source/
+    extra_hosts:
+      - "hzsidev.hr:172.20.0.12"
     networks:
       - docker_hzsi-front-app_net
 
