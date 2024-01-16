@@ -146,7 +146,8 @@ class LdapUpdate(object):
                 stmt = select(Project).where(Project.identifier == project)
                 target_project = await self.dbsession.execute(stmt)
                 target_project = target_project.scalars().one()
-                await target_project.awaitable_attrs.user.remove(user)
+                target_project_user = await target_project.awaitable_attrs.user
+                target_project_user.remove(user)
                 self.dbsession.add(target_project)
                 self.logger.info(f"User {user.person_uniqueid} removed from project {project}")
         try:
