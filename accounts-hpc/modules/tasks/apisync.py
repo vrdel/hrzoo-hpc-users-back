@@ -295,11 +295,13 @@ class ApiSync(object):
                 uids_not_onapi.add(uid)
 
         if uids_not_onapi:
-            user_without_projects = users_db.filter(User.uid_api.in_(uids_not_onapi))
+            stmt = select(User).where(User.uid_api.in_(uids_not_onapi))
+            users_db = await self.dbsession.execute(stmt)
+            user_without_projects = users_db.scalars().all()
             self.logger.info("Found users in local DB without any registered project on HRZOO-SIGNUP-API: {}"
                              .format(', '.join([user.ldap_username for user in user_without_projects])))
             self.logger.info("Nullifying user.projects_api and setting user.is_active=0,ldap_gid=0 for such")
-            self.dbsession.execute(
+            await self.dbsession.execute(
                 update(User),
                 [{"id": user.id, "projects_api": [], "ldap_gid": 0, "is_active": 0} for user in user_without_projects]
             )
