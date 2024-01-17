@@ -38,6 +38,8 @@ class User(Base):
     is_staff: Mapped[bool] = mapped_column(Boolean)
     is_dir_created: Mapped[bool] = mapped_column(Boolean)
     mail_is_subscribed: Mapped[bool] = mapped_column(Boolean)
+    mail_is_activated: Mapped[bool] = mapped_column(Boolean)
+    mail_is_deactivated: Mapped[bool] = mapped_column(Boolean)
     mail_is_opensend: Mapped[bool] = mapped_column(Boolean)
     mail_is_sshkeyadded: Mapped[bool] = mapped_column(Boolean)
     mail_name_sshkey: Mapped[List[str]] = mapped_column(MutableJson)
