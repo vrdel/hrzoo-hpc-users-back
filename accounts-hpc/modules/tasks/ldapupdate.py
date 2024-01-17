@@ -168,19 +168,19 @@ class LdapUpdate(object):
         if not user.is_staff:
             user.ldap_gid = target_gid
 
-        if user.is_active == 0 and user.is_deactivated == 0:
+        if user.is_active == False and user.is_deactivated == False:
             ldap_user[0].change_attribute('loginShell', bonsai.LDAPModOp.REPLACE, self.confopts['usersetup']['noshell'])
-            ldap_user[0].modify()
+            await ldap_user[0].modify()
             self.logger.info(f"Deactivating {user.ldap_username}, setting disabled shell={self.confopts['usersetup']['noshell']}")
-            user.is_deactivated = 1
-            user.mail_is_deactivated = 1
+            user.is_deactivated = True
+            user.mail_is_deactivated = True
 
-        if user.is_active == 1 and user.is_deactivated == 1:
+        if user.is_active == True and user.is_deactivated == True:
             ldap_user[0].change_attribute('loginShell', bonsai.LDAPModOp.REPLACE, '/bin/bash')
             await ldap_user[0].modify()
             self.logger.info(f"Activating {user.ldap_username}, setting default shell=/bin/bash")
-            user.is_deactivated = 0
-            user.mail_is_activated = 1
+            user.is_deactivated = False
+            user.mail_is_activated = True
 
     async def user_key_update(self, user, ldap_user):
         """
