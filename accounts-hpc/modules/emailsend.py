@@ -17,22 +17,22 @@ import ssl
 
 
 class EmailSend(object):
-    def __init__(self, logger, confopts, emailto, username=None, sshkeyname=None, project=None):
+    def __init__(self, logger, confopts, emailto, username=None,
+                 sshkeyname=None, project=None, activated=None,
+                 deactivated=None):
         self.username = username
         self.sshkeyname = sshkeyname
+        self.activated = activated
+        self.deactivated = deactivated
         self.project = project
-        if username:
-            if confopts['email']['project_email']:
-                self.template = confopts['email']['template_newuser']
-                self.template = self.template.replace('.', f'_{self.project}.')
-            else:
-                self.template = confopts['email']['template_newuser']
+        if activated:
+            self.template = self._load_template(confopts['email']['template_activateuser'])
+        elif deactivated:
+            self.template = self._load_template(confopts['email']['template_deactivateuser'])
+        elif username:
+            self.template = self._load_template(confopts['email']['template_newuser'])
         else:
-            if confopts['email']['project_email']:
-                self.template = confopts['email']['template_newkey']
-                self.template = self.template.replace('.', f'_{self.project}.')
-            else:
-                self.template = confopts['email']['template_newkey']
+            self.template = self._load_template(confopts['email']['template_newkey'])
         self.smtpserver = confopts['email']['smtp']
         self.port = confopts['email']['port']
         self.tls = confopts['email']['tls']
@@ -41,13 +41,18 @@ class EmailSend(object):
         self.password = confopts['email']['password']
         self.timeout = confopts['email']['timeout']
         self.emailfrom = confopts['email']['from']
-        # TODO: uncomment
-        # self.emailbcc = "daniel.vrcic@gmail.com"
         self.emailbcc = confopts['email']['bcc']
-        # TODO: uncomment
-        # self.emailto = "daniel.vrcic@srce.hr"
         self.emailto = emailto
         self.logger = logger
+
+    def _load_template(self, template):
+        template_file = None
+        if self.confopts['email']['project_email']:
+            template_file = self.confopts['email'][template]
+            template_file = template_file.replace('.', f'_{self.project}.')
+        else:
+            template_file = self.confopts['email'][template]
+        return template_file
 
     async def _construct_email(self):
         text = None
