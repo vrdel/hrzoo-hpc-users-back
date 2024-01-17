@@ -60,6 +60,26 @@ class SendEmail(object):
                 users_opened.add(user.ldap_username)
                 self.logger.info(f"Send email for created account {user.ldap_username} @ {user.person_mail}")
 
+    async def _email_activate(self, users):
+        for user in users:
+            email = EmailSend(self.logger, self.confopts, user.person_mail,
+                              username=user.ldap_username, activated=True)
+            if await email.send():
+                user.mail_is_activated = False
+                user.mail_is_sshkeyadded = True
+                # all SSH keys are readded once user is back so we null it here
+                # so that user does not get an email for his SSH keys
+                user.mail_name_sshkey = list()
+                self.logger.info(f"Send email for reactivated account {user.ldap_username} @ {user.person_mail}")
+
+    async def _email_deactivate(self, users):
+        for user in users:
+            email = EmailSend(self.logger, self.confopts, user.person_mail,
+                              username=user.ldap_username, deactivated=True)
+            if await email.send():
+                user.mail_is_deactivated = False
+                self.logger.info(f"Send email for deactivated account {user.ldap_username} @ {user.person_mail}")
+
     async def _email_key(self, users, users_opened):
         for user in users:
             # skip for new users that are just created
@@ -104,6 +124,30 @@ class SendEmail(object):
                     raise exc
 
             else:
+                stmt = select(User).where(User.mail_is_activated == True)
+                users = await self.dbsession.execute(stmt)
+                users = users.scalars().all()
+
+                coros = []
+                for chunk in chunk_list(users):
+                    coros.append(self._email_activate(chunk))
+                calrets = await asyncio.gather(*coros, return_exceptions=True)
+                exc_raised, exc = contains_exception(calrets)
+                if exc_raised:
+                    raise exc
+
+                stmt = select(User).where(User.mail_is_deactivated == True)
+                users = await self.dbsession.execute(stmt)
+                users = users.scalars().all()
+
+                coros = []
+                for chunk in chunk_list(users):
+                    coros.append(self._email_deactivate(chunk))
+                calrets = await asyncio.gather(*coros, return_exceptions=True)
+                exc_raised, exc = contains_exception(calrets)
+                if exc_raised:
+                    raise exc
+
                 stmt = select(User).where(User.mail_is_opensend == False)
                 users = await self.dbsession.execute(stmt)
                 users = users.scalars().all()

@@ -20,19 +20,20 @@ class EmailSend(object):
     def __init__(self, logger, confopts, emailto, username=None,
                  sshkeyname=None, project=None, activated=None,
                  deactivated=None):
+        self.confopts = confopts
         self.username = username
         self.sshkeyname = sshkeyname
         self.activated = activated
         self.deactivated = deactivated
         self.project = project
         if activated:
-            self.template = self._load_template(confopts['email']['template_activateuser'])
+            self.template = self._load_template('template_activateuser')
         elif deactivated:
-            self.template = self._load_template(confopts['email']['template_deactivateuser'])
+            self.template = self._load_template('template_deactivateuser')
         elif username:
-            self.template = self._load_template(confopts['email']['template_newuser'])
+            self.template = self._load_template('template_newuser')
         else:
-            self.template = self._load_template(confopts['email']['template_newkey'])
+            self.template = self._load_template('template_newkey')
         self.smtpserver = confopts['email']['smtp']
         self.port = confopts['email']['port']
         self.tls = confopts['email']['tls']
