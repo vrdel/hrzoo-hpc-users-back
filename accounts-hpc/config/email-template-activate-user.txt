@@ -1,0 +1,16 @@
+Korisnički račun na Supeku ponovo aktivan
+----
+Poštovani/a,
+
+vaš korisnički račun za pristup resursu Supek je ponovo aktivan.
+
+Korisničko ime: __USERNAME__
+
+Upute za pristup možete pronaći na sljedećoj adresi:
+https://wiki.srce.hr/display/NR/Pristup+i+kopiranje+datoteka .
+
+Srdačan pozdrav,
+--
+Napredno računanje
+Sveučilište u Zagrebu, Sveučilišni računski centar (Srce), www.srce.unizg.hr
+computing@srce.hr, tel: +385 1 616 5555, fax: +385 1 616 5559
