@@ -12,6 +12,7 @@ from accounts_hpc.tasks.createdirectories import DirectoriesCreate
 from accounts_hpc.tasks.emailsend import SendEmail
 from accounts_hpc.tasks.fairshare import FairshareUpdate
 from accounts_hpc.shared import Shared
+from accounts_hpc.exceptions import AhTaskError
 
 
 CALLER_NAME = "ah-taskd"
@@ -99,6 +100,9 @@ class AhDaemon(object):
                 self.logger.info(f"> Ended {', '.join(scheduled)} in {format(end - start, '.2f')} seconds")
 
                 await asyncio.sleep(float(self.confopts['tasks']['every_sec']))
+
+        except AhTaskError as exc:
+            self.logger.error('Critical error, can not continue')
 
         except asyncio.CancelledError:
             if task_apisync:

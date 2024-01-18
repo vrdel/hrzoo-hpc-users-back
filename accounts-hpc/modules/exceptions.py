@@ -6,3 +6,7 @@ class AccountsHPCError(Exception):
 class SyncHttpError(AccountsHPCError):
     def __init__(self, msg=None):
         self.msg = msg
+
+class AhTaskError(AccountsHPCError):
+    def __init__(self, msg=None):
+        self.msg = msg
