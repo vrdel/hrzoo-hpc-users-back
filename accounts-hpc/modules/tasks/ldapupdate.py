@@ -1,5 +1,7 @@
 from accounts_hpc.shared import Shared  # type: ignore
 from accounts_hpc.db import Base, Project, User, SshKey  # type: ignore
+from accounts_hpc.exceptions import AhTaskError
+from accounts_hpc.utils import contains_exception
 
 from sqlalchemy import and_
 from sqlalchemy import select
@@ -15,6 +17,7 @@ class LdapUpdate(object):
     def __init__(self, caller, args, daemon=False):
         shared = Shared(caller, daemon)
         self.confopts = shared.confopts
+        self.daemon = daemon
         self.logger = shared.log[caller].get()
         self.dbsession = shared.dbsession[caller]
         self.args = args
@@ -322,10 +325,13 @@ class LdapUpdate(object):
 
             # default and resource groups are created only for flat hierarchies
             if not self.confopts['ldap']['project_organisation']:
-                task_create_defgroups = asyncio.create_task(self.create_default_groups())
-                task_create_resgroups = asyncio.create_task(self.create_resource_groups())
-                await task_create_defgroups
-                await task_create_resgroups
+                loop = asyncio.get_event_loop()
+                tasks = [self.create_resource_groups(), self.create_default_groups()]
+                ret_create_groups = await asyncio.gather(*tasks, loop=loop, return_exceptions=True)
+                exc_raised, exc = contains_exception(ret_create_groups)
+                if exc_raised:
+                    self.logger.error(f"Error creating default and resource groups - {repr(exc)}")
+                    raise AhTaskError
 
             for user in users:
                 if not user.ldap_username:
@@ -339,17 +345,13 @@ class LdapUpdate(object):
                                 await self.user_ldap_update(user, [ldap_user])
                                 await self.user_key_update(user, [ldap_user])
                             else:
-                                task_user_ldapup = asyncio.create_task(self.user_ldap_update(user, ldap_user))
-                                await task_user_ldapup
-                                task_user_keyup = asyncio.create_task(self.user_key_update(user, ldap_user))
-                                await task_user_keyup
+                                await self.user_ldap_update(user, ldap_user)
+                                await self.user_key_update(user, ldap_user)
                             user.is_opened = True
                         except bonsai.errors.AlreadyExists as exc:
                             self.logger.warning(f'LDAP user {user.ldap_username} - {repr(exc)}')
-                            task_user_ldapup = asyncio.create_task(self.user_ldap_update(user, ldap_user))
-                            await task_user_ldapup
-                            task_user_keyup = asyncio.create_task(self.user_key_update(user, ldap_user))
-                            await task_user_keyup
+                            await self.user_ldap_update(user, ldap_user)
+                            await self.user_key_update(user, ldap_user)
                             user.is_opened = True
                         except bonsai.errors.LDAPError as exc:
                             self.logger.error(f'Error adding/updating LDAP user {user.ldap_username} - {repr(exc)}')
@@ -366,17 +368,13 @@ class LdapUpdate(object):
                                     await self.user_ldap_update(user, [ldap_user])
                                     await self.user_key_update(user, [ldap_user])
                                 else:
-                                    task_user_ldapup = asyncio.create_task(self.user_ldap_update(user, ldap_user))
-                                    await task_user_ldapup
-                                    task_user_keyup = asyncio.create_task(self.user_key_update(user, ldap_user))
-                                    await task_user_keyup
+                                    await self.user_ldap_update(user, ldap_user)
+                                    await self.user_key_update(user, ldap_user)
                                 user.is_opened = True
                             except bonsai.errors.AlreadyExists as exc:
                                 self.logger.warning(f'LDAP user {user.ldap_username} - {repr(exc)}')
-                                task_user_ldapup = asyncio.create_task(self.user_ldap_update(user, ldap_user))
-                                await task_user_ldapup
-                                task_user_keyup = asyncio.create_task(self.user_key_update(user, ldap_user))
-                                await task_user_keyup
+                                await self.user_ldap_update(user, ldap_user)
+                                await self.user_key_update(user, ldap_user)
                                 user.is_opened = True
                             except bonsai.errors.LDAPError as exc:
                                 self.logger.error(f'Error adding/updating LDAP user {user.ldap_username} - {repr(exc)}')
