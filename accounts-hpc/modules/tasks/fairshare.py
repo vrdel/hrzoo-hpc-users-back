@@ -9,6 +9,7 @@ from sqlalchemy import select
 
 from accounts_hpc.db import Project  # type: ignore
 from accounts_hpc.shared import Shared  # type: ignore
+from accounts_hpc.exceptions import AhTaskError
 
 
 def send_sighup(process_name):

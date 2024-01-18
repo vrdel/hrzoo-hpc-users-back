@@ -1,6 +1,7 @@
 from accounts_hpc.shared import Shared  # type: ignore
 from accounts_hpc.db import User  # type: ignore
 from accounts_hpc.emailsend import EmailSend  # type: ignore
+from accounts_hpc.exceptions import AhTaskError
 from accounts_hpc.utils import contains_exception, chunk_list
 
 from sqlalchemy import select

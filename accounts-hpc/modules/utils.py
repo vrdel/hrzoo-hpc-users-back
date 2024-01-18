@@ -4,6 +4,7 @@ from accounts_hpc.db import User  # type: ignore
 from accounts_hpc.exceptions import SyncHttpError
 
 import aiohttp
+import asyncio
 
 
 def latest_project(username):
@@ -59,7 +60,7 @@ def check_error_statuses(fetched_data):
 
 def contains_exception(list: list[Exception]) -> tuple[bool, Any]:
     for a in list:
-        if isinstance(a, Exception):
+        if isinstance(a, Exception) or isinstance(a, asyncio.CancelledError):
             return (True, a)
 
     return (False, None)

@@ -390,7 +390,7 @@ class ApiSync(object):
                     interested_users_api.add(up['user']['id'])
                 visited_users.update([key['user']['id']])
 
-            self.logger.info(f"Interested in ({','.join(self.confopts['hzsiapi']['project_resources'])}) projects={len(stats['projects'])}/{len(stats['fullprojects'])}  users={len(stats['users'])}/{len(stats['fullusers'])} keys={len(stats['keys'])}")
+            self.logger.info(f"Interested in ({','.join(self.confopts['hzsiapi']['project_resources'])}) projects={len(stats['projects'])}/{len(stats['fullprojects'])} users={len(stats['users'])}/{len(stats['fullusers'])} keys={len(stats['keys'])}")
 
             await self.check_users_without_projects(interested_users_api)
             await self.users_projects_add(projects_users)

@@ -13,6 +13,7 @@ from accounts_hpc.tasks.emailsend import SendEmail
 from accounts_hpc.tasks.fairshare import FairshareUpdate
 from accounts_hpc.shared import Shared
 from accounts_hpc.exceptions import AhTaskError
+from accounts_hpc.utils import contains_exception
 
 
 CALLER_NAME = "ah-taskd"
@@ -56,60 +57,71 @@ class AhDaemon(object):
                 if 'apisync' in self.confopts['tasks']['call_list']:
                     self.logger.info("> Calling apisync task")
                     start = timeit.default_timer()
-                    task_apisync = asyncio.create_task(
+                    self.task_apisync = asyncio.create_task(
                         ApiSync(f'{CALLER_NAME}.apisync', self.fakeargs, daemon=True).run()
                     )
-                    await task_apisync
+                    await self.task_apisync
                     end = timeit.default_timer()
                     self.logger.info(f"> Ended apisync in {format(end - start, '.2f')} seconds")
 
                 if 'usermetadata' in self.confopts['tasks']['call_list']:
                     self.logger.info("> Calling usermetadata task")
                     start = timeit.default_timer()
-                    task_usermetadata = asyncio.create_task(
+                    self.task_usermetadata = asyncio.create_task(
                         UserMetadata(f'{CALLER_NAME}.usermetadata', self.fakeargs, daemon=True).run()
                     )
-                    await task_usermetadata
+                    await self.task_usermetadata
                     end = timeit.default_timer()
                     self.logger.info(f"> Ended usermetadata in {format(end - start, '.2f')} seconds")
 
                 if 'ldapupdate' in self.confopts['tasks']['call_list']:
                     self.logger.info("> Calling ldapupdate task")
                     start = timeit.default_timer()
-                    task_ldapupdate = asyncio.create_task(
+                    self.task_ldapupdate = asyncio.create_task(
                         LdapUpdate(f'{CALLER_NAME}.ldapupdate', self.fakeargs, daemon=True).run()
                     )
-                    await task_ldapupdate
+                    await self.task_ldapupdate
                     end = timeit.default_timer()
                     self.logger.info(f"> Ended ldapupdate in {format(end - start, '.2f')} seconds")
 
                 scheduled = []
                 if 'fairshare' in self.confopts['tasks']['call_list']:
-                    task_fairshare = asyncio.create_task(
+                    self.task_fairshare = asyncio.create_task(
                         FairshareUpdate(f'{CALLER_NAME}.fairshare', self.fakeargs, daemon=True).run()
                     )
                     scheduled.append('fairshare')
 
                 if 'createdirectories' in self.confopts['tasks']['call_list']:
-                    task_createdirectories = asyncio.create_task(
+                    self.task_createdirectories = asyncio.create_task(
                         DirectoriesCreate(f'{CALLER_NAME}.createdirectories', self.fakeargs, daemon=True).run()
                     )
                     scheduled.append('createdirectories')
 
                 if 'emailsend' in self.confopts['tasks']['call_list']:
-                    task_emailsend = asyncio.create_task(
+                    self.task_emailsend = asyncio.create_task(
                         SendEmail(f'{CALLER_NAME}.emailsend', self.fakeargs, daemon=True).run()
                     )
                     scheduled.append('emailsend')
 
                 self.logger.info(f"> Calling {', '.join(scheduled)} tasks")
                 start = timeit.default_timer()
-                if task_fairshare:
-                    await task_fairshare
-                if task_createdirectories:
-                    await task_createdirectories
-                if task_emailsend:
-                    await task_emailsend
+                tasks_concur = []
+                if self.task_fairshare:
+                    tasks_concur.append(self.task_fairshare)
+                if self.task_createdirectories:
+                    tasks_concur.append(self.task_createdirectories)
+                if self.task_emailsend:
+                    tasks_concur.append(self.task_emailsend)
+                ret_concur = await asyncio.gather(*tasks_concur, return_exceptions=True)
+                exc_raised, exc = contains_exception(ret_concur)
+                if exc_raised:
+                    for ret in ret_concur:
+                        if isinstance(ret, AhTaskError):
+                            self.logger.error("Error in concurrently running tasks")
+                            raise ret
+                        elif isinstance(ret, asyncio.CancelledError):
+                            self.logger.error("Concurrent task cancelled")
+
                 end = timeit.default_timer()
                 self.logger.info(f"> Ended {', '.join(scheduled)} in {format(end - start, '.2f')} seconds")
 
