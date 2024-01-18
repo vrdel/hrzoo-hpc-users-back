@@ -1,6 +1,9 @@
 from typing import Any, Union
 from accounts_hpc.shared import Shared  # type: ignore
 from accounts_hpc.db import User  # type: ignore
+from accounts_hpc.exceptions import SyncHttpError
+
+import aiohttp
 
 
 def latest_project(username):
@@ -39,6 +42,19 @@ def only_alnum(s: str) -> str:
         s = ''.join(s)
 
     return s
+
+
+def check_error_statuses(fetched_data):
+    if isinstance(fetched_data, list):
+        for response in fetched_data:
+            if (isinstance(response, aiohttp.ClientResponse)
+                    and not (response.status >= 200 and response.status < 300)):
+                return True
+    elif (isinstance(fetched_data, aiohttp.ClientResponse)
+            and not (response.status >= 200 and response.status < 300)):
+        return True
+
+    return False
 
 
 def contains_exception(list: list[Exception]) -> tuple[bool, Any]:

@@ -7,7 +7,7 @@ import timeit
 from accounts_hpc.db import Base, Project, User, SshKey  # type: ignore
 from accounts_hpc.httpconn import SessionWithRetry
 from accounts_hpc.exceptions import SyncHttpError
-from accounts_hpc.utils import only_alnum, all_none, contains_exception
+from accounts_hpc.utils import only_alnum, all_none, contains_exception, check_error_statuses
 from accounts_hpc.shared import Shared  # type: ignore
 
 from sqlalchemy import and_
@@ -335,6 +335,11 @@ class ApiSync(object):
             raise SystemExit(1)
 
         exc_raised, exc = contains_exception(fetched_data)
+        error_status = check_error_statuses(fetched_data)
+
+        if error_status:
+            raise SyncHttpError
+
         if exc_raised:
             raise exc
 
