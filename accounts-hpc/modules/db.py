@@ -37,7 +37,6 @@ class User(Base):
     is_opened: Mapped[bool] = mapped_column(Boolean)
     is_staff: Mapped[bool] = mapped_column(Boolean)
     is_dir_created: Mapped[bool] = mapped_column(Boolean)
-    mail_is_subscribed: Mapped[bool] = mapped_column(Boolean)
     mail_is_activated: Mapped[bool] = mapped_column(Boolean)
     mail_is_deactivated: Mapped[bool] = mapped_column(Boolean)
     mail_is_opensend: Mapped[bool] = mapped_column(Boolean)
