@@ -31,10 +31,24 @@ class AhDaemon(object):
         self.confopts = shared.confopts
         self.logger = shared.log[CALLER_NAME].get()
 
+    def _cancel_tasks(self):
+        if self.task_apisync:
+            self.task_apisync.cancel()
+        if self.task_usermetadata:
+            self.task_usermetadata.cancel()
+        if self.task_ldapupdate:
+            self.task_ldapupdate.cancel()
+        if self.task_fairshare:
+            self.task_fairshare.cancel()
+        if self.task_createdirectories:
+            self.task_createdirectories.cancel()
+        if self.task_emailsend:
+            self.task_emailsend.cancel()
+
     async def run(self):
         try:
-            task_apisync, task_usermetadata, task_ldapupdate = None, None, None
-            task_fairshare, task_createdirectories, task_emailsend = None, None, None
+            self.task_apisync, self.task_usermetadata, self.task_ldapupdate = None, None, None
+            self.task_fairshare, self.task_createdirectories, self.task_emailsend = None, None, None
 
             while True:
                 calls_str = ', '.join(self.confopts['tasks']['call_list'])
@@ -101,22 +115,12 @@ class AhDaemon(object):
 
                 await asyncio.sleep(float(self.confopts['tasks']['every_sec']))
 
-        except AhTaskError as exc:
+        except AhTaskError:
             self.logger.error('Critical error, can not continue')
+            self._cancel_tasks()
 
         except asyncio.CancelledError:
-            if task_apisync:
-                task_apisync.cancel()
-            if task_usermetadata:
-                task_usermetadata.cancel()
-            if task_ldapupdate:
-                task_ldapupdate.cancel()
-            if task_fairshare:
-                task_fairshare.cancel()
-            if task_createdirectories:
-                task_createdirectories.cancel()
-            if task_emailsend:
-                task_emailsend.cancel()
+            self._cancel_tasks()
             self.logger.info("* Stopping task runner...")
 
 
