@@ -183,13 +183,6 @@ def user_update(logger, args, session):
                 logger.info(f"Project {args.project} DB relation added for user {user.ldap_username}")
                 session.add(project)
 
-        if args.flagissubscribed and args.flagissubscribed > 0:
-            user.mail_is_subscribed = True
-        elif args.flagissubscribed == 0:
-            user.mail_is_subscribed = False
-        if args.flagissubscribed != None:
-            logger.info(f"Set mail_is_subscribed={args.flagissubscribed} for {user.ldap_username}")
-
         if args.flagisdircreated and args.flagisdircreated > 0:
             user.is_dir_created = True
         elif args.flagisdircreated == 0:
@@ -319,7 +312,6 @@ def user_project_add(logger, args, session):
                   is_dir_created=False,
                   is_deactivated=False,
                   mail_is_opensend=False,
-                  mail_is_subscribed=False,
                   mail_is_sshkeyadded=False,
                   mail_name_sshkey=list(),
                   is_staff=args.staff,
@@ -381,7 +373,6 @@ def user_project_list(logger, args, session):
                 table.add_row("Deactivated = ", str(user.is_deactivated))
                 table.add_row("Staff = ", str(user.is_staff))
                 table.add_row("Directories = ", str(user.is_dir_created))
-                table.add_row("Subscribed = ", str(user.mail_is_subscribed))
                 table.add_row("Mail open = ", str(user.mail_is_opensend))
                 table.add_row("Mail SSH key = ", str(user.mail_is_sshkeyadded))
                 table.add_row("Mail key name = ", ', '.join(user.mail_name_sshkey))
@@ -424,7 +415,6 @@ def user_project_list(logger, args, session):
                 table.add_row("Deactivated = ", str(user.is_deactivated))
                 table.add_row("Staff = ", str(user.is_staff))
                 table.add_row("Directories = ", str(user.is_dir_created))
-                table.add_row("Subscribed = ", str(user.mail_is_subscribed))
                 table.add_row("Mail open = ", str(user.mail_is_opensend))
                 table.add_row("Mail SSH key = ", str(user.mail_is_sshkeyadded))
                 table.add_row("Mail key name = ", ', '.join(user.mail_name_sshkey))
@@ -467,7 +457,6 @@ def user_project_list(logger, args, session):
                 table.add_row("Deactivated = ", str(user.is_deactivated))
                 table.add_row("Staff = ", str(user.is_staff))
                 table.add_row("Directories = ", str(user.is_dir_created))
-                table.add_row("Subscribed = ", str(user.mail_is_subscribed))
                 table.add_row("Mail open = ", str(user.mail_is_opensend))
                 table.add_row("Mail SSH key = ", str(user.mail_is_sshkeyadded))
                 table.add_row("Mail key name = ", ', '.join(user.mail_name_sshkey))
@@ -510,7 +499,6 @@ def user_project_list(logger, args, session):
                 table.add_row("Deactivated = ", str(user.is_deactivated))
                 table.add_row("Staff = ", str(user.is_staff))
                 table.add_row("Directories = ", str(user.is_dir_created))
-                table.add_row("Subscribed = ", str(user.mail_is_subscribed))
                 table.add_row("Mail open = ", str(user.mail_is_opensend))
                 table.add_row("Mail SSH key = ", str(user.mail_is_sshkeyadded))
                 table.add_row("Mail key name = ", ', '.join(user.mail_name_sshkey))
@@ -551,7 +539,6 @@ def user_project_list(logger, args, session):
             table.add_row("Deactivated = ", str(user.is_deactivated))
             table.add_row("Staff = ", str(user.is_staff))
             table.add_row("Directories = ", str(user.is_dir_created))
-            table.add_row("Subscribed = ", str(user.mail_is_subscribed))
             table.add_row("Mail open = ", str(user.mail_is_opensend))
             table.add_row("Mail SSH key = ", str(user.mail_is_sshkeyadded))
             table.add_row("Mail key name = ", ', '.join(user.mail_name_sshkey))
@@ -564,7 +551,7 @@ def user_project_list(logger, args, session):
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Manage user create, change and delete manually with needed metadata about him')
+    parser = argparse.ArgumentParser(description='Manage users create, change and delete manually with needed metadata about them')
     parser.add_argument('--force', dest='force', action='store_true', required=False,
                         help='Make changes in DB relations')
     parser.add_argument('--flush-keys', dest='flushkeys', action='store_true', required=False,
@@ -607,8 +594,6 @@ def main():
                                required=False, help='Flag user as staff')
     parser_update.add_argument('--project', dest='project', type=str,
                                required=False, help='Project identifier that user will be associated to')
-    parser_update.add_argument('--flag-subscribed', dest='flagissubscribed', type=int, metavar='0/1',
-                               required=False, help='Set flag mail_is_subscribed')
     parser_update.add_argument('--flag-dircreated', dest='flagisdircreated', type=int, metavar='0/1',
                                required=False, help='Set flag is_dir_created')
     parser_update.add_argument('--flag-deactivated', dest='flagisdeactivated', type=int, metavar='0/1',
