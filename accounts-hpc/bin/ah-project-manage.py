@@ -230,7 +230,7 @@ def main():
     shared = Shared(sys.argv[0])
     confopts = shared.confopts
     logger = shared.log.get()
-    dbsession = shared.dbsession
+    dbsession = shared.dbsession[sys.argv[0]]
 
     if args.command == "create":
         new_project = project_add(logger, args, dbsession, confopts)
