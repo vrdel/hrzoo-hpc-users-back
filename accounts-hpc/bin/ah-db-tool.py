@@ -7,6 +7,9 @@ import asyncio
 from accounts_hpc.db import Base  # type: ignore
 from accounts_hpc.shared import Shared  # type: ignore
 
+from alembic.config import Config
+from alembic import command
+
 from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.ext.asyncio import async_sessionmaker
@@ -27,6 +30,9 @@ async def main():
     if args.init:
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
+
+    alembic_cfg = Config("alembic.ini")
+    command.stamp(alembic_cfg, "head")
 
 
 if __name__ == '__main__':
