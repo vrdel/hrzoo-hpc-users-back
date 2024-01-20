@@ -124,7 +124,7 @@ class LdapUpdate(object):
                         diff_res = set(existing_members).difference(set(all_usernames))
                     self.logger.info(f"Updated resource group {group} because of difference: {', '.join(diff_res)}")
 
-    async def user_ldap_update(self, user, ldap_user):
+    async def user_sync_api_db(self, user, ldap_user):
         """
             check if there are differencies between user's project just
             synced from API and ones already registered in cache
@@ -343,17 +343,17 @@ class LdapUpdate(object):
                         try:
                             if not ldap_user or not user.is_opened:
                                 ldap_user = await self.new_user_ldap_add(user, conn)
-                                await self.user_ldap_update(user, [ldap_user])
+                                await self.user_sync_api_db(user, [ldap_user])
                                 await self.user_active_deactive(user, [ldap_user])
                                 await self.user_key_update(user, [ldap_user])
                             else:
-                                await self.user_ldap_update(user, ldap_user)
+                                await self.user_sync_api_db(user, ldap_user)
                                 await self.user_active_deactive(user, ldap_user)
                                 await self.user_key_update(user, ldap_user)
                             user.is_opened = True
                         except bonsai.errors.AlreadyExists as exc:
                             self.logger.warning(f'LDAP user {user.ldap_username} - {repr(exc)}')
-                            await self.user_ldap_update(user, ldap_user)
+                            await self.user_sync_api_db(user, ldap_user)
                             await self.user_active_deactive(user, ldap_user)
                             await self.user_key_update(user, ldap_user)
                             user.is_opened = True
@@ -369,15 +369,15 @@ class LdapUpdate(object):
                             try:
                                 if not ldap_user or not user.is_opened:
                                     ldap_user = await self.new_user_ldap_add(user, conn, identifier)
-                                    await self.user_ldap_update(user, [ldap_user])
+                                    await self.user_sync_api_db(user, [ldap_user])
                                     await self.user_key_update(user, [ldap_user])
                                 else:
-                                    await self.user_ldap_update(user, ldap_user)
+                                    await self.user_sync_api_db(user, ldap_user)
                                     await self.user_key_update(user, ldap_user)
                                 user.is_opened = True
                             except bonsai.errors.AlreadyExists as exc:
                                 self.logger.warning(f'LDAP user {user.ldap_username} - {repr(exc)}')
-                                await self.user_ldap_update(user, ldap_user)
+                                await self.user_sync_api_db(user, ldap_user)
                                 await self.user_key_update(user, ldap_user)
                                 user.is_opened = True
                             except bonsai.errors.LDAPError as exc:
