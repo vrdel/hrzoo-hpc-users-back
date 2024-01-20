@@ -171,6 +171,7 @@ class LdapUpdate(object):
         if not user.is_staff:
             user.ldap_gid = target_gid
 
+    async def user_active_deactive(self, user, ldap_user):
         if user.is_active == False and user.is_deactivated == False:
             ldap_user[0].change_attribute('loginShell', bonsai.LDAPModOp.REPLACE, self.confopts['usersetup']['noshell'])
             await ldap_user[0].modify()
@@ -343,14 +344,17 @@ class LdapUpdate(object):
                             if not ldap_user or not user.is_opened:
                                 ldap_user = await self.new_user_ldap_add(user, conn)
                                 await self.user_ldap_update(user, [ldap_user])
+                                await self.user_active_deactive(user, [ldap_user])
                                 await self.user_key_update(user, [ldap_user])
                             else:
                                 await self.user_ldap_update(user, ldap_user)
+                                await self.user_active_deactive(user, ldap_user)
                                 await self.user_key_update(user, ldap_user)
                             user.is_opened = True
                         except bonsai.errors.AlreadyExists as exc:
                             self.logger.warning(f'LDAP user {user.ldap_username} - {repr(exc)}')
                             await self.user_ldap_update(user, ldap_user)
+                            await self.user_active_deactive(user, ldap_user)
                             await self.user_key_update(user, ldap_user)
                             user.is_opened = True
                         except bonsai.errors.LDAPError as exc:
