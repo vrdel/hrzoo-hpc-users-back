@@ -232,8 +232,12 @@ class ApiSync(object):
                               mail_is_sshkeyadded=False,
                               mail_is_activated=False,
                               mail_is_deactivated=False,
+                              is_activated_project={uspr['project']['identifier']: True},
+                              is_deactivated_project={uspr['project']['identifier']: False},
                               mail_project_is_opensend={uspr['project']['identifier']: True if self.args.initset else False},
                               mail_project_is_sshkeyadded={uspr['project']['identifier']: True if self.args.initset else False},
+                              mail_project_is_activated=dict(),
+                              mail_project_is_deactivated=dict(),
                               mail_name_sshkey=list(),
                               is_staff=uspr['user']['is_staff'],
                               last_name=only_alnum(unidecode(uspr['user']['last_name'])),
@@ -257,8 +261,12 @@ class ApiSync(object):
                               mail_is_sshkeyadded=True if self.args.initset else False,
                               mail_is_activated=False,
                               mail_is_deactivated=False,
+                              is_activated_project=dict(),
+                              is_deactivated_project=dict(),
                               mail_project_is_opensend=dict(),
                               mail_project_is_sshkeyadded=dict(),
+                              mail_project_is_activated=dict(),
+                              mail_project_is_deactivated=dict(),
                               mail_name_sshkey=list(),
                               is_staff=uspr['user']['is_staff'],
                               last_name=only_alnum(unidecode(uspr['user']['last_name'])),
@@ -286,7 +294,7 @@ class ApiSync(object):
                 self.dbsession.add(pr)
                 self.dbsession.add(us)
 
-    async def check_users_without_projects(self, apiusers):
+    async def check_users_inactive(self, apiusers):
         users_db = await self.dbsession.execute(select(User))
         users_db = users_db.scalars().all()
         uids_db = [user.uid_api for user in users_db
@@ -390,7 +398,7 @@ class ApiSync(object):
 
             self.logger.info(f"Interested in ({','.join(self.confopts['hzsiapi']['project_resources'])}) projects={len(stats['projects'])}/{len(stats['fullprojects'])} users={len(stats['users'])}/{len(stats['fullusers'])} keys={len(stats['keys'])}")
 
-            await self.check_users_without_projects(interested_users_api)
+            await self.check_users_inactive(interested_users_api)
             await self.users_projects_add(projects_users)
             await self.users_projects_del(projects_users)
             await self.sshkeys_add(projects_users, sshkeys)
