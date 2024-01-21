@@ -166,11 +166,13 @@ class ApiSync(object):
                     for pr in prjs_diff_db:
                         del us.mail_project_is_opensend[pr.identifier]
                         del us.mail_project_is_sshkeyadded[pr.identifier]
+                        us.is_deactivated_project.update({
+                            pr.identifier: False
+                        })
 
             visited_users.update([uspr['user']['id']])
 
     async def users_projects_add(self, projects_users):
-
         for uspr in projects_users:
             try:
                 stmt = select(Project).where(Project.identifier == uspr['project']['identifier'])
@@ -215,6 +217,14 @@ class ApiSync(object):
                                 uspr['project']['identifier']: True if self.args.initset else False
                             }
                         )
+                    if uspr['project']['identifier'] in us.is_deactivated_project.keys():
+                        is_activated_project = us.is_activated_project
+                        if uspr['project']['identifier'] not in is_activated_project.keys():
+                            is_activated_project.update(
+                                {
+                                    uspr['project']['identifier']: False
+                                }
+                            )
                 # always up to date fields
                 us.person_mail = uspr['user']['person_mail']
                 us.person_uniqueid = uspr['user']['username']
@@ -232,8 +242,8 @@ class ApiSync(object):
                               mail_is_sshkeyadded=False,
                               mail_is_activated=False,
                               mail_is_deactivated=False,
-                              is_activated_project={uspr['project']['identifier']: True},
-                              is_deactivated_project={uspr['project']['identifier']: False},
+                              is_activated_project=dict(),
+                              is_deactivated_project=dict(),
                               mail_project_is_opensend={uspr['project']['identifier']: True if self.args.initset else False},
                               mail_project_is_sshkeyadded={uspr['project']['identifier']: True if self.args.initset else False},
                               mail_project_is_activated=dict(),
