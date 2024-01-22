@@ -225,6 +225,12 @@ class ApiSync(object):
                                     uspr['project']['identifier']: False
                                 }
                             )
+                    if (us.is_activated_project.get(uspr['project']['identifier'], False)
+                            and us.is_deactivated_project.get(uspr['project']['identifier'], False)):
+                        del us.is_activated_project[uspr['project']['identifier']]
+                        del us.is_deactivated_project[uspr['project']['identifier']]
+                        del us.mail_project_is_activated[uspr['project']['identifier']]
+                        del us.mail_project_is_deactivated[uspr['project']['identifier']]
                 # always up to date fields
                 us.person_mail = uspr['user']['person_mail']
                 us.person_uniqueid = uspr['user']['username']
