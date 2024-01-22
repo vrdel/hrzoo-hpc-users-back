@@ -203,9 +203,17 @@ class LdapUpdate(object):
                         ldap_user = await ldap_conn.search(f"cn={user.ldap_username},ou=People,o=PROJECT-{proj},{self.confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
                         ldap_user[0].change_attribute('loginShell', bonsai.LDAPModOp.REPLACE, '/bin/bash')
                         await ldap_user[0].modify()
-                        self.logger.info(f"Activating {user.ldap_username} for {proj}, setting default shell={self.confopts['usersetup']['noshell']}")
+                        self.logger.info(f"Activating {user.ldap_username} for {proj}, setting default shell=/bin/bash")
                         user.is_activated_project[proj] = True
                         user.mail_project_is_activated[proj] = False
+            if not user.is_active:
+                for proj in await user.awaitable_attrs.project:
+                    ldap_user = await ldap_conn.search(f"cn={user.ldap_username},ou=People,o=PROJECT-{proj.identifier},{self.confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
+                    ldap_user[0].change_attribute('loginShell', bonsai.LDAPModOp.REPLACE, self.confopts['usersetup']['noshell'])
+                    await ldap_user[0].modify()
+                    self.logger.info(f"user.is_active=0, deactivating {user.ldap_username} for {proj.identifier}, setting disabled shell={self.confopts['usersetup']['noshell']}")
+                    user.is_deactivated_project[proj.identifier] = True
+                    user.mail_project_is_deactivated[proj.identifier] = False
 
     async def user_key_update(self, user, ldap_user):
         """
