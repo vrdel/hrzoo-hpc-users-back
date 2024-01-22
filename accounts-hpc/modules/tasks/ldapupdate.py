@@ -154,7 +154,8 @@ class LdapUpdate(object):
                 self.dbsession.add(target_project)
                 self.logger.info(f"User {user.person_uniqueid} removed from project {project}")
         try:
-            target_gid = self.confopts['usersetup']['gid_offset'] + user.project[-1].prjid_api
+            user_project = await user.awaitable_attrs.project
+            target_gid = self.confopts['usersetup']['gid_offset'] + user_project[-1].prjid_api
         except IndexError:
             target_gid = 0
 
@@ -200,7 +201,7 @@ class LdapUpdate(object):
                 for proj in user.is_activated_project:
                     if not user.is_activated_project[proj]:
                         ldap_user = await ldap_conn.search(f"cn={user.ldap_username},ou=People,o=PROJECT-{proj},{self.confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
-                        ldap_user[0].change_attribute('loginShell', bonsai.LDAPModOp.REPLACE, self.confopts['usersetup']['noshell'])
+                        ldap_user[0].change_attribute('loginShell', bonsai.LDAPModOp.REPLACE, '/bin/bash')
                         await ldap_user[0].modify()
                         self.logger.info(f"Activating {user.ldap_username} for {proj}, setting default shell={self.confopts['usersetup']['noshell']}")
                         user.is_activated_project[proj] = True
