@@ -173,7 +173,7 @@ class LdapUpdate(object):
             user.ldap_gid = target_gid
 
     async def user_active_deactive(self, user, ldap_user=None, ldap_conn=None):
-        if not self.confopts['ldap']['project_organisation']:
+        if self.confopts['ldap']['project_organisation'] == 'flat':
             if user.is_active == False and user.is_deactivated == False:
                 ldap_user[0].change_attribute('loginShell', bonsai.LDAPModOp.REPLACE, self.confopts['usersetup']['noshell'])
                 await ldap_user[0].modify()
@@ -257,7 +257,7 @@ class LdapUpdate(object):
                 user_sshkey = await user.awaitable_attrs.sshkey
                 user_sshkey.append(target_key)
                 user.mail_name_sshkey.append(target_key.name)
-                if self.confopts['email']['project_email']:
+                if self.confopts['ldap']['mode'] == 'project_organisation':
                     mp = user.mail_project_is_sshkeyadded
                     for prj in mp.keys():
                         if mp[prj]:
@@ -288,7 +288,7 @@ class LdapUpdate(object):
 
     async def new_group_ldap_add(self, project):
         async with self.client.connect(is_async=True) as conn:
-            if not self.confopts['ldap']['project_organisation']:
+            if self.confopts['ldap']['mode'] == 'flat':
                 ldap_project = bonsai.LDAPEntry(f"cn={project.identifier},ou=Group,{self.confopts['ldap']['basedn']}")
             else:
                 ldap_project = bonsai.LDAPEntry(f"cn={project.identifier},ou=Group,o=PROJECT-{project.identifier},{self.confopts['ldap']['basedn']}")
@@ -356,7 +356,7 @@ class LdapUpdate(object):
             users = users.scalars().all()
 
             # default and resource groups are created only for flat hierarchies
-            if not self.confopts['ldap']['project_organisation']:
+            if self.confopts['ldap']['mode'] == 'flat':
                 loop = asyncio.get_event_loop()
                 tasks = [self.create_resource_groups(), self.create_default_groups()]
                 ret_create_groups = await asyncio.gather(*tasks, loop=loop, return_exceptions=True)
@@ -368,7 +368,7 @@ class LdapUpdate(object):
             for user in users:
                 if not user.ldap_username:
                     continue
-                if not self.confopts['ldap']['project_organisation']:
+                if self.confopts['ldap']['mode'] == 'flat':
                     async with self.client.connect(is_async=True, timeout=None) as conn:
                         ldap_user = await conn.search(f"cn={user.ldap_username},ou=People,{self.confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
                         try:
@@ -421,7 +421,7 @@ class LdapUpdate(object):
 
             async with self.client.connect(is_async=True) as conn:
                 for project in projects:
-                    if not self.confopts['ldap']['project_organisation']:
+                    if self.confopts['ldap']['mode'] == 'flat':
                         ldap_project = await conn.search(f"cn={project.identifier},ou=Group,{self.confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
                     else:
                         ldap_project = await conn.search(f"cn={project.identifier},ou=Group,o=PROJECT-{project.identifier},{self.confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
@@ -434,7 +434,7 @@ class LdapUpdate(object):
                     except bonsai.errors.LDAPError as exc:
                         self.logger.error(f'Error adding/updating LDAP group {project.identifier} - {repr(exc)}')
 
-            if not self.confopts['ldap']['project_organisation']:
+            if self.confopts['ldap']['mode'] == 'flat':
                 # handle default groups associations
                 task_update_defgroups = asyncio.create_task(self.update_default_groups(users, "hpc-users"))
                 # update_default_groups(self.confopts, conn, self.logger, users, "hpc", onlyops=True)

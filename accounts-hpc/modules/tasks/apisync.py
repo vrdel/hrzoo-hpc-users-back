@@ -162,7 +162,7 @@ class ApiSync(object):
                     for pr in prjs_diff_db:
                         us.project.remove(pr)
 
-                if self.confopts['email']['project_email']:
+                if self.confopts['ldap']['mode'] == 'project_organisation':
                     for pr in prjs_diff_db:
                         del us.mail_project_is_opensend[pr.identifier]
                         del us.mail_project_is_sshkeyadded[pr.identifier]
@@ -202,7 +202,7 @@ class ApiSync(object):
                 if uspr['project']['identifier'] not in projects_api:
                     projects_api.append(uspr['project']['identifier'])
                 us.projects_api = projects_api
-                if self.confopts['email']['project_email'] == True:
+                if self.confopts['ldap']['mode'] == 'project_organisation':
                     mail_project_is_opensend = us.mail_project_is_opensend
                     if uspr['project']['identifier'] not in mail_project_is_opensend.keys():
                         mail_project_is_opensend.update(
@@ -239,7 +239,7 @@ class ApiSync(object):
                 us.uid_api = uspr['user']['id']
 
             except NoResultFound:
-                if self.confopts['email']['project_email'] == True:
+                if self.confopts['ldap']['mode'] == 'project_organisation':
                     us = User(first_name=only_alnum(unidecode(uspr['user']['first_name'])),
                               is_active=uspr['user']['status'],
                               is_opened=True if self.args.initset else False,
@@ -415,7 +415,6 @@ class ApiSync(object):
 
             self.logger.info(f"Interested in ({','.join(self.confopts['hzsiapi']['project_resources'])}) projects={len(stats['projects'])}/{len(stats['fullprojects'])} users={len(stats['users'])}/{len(stats['fullusers'])} keys={len(stats['keys'])}")
 
-            # if not self.confopts['ldap']['project_organisation']:
             await self.check_users_inactive(interested_users_api)
             await self.users_projects_add(projects_users)
             await self.users_projects_del(projects_users)

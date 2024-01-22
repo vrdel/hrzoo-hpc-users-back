@@ -18,7 +18,7 @@ def parse_config(logger=None):
                     confopts['ldap'].update({'user': config.get(section, 'user')})
                     confopts['ldap'].update({'password': config.get(section, 'password')})
                     confopts['ldap'].update({'basedn': config.get(section, 'basedn')})
-                    confopts['ldap'].update({'project_organisation': config.getboolean(section, 'project_organisation')})
+                    confopts['ldap'].update({'mode': config.get(section, 'mode')})
 
                 if section.startswith('db'):
                     confopts['db'] = ({'path': config.get(section, 'path')})

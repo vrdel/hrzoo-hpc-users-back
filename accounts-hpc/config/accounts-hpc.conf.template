@@ -20,7 +20,7 @@ server = ldap://docker-hrzooldapserv
 user = cn=Manager,dc=example,dc=domain,dc=hr
 password = password
 basedn = dc=example,dc=example,dc=hr
-project_organisation = False
+mode = project_organisation
 
 [hzsiapi]
 sshkeys = http://hzsidev.hr:8001/api/v1/sshkeys

@@ -131,7 +131,7 @@ class SendEmail(object):
 
     async def run(self):
         try:
-            if self.confopts['email']['project_email']:
+            if self.confopts['ldap']['mode'] == 'project_organisation':
                 users = await self.dbsession.execute(select(User))
                 users = users.scalars().all()
 
