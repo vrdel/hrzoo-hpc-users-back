@@ -231,6 +231,7 @@ class ApiSync(object):
                         del us.is_deactivated_project[uspr['project']['identifier']]
                         del us.mail_project_is_activated[uspr['project']['identifier']]
                         del us.mail_project_is_deactivated[uspr['project']['identifier']]
+                        self.logger.info(f"Reset activated/deactivated flags for {us.ldap_username} - {uspr['project']['identifier']}")
                 # always up to date fields
                 us.person_mail = uspr['user']['person_mail']
                 us.person_uniqueid = uspr['user']['username']
@@ -314,7 +315,7 @@ class ApiSync(object):
         users_db = await self.dbsession.execute(select(User))
         users_db = users_db.scalars().all()
         uids_db = [user.uid_api for user in users_db
-                   if not user.is_deactivated and not user.type_create == 'manual']
+                   if not user.is_deactivated and not user.type_create == 'manual' and user.is_active]
         uids_not_onapi = set()
         for uid in uids_db:
             if uid not in apiusers:
@@ -414,6 +415,7 @@ class ApiSync(object):
 
             self.logger.info(f"Interested in ({','.join(self.confopts['hzsiapi']['project_resources'])}) projects={len(stats['projects'])}/{len(stats['fullprojects'])} users={len(stats['users'])}/{len(stats['fullusers'])} keys={len(stats['keys'])}")
 
+            # if not self.confopts['ldap']['project_organisation']:
             await self.check_users_inactive(interested_users_api)
             await self.users_projects_add(projects_users)
             await self.users_projects_del(projects_users)
