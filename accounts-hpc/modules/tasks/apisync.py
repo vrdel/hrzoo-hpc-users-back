@@ -385,33 +385,32 @@ class ApiSync(object):
 
             stats = dict({'users': set(), 'fullusers': set(), 'fullprojects': set(), 'projects': set(), 'keys': set()})
             projects_users = list()
-            visited_users, interested_users_api = set(), set()
+            interested_users_api = set()
             # build of projects_users association list
             # user has at least one key added - enough at this point
             # filter project according to interested state and approved
             # resources
-            for key in sshkeys:
-                stats['keys'].add('{}{}'.format(key['fingerprint'], key['user']['id']))
-                stats['fullusers'].add(key['user']['id'])
-                for up in userproject:
-                    if (up['project']['state']
-                            not in self.confopts['hzsiapi']['project_state']):
-                        continue
-                    stats['fullprojects'].add(up['project']['id'])
-                    if projectsfields:
-                        replace_projectsapi_fields(projectsfields, up)
-                    rt_found = False
-                    for rt in up['project']['staff_resources_type']:
-                        if rt in self.confopts['hzsiapi']['project_resources']:
-                            rt_found = True
-                    if not rt_found:
-                        continue
+            for up in userproject:
+                if (up['project']['state']
+                        not in self.confopts['hzsiapi']['project_state']):
+                    continue
+                stats['fullprojects'].add(up['project']['id'])
+                if projectsfields:
+                    replace_projectsapi_fields(projectsfields, up)
+                rt_found = False
+                for rt in up['project']['staff_resources_type']:
+                    if rt in self.confopts['hzsiapi']['project_resources']:
+                        rt_found = True
+                if not rt_found:
+                    continue
+                stats['projects'].add(up['project']['id'])
+                interested_users_api.add(up['user']['id'])
+                for key in sshkeys:
+                    stats['keys'].add('{}{}'.format(key['fingerprint'], key['user']['id']))
+                    stats['fullusers'].add(key['user']['id'])
                     if up['user']['id'] == key['user']['id']:
                         projects_users.append(up)
                         stats['users'].add(key['user']['id'])
-                    stats['projects'].add(up['project']['id'])
-                    interested_users_api.add(up['user']['id'])
-                visited_users.update([key['user']['id']])
 
             self.logger.info(f"Interested in ({','.join(self.confopts['hzsiapi']['project_resources'])}) projects={len(stats['projects'])}/{len(stats['fullprojects'])} users={len(stats['users'])}/{len(stats['fullusers'])} keys={len(stats['keys'])}")
 

@@ -48,7 +48,7 @@ class EmailSend(object):
 
     def _load_template(self, template):
         template_file = None
-        if self.confopts['email']['project_email']:
+        if self.confopts['ldap']['mode'] == 'project_organisation':
             template_file = self.confopts['email'][template]
             template_file = template_file.replace('.', f'_{self.project}.')
         else:

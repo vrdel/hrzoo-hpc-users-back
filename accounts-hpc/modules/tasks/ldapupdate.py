@@ -173,7 +173,7 @@ class LdapUpdate(object):
             user.ldap_gid = target_gid
 
     async def user_active_deactive(self, user, ldap_user=None, ldap_conn=None):
-        if self.confopts['ldap']['project_organisation'] == 'flat':
+        if self.confopts['ldap']['mode'] == 'flat':
             if user.is_active == False and user.is_deactivated == False:
                 ldap_user[0].change_attribute('loginShell', bonsai.LDAPModOp.REPLACE, self.confopts['usersetup']['noshell'])
                 await ldap_user[0].modify()
