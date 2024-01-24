@@ -4,6 +4,9 @@ import asyncio
 import sys
 import signal
 import timeit
+import datetime
+
+from datetime import timedelta
 
 from accounts_hpc.tasks.apisync import ApiSync
 from accounts_hpc.tasks.usermetadata import UserMetadata
@@ -46,14 +49,37 @@ class AhDaemon(object):
         if self.task_emailsend:
             self.task_emailsend.cancel()
 
+    def _initial_delay(self):
+        now = datetime.datetime.now()
+        next_run_minute = (now.minute // self.confopts['tasks']['every_min'] + 1) * self.confopts['tasks']['every_min']
+        if next_run_minute >= 60:
+            next_run_minute = 0
+        next_run_time = now.replace(minute=next_run_minute, second=0, microsecond=0)
+        if next_run_time < now:
+            next_run_time = (now + datetime.timedelta(hours=1)).replace(minute=0, second=0, microsecond=0)
+        initial_delay = (next_run_time - now).total_seconds()
+
+        return initial_delay
+
+    def _next_delay(self):
+        now = datetime.datetime.now()
+        delay = now.replace(second=0, microsecond=0) + timedelta(minutes=self.confopts['tasks']['every_min']) - now
+        return delay.total_seconds()
+
     async def run(self):
         try:
             self.task_apisync, self.task_usermetadata, self.task_ldapupdate = None, None, None
             self.task_fairshare, self.task_createdirectories, self.task_emailsend = None, None, None
+            initial_delay, initial_done = self._initial_delay(), False
 
             while True:
                 calls_str = ', '.join(self.confopts['tasks']['call_list'])
                 self.logger.info(f"* Scheduled tasks ({calls_str})...")
+                if initial_delay and not initial_done:
+                    self.logger.info(f"* Initial delay ({initial_delay})...")
+                    await asyncio.sleep(initial_delay)
+                    initial_done = True
+
                 if 'apisync' in self.confopts['tasks']['call_list']:
                     self.logger.info("> Calling apisync task")
                     start = timeit.default_timer()
@@ -125,7 +151,7 @@ class AhDaemon(object):
                 end = timeit.default_timer()
                 self.logger.info(f"> Ended {', '.join(scheduled)} in {format(end - start, '.2f')} seconds")
 
-                await asyncio.sleep(float(self.confopts['tasks']['every_sec']))
+                await asyncio.sleep(self._next_delay())
 
         except AhTaskError:
             self.logger.error('Critical error, can not continue')
