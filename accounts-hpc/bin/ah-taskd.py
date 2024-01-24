@@ -74,7 +74,7 @@ class AhDaemon(object):
 
             while True:
                 calls_str = ', '.join(self.confopts['tasks']['call_list'])
-                self.logger.info(f"* Scheduled tasks ({calls_str})...")
+                self.logger.info(f"* Scheduled tasks ({calls_str}) every {self.confopts['tasks']['every_min']} minutes...")
                 if initial_delay and not initial_done:
                     self.logger.info(f"* Initial delay ({initial_delay})...")
                     await asyncio.sleep(initial_delay)
