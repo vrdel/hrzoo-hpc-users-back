@@ -25,7 +25,7 @@ def parse_config(logger=None):
 
                 if section.startswith('tasks'):
                     confopts['tasks'] = ({'call_list': [task.strip() for task in config.get(section, 'call_list').split(',')]})
-                    confopts['tasks'].update({'every_sec': config.get(section, 'every_sec')})
+                    confopts['tasks'].update({'every_min': config.getint(section, 'every_min')})
                     confopts['tasks'].update({'db_chunks': config.getint(section, 'db_chunks')})
 
                 if section.startswith('hzsiapi'):

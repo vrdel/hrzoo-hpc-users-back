@@ -3,7 +3,7 @@ VENV = /opt/hrzoo-accounts-hpc
 
 [tasks]
 call_list = apisync, usermetadata
-every_sec = 60
+every_min = 1
 db_chunks = 10
 
 [connection]
