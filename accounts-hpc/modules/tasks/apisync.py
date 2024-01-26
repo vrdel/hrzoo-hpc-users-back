@@ -236,7 +236,9 @@ class ApiSync(object):
                 us.person_mail = uspr['user']['person_mail']
                 us.person_uniqueid = uspr['user']['username']
                 us.is_active = uspr['user']['status']
+                us.is_staff = uspr['user']['is_staff']
                 us.uid_api = uspr['user']['id']
+                us.ldap_username = uspr['user']['person_username']
 
             except NoResultFound:
                 if self.confopts['ldap']['mode'] == 'project_organisation':
@@ -266,7 +268,7 @@ class ApiSync(object):
                               uid_api=uspr['user']['id'],
                               ldap_uid=0,
                               ldap_gid=0,
-                              ldap_username='',
+                              ldap_username=uspr['user']['person_username'],
                               type_create='api')
                 else:
                     us = User(first_name=only_alnum(unidecode(uspr['user']['first_name'])),
@@ -295,7 +297,7 @@ class ApiSync(object):
                               uid_api=uspr['user']['id'],
                               ldap_uid=0,
                               ldap_gid=0,
-                              ldap_username='',
+                              ldap_username=uspr['user']['person_username'],
                               type_create='api')
 
             except MultipleResultsFound as exc:
