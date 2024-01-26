@@ -10,26 +10,6 @@ import aiofiles
 import asyncio
 
 
-def gen_username(first: str, last: str, existusers: list[str]) -> str:
-    # ASCII convert
-    name = first.lower()
-    surname = last.lower()
-    # take first char of name and first seven from surname
-    username = name[0] + surname[:7]
-
-    if username in existusers:
-        match = list()
-        if len(username) < 8:
-            match = list(filter(lambda u: u.startswith(username), existusers))
-        else:
-            match = list(filter(lambda u: u.startswith(username[:-1]), existusers))
-
-        return username + str(len(match))
-
-    else:
-        return username
-
-
 class UserMetadata(object):
     def __init__(self, caller, args, daemon=False):
         shared = Shared(caller, daemon)
@@ -56,17 +36,12 @@ class UserMetadata(object):
             users = await self.dbsession.execute(select(User))
             users = users.scalars().all()
 
-            all_usernames = [user.ldap_username for user in users if user.ldap_username]
             for user in users:
                 set_metadata = False
 
                 if user.is_active == 0:
                     continue
 
-                if not user.ldap_username:
-                    user.ldap_username = gen_username(user.first_name, user.last_name, all_usernames)
-                    all_usernames.append(user.ldap_username)
-                    set_metadata = True
                 if not user.ldap_uid and not user.is_staff:
                     if user.type_create == 'manual':
                         target_user = [tu for tu in mapuser if tu['username'] == user.ldap_username]
