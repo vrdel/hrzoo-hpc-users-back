@@ -61,7 +61,6 @@ def parse_config(logger=None):
                     confopts['email'].update({'tls': config.getboolean(section, 'tls')})
                     confopts['email'].update({'ssl': config.getboolean(section, 'ssl')})
                     confopts['email'].update({'timeout': config.getint(section, 'timeout')})
-                    confopts['email'].update({'project_email': config.getboolean(section, 'project_email')})
 
                 if section.startswith('usersetup'):
                     confopts['usersetup'] = ({'uid_offset': config.getint(section, 'uid_offset')})

@@ -41,7 +41,7 @@ setup(
              'bin/ah-directories-create.py', 'bin/ah-fairshare-update.py', 'bin/ah-email-send.py',
              'bin/ah-db-tool.py', 'bin/ah-all-flags-set.py',
              'bin/ah-user-manage.py', 'bin/ah-project-manage.py',
-             'bin/ah-daemon.py'],
+             'bin/ah-taskd.py'],
     data_files=[
         ('bin/', glob.glob('bin/*')),
         ('etc/accounts-hpc', ['config/email-template-new-key.txt',
