@@ -229,8 +229,8 @@ def main():
 
     shared = Shared(sys.argv[0])
     confopts = shared.confopts
-    logger = shared.log.get()
-    dbsession = shared.dbsession[sys.argv[0]]
+    logger = shared.log[sys.argv[0]].get()
+    dbsession = shared.dbsession_sync[sys.argv[0]]
 
     if args.command == "create":
         new_project = project_add(logger, args, dbsession, confopts)

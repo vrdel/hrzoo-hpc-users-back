@@ -3,6 +3,7 @@ from accounts_hpc.log import Logger  # type: ignore
 from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy import create_engine
 
 
 class Shared(object):
@@ -33,3 +34,10 @@ class Shared(object):
             engine = create_async_engine("sqlite+aiosqlite:///{}".format(self.__class__.confopts['db']['path']))
             async_session = sessionmaker(bind=engine, expire_on_commit=False, class_=AsyncSession)
             self.__class__.dbsession[caller] = async_session()
+
+        if not getattr(self.__class__, 'dbsession_sync', False):
+            self.__class__.dbsession_sync = dict()
+        if caller not in self.__class__.dbsession_sync:
+            engine = create_engine("sqlite:///{}".format(self.__class__.confopts['db']['path']))
+            Session = sessionmaker(engine)
+            self.__class__.dbsession_sync[caller] = Session()
