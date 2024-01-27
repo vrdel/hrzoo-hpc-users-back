@@ -2,7 +2,7 @@
 VENV = /opt/hrzoo-accounts-hpc
 
 [tasks]
-call_list = apisync, usermetadata
+call_list = apisync, usermetadata, ldapupdate, fairshare, createdirectories, emailsend
 every_min = 1
 db_chunks = 10
 
@@ -59,7 +59,6 @@ template_newuser = %(VENV)s/etc/accounts-hpc/email-template-new-user.txt
 template_newkey = %(VENV)s/etc/accounts-hpc/email-template-new-key.txt
 template_activateuser = %(VENV)s/etc/accounts-hpc/email-template-activate-user.txt
 template_deactivateuser = %(VENV)s/etc/accounts-hpc/email-template-deactivate-user.txt
-project_email = False
 
 [db]
 path = %(VENV)s/var/lib/cache.db
