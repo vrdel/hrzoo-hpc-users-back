@@ -33,7 +33,7 @@ async def main():
             if not project.is_pbsfairshare_added:
                 project.is_pbsfairshare_added = True
 
-        if not shared.confopts['ldap']['project_organisation']:
+        if shared.confopts['ldap']['mode'] == 'flat':
             for user in users:
                 if not user.is_opened:
                     user.is_opened = True
