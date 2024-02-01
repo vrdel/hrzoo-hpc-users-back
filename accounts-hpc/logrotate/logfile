@@ -1,8 +1,7 @@
-/opt/hrzoo-signup/var/log {
+/opt/hrzoo-accounts-hpc/var/log/accounts-hpc.log {
     size 1M
     rotate 100
     compress
     missingok
     notifempty
-    endscript
 }
