@@ -1,0 +1,8 @@
+/opt/hrzoo-signup/var/log {
+    size 1M
+    rotate 100
+    compress
+    missingok
+    notifempty
+    endscript
+}
