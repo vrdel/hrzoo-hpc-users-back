@@ -1,0 +1,7 @@
+/opt/hrzoo-accounts-hpc/var/lib/cache.db {
+    rotate 7
+    compress
+    daily
+    copy
+    olddir /opt/hrzoo-accounts-hpc/var/lib/backup/
+}
