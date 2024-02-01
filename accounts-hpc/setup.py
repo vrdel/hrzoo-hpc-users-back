@@ -50,6 +50,7 @@ setup(
                               'config/email-template-deactivate-user.txt',
                               'config/accounts-hpc.conf.template',
                               'config/replacestring_map.json',
+                              'config/deploy-config.sh',
                               'config/users_map.json']),
         ('etc/logrotate.d/', ['logrotate/cache', 'logrotate/logfile']),
         ('var/log/', ['helpers/empty']),
