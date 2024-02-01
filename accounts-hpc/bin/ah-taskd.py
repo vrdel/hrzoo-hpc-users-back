@@ -129,7 +129,8 @@ class AhDaemon(object):
                     )
                     scheduled.append('emailsend')
 
-                self.logger.info(f"> Calling {', '.join(scheduled)} tasks")
+                if scheduled:
+                    self.logger.info(f"> Calling {', '.join(scheduled)} tasks")
                 start = timeit.default_timer()
                 tasks_concur = []
                 if self.task_fairshare:

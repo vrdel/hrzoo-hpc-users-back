@@ -52,7 +52,7 @@ class Logger(object):
             logging.basicConfig(format=lfs, level=lv)
             self.logger = logging.getLogger(self._caller)
 
-        sf = logging.handlers.RotatingFileHandler(self.logfile, maxBytes=511 * 1024, backupCount=5)
+        sf = logging.handlers.WatchedFileHandler(self.logfile)
         self.logger.fileloghandle = sf.stream
         sf.setFormatter(lf)
         sf.setLevel(lv)
