@@ -167,6 +167,7 @@ class ApiSync(object):
                     for pr in prjs_diff_db:
                         del us.mail_project_is_opensend[pr.identifier]
                         del us.mail_project_is_sshkeyadded[pr.identifier]
+                        del us.mail_project_is_sshkeyremoved[pr.identifier]
                         us.is_deactivated_project.update({
                             pr.identifier: False
                         })
@@ -214,6 +215,13 @@ class ApiSync(object):
                     mail_project_is_sshkeyadded = us.mail_project_is_sshkeyadded
                     if uspr['project']['identifier'] not in mail_project_is_sshkeyadded.keys():
                         mail_project_is_sshkeyadded.update(
+                            {
+                                uspr['project']['identifier']: True if self.args.initset else False
+                            }
+                        )
+                    mail_project_is_sshkeyremoved = us.mail_project_is_sshkeyremoved
+                    if uspr['project']['identifier'] not in mail_project_is_sshkeyremoved.keys():
+                        mail_project_is_sshkeyremoved.update(
                             {
                                 uspr['project']['identifier']: True if self.args.initset else False
                             }

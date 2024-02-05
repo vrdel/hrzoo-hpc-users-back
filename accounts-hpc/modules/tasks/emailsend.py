@@ -40,22 +40,45 @@ class SendEmail(object):
             for project in user.mail_project_is_sshkeyadded.keys():
                 if user.ldap_username in self.users_project_opened.get(project, []):
                     user.mail_project_is_sshkeyadded[project] = True
+                    user.mail_project_is_sshkeyremoved[project] = True
                     already_opened += 1
             user_project = await user.awaitable_attrs.project
             if already_opened == len(user_project):
                 user.mail_name_sshkey = list()
+
+            added_keys = [key for key in user.mail_name_sshkey if key.startswith('ADD:')]
+            removed_keys = [key for key in user.mail_name_sshkey if key.startswith('DEL:')]
+
             nmail = 0
-            for sshkeyname in user.mail_name_sshkey:
+            for sshkeyname in added_keys:
+                key_name = sshkeyname.split('ADD:', 1)[1]
                 for project in user.mail_project_is_sshkeyadded.keys():
                     if user.mail_project_is_sshkeyadded[project] == False:
-                        email = EmailSend(self.logger, self.confopts, user.person_mail,
-                                          sshkeyname=sshkeyname, project=project)
+                        email = EmailSend(self.logger, self.confopts,
+                                          user.person_mail,
+                                          sshkeyname=key_name,
+                                          project=project, keyop='add')
                         if await email.send():
                             nmail += 1
-                            self.logger.info(f"Send email for added key {sshkeyname} of {user.ldap_username} - {project}")
+                            self.logger.info(f"Send email for added key {key_name} of {user.ldap_username} - {project}")
                             user.mail_project_is_sshkeyadded[project] = True
-                if nmail == len(user.mail_name_sshkey) * len(user.mail_project_is_sshkeyadded.keys()):
-                    user.mail_name_sshkey = list()
+                if nmail == len(added_keys) * len(user.mail_project_is_sshkeyadded.keys()):
+                    user.mail_name_sshkey = [key for key in user.mail_name_sshkey if not key.startswith('ADD:')]
+
+            for sshkeyname in removed_keys:
+                key_name = sshkeyname.split('DEL:', 1)[1]
+                for project in user.mail_project_is_sshkeyremoved.keys():
+                    if user.mail_project_is_sshkeyremoved[project] == False:
+                        email = EmailSend(self.logger, self.confopts,
+                                          user.person_mail,
+                                          sshkeyname=key_name,
+                                          project=project, keyop='del')
+                        if await email.send():
+                            nmail += 1
+                            self.logger.info(f"Send email for removed key {key_name} of {user.ldap_username} - {project}")
+                            user.mail_project_is_sshkeyremoved[project] = True
+                if nmail == len(removed_keys) * len(user.mail_project_is_sshkeyremoved.keys()):
+                    user.mail_name_sshkey = [key for key in user.mail_name_sshkey if not key.startswith('DEL:')]
 
     async def _email_account(self, users):
         for user in users:
@@ -127,7 +150,7 @@ class SendEmail(object):
             for sshkeyname in added_keys:
                 key_name = sshkeyname.split('ADD:', 1)[1]
                 email = EmailSend(self.logger, self.confopts, user.person_mail,
-                                  sshkeyname=key_name)
+                                  sshkeyname=key_name, keyop='add')
                 if await email.send():
                     nmail += 1
                     self.logger.info(f"Send email for added key {key_name} of {user.ldap_username}")
@@ -139,7 +162,7 @@ class SendEmail(object):
             for sshkeyname in removed_keys:
                 key_name = sshkeyname.split('DEL:', 1)[1]
                 email = EmailSend(self.logger, self.confopts, user.person_mail,
-                                  sshkeyname=key_name)
+                                  sshkeyname=key_name, keyop='del')
                 if await email.send():
                     nmail += 1
                     self.logger.info(f"Send email for removed key {key_name} of {user.ldap_username}")
