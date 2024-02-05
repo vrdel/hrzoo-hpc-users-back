@@ -116,18 +116,36 @@ class SendEmail(object):
             # as they will receive previous email
             if user.ldap_username in self.users_opened:
                 user.mail_is_sshkeyadded = True
+                user.mail_is_sshkeyremoved = True
                 user.mail_name_sshkey = list()
                 continue
             nmail = 0
-            for sshkeyname in user.mail_name_sshkey:
+
+            added_keys = [key for key in user.mail_name_sshkey if key.startswith('ADD:')]
+            removed_keys = [key for key in user.mail_name_sshkey if key.startswith('DEL:')]
+
+            for sshkeyname in added_keys:
+                key_name = sshkeyname.split('ADD:', 1)[1]
                 email = EmailSend(self.logger, self.confopts, user.person_mail,
-                                  sshkeyname=sshkeyname)
+                                  sshkeyname=key_name)
                 if await email.send():
                     nmail += 1
-                    self.logger.info(f"Send email for added key {sshkeyname} of {user.ldap_username}")
-            if nmail == len(user.mail_name_sshkey):
+                    self.logger.info(f"Send email for added key {key_name} of {user.ldap_username}")
+            if nmail == len(added_keys):
                 user.mail_is_sshkeyadded = True
-                user.mail_name_sshkey = list()
+                user.mail_name_sshkey = [key for key in user.mail_name_sshkey if not key.startswith('ADD:')]
+
+            nmail = 0
+            for sshkeyname in removed_keys:
+                key_name = sshkeyname.split('DEL:', 1)[1]
+                email = EmailSend(self.logger, self.confopts, user.person_mail,
+                                  sshkeyname=key_name)
+                if await email.send():
+                    nmail += 1
+                    self.logger.info(f"Send email for removed key {key_name} of {user.ldap_username}")
+            if nmail == len(removed_keys):
+                user.mail_is_sshkeyremoved = True
+                user.mail_name_sshkey = [key for key in user.mail_name_sshkey if not key.startswith('DEL:')]
 
     async def run(self):
         try:
@@ -206,6 +224,18 @@ class SendEmail(object):
                     raise exc
 
                 stmt = select(User).where(User.mail_is_sshkeyadded == False)
+                users = await self.dbsession.execute(stmt)
+                users = users.scalars().all()
+
+                coros = []
+                for chunk in chunk_list(users):
+                    coros.append(self._email_key(chunk))
+                calrets = await asyncio.gather(*coros, return_exceptions=True)
+                exc_raised, exc = contains_exception(calrets)
+                if exc_raised:
+                    raise exc
+
+                stmt = select(User).where(User.mail_is_sshkeyremoved == False)
                 users = await self.dbsession.execute(stmt)
                 users = users.scalars().all()
 
