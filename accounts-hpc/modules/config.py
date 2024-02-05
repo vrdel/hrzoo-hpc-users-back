@@ -54,6 +54,7 @@ def parse_config(logger=None):
                     confopts['email'].update({'smtp': config.get(section, 'smtp')})
                     confopts['email'].update({'template_newuser': config.get(section, 'template_newuser')})
                     confopts['email'].update({'template_newkey': config.get(section, 'template_newkey')})
+                    confopts['email'].update({'template_delkey': config.get(section, 'template_delkey')})
                     confopts['email'].update({'template_activateuser': config.get(section, 'template_activateuser')})
                     confopts['email'].update({'template_deactivateuser': config.get(section, 'template_deactivateuser')})
                     confopts['email'].update({'port': config.getint(section, 'port')})

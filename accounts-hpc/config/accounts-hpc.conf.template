@@ -58,6 +58,7 @@ ssl = False
 timeout = 15
 template_newuser = %(VENV)s/etc/accounts-hpc/email-template-new-user.txt
 template_newkey = %(VENV)s/etc/accounts-hpc/email-template-new-key.txt
+template_delkey = %(VENV)s/etc/accounts-hpc/email-template-del-key.txt
 template_activateuser = %(VENV)s/etc/accounts-hpc/email-template-activate-user.txt
 template_deactivateuser = %(VENV)s/etc/accounts-hpc/email-template-deactivate-user.txt
 
