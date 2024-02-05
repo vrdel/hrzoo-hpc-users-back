@@ -256,7 +256,7 @@ class LdapUpdate(object):
                         target_key = target_key.scalars().one()
                 user_sshkey = await user.awaitable_attrs.sshkey
                 user_sshkey.append(target_key)
-                user.mail_name_sshkey.append(target_key.name)
+                user.mail_name_sshkey.append(f'ADD:{target_key.name}')
                 if self.confopts['ldap']['mode'] == 'project_organisation':
                     mp = user.mail_project_is_sshkeyadded
                     for prj in mp.keys():
@@ -275,7 +275,17 @@ class LdapUpdate(object):
                 target_key = target_key.scalars().one()
                 user_target_key = await user.awaitable_attrs.sshkey
                 user_target_key.remove(target_key)
+                user.mail_name_sshkey.append(f'DEL:{target_key.name}')
+                if self.confopts['ldap']['mode'] == 'project_organisation':
+                    mp = user.mail_project_is_sshkeyremoved
+                    for prj in mp.keys():
+                        if mp[prj]:
+                            mp[prj] = False
+                    user.mail_project_is_sshkeyremoved = mp
+                else:
+                    user.mail_is_sshkeyremoved = False
                 self.logger.info(f"Removed key {target_key.name} for user {user.person_uniqueid}")
+
         if keys_diff_add or keys_diff_del:
             updated_keys = [sshkey.public_key for sshkey in user.sshkey]
             if len(updated_keys) == 0:
