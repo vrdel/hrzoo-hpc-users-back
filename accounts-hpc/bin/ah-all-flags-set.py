@@ -44,6 +44,9 @@ async def main():
                 if not user.mail_is_sshkeyadded:
                     user.mail_is_sshkeyadded = True
                     user.mail_name_sshkey = []
+                if not user.mail_is_sshkeyremoved:
+                    user.mail_is_sshkeyremoved = True
+                    user.mail_name_sshkey = []
         else:
             for user in users:
                 if not user.is_opened:
@@ -56,6 +59,9 @@ async def main():
                 if user.mail_project_is_sshkeyadded:
                     for project in user.mail_project_is_sshkeyadded.keys():
                         user.mail_project_is_sshkeyadded[project] = True
+                if user.mail_project_is_sshkeyremoved:
+                    for project in user.mail_project_is_sshkeyremoved.keys():
+                        user.mail_project_is_sshkeyremoved[project] = True
 
         await dbsession.commit()
         await dbsession.close()
