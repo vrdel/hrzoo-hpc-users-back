@@ -5,6 +5,7 @@ VENV = /opt/hrzoo-accounts-hpc
 call_list = apisync, usermetadata, ldapupdate, fairshare, createdirectories, emailsend
 every_min = 1
 db_chunks = 10
+pidfile = %(VENV)s/var/run/ahtaskd.pid
 
 [connection]
 timeout = 180

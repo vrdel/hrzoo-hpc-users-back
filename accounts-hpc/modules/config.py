@@ -27,6 +27,7 @@ def parse_config(logger=None):
                     confopts['tasks'] = ({'call_list': [task.strip() for task in config.get(section, 'call_list').split(',')]})
                     confopts['tasks'].update({'every_min': config.getint(section, 'every_min')})
                     confopts['tasks'].update({'db_chunks': config.getint(section, 'db_chunks')})
+                    confopts['tasks'].update({'pidfile': config.get(section, 'pidfile')})
 
                 if section.startswith('hzsiapi'):
                     confopts['hzsiapi'] = ({'sshkeys': config.get(section, 'sshkeys')})
