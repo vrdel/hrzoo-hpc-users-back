@@ -19,7 +19,7 @@ import ssl
 class EmailSend(object):
     def __init__(self, logger, confopts, emailto, username=None,
                  sshkeyname=None, project=None, activated=None,
-                 deactivated=None):
+                 deactivated=None, keyop=None):
         self.confopts = confopts
         self.username = username
         self.sshkeyname = sshkeyname
@@ -33,7 +33,10 @@ class EmailSend(object):
         elif username:
             self.template = self._load_template('template_newuser')
         else:
-            self.template = self._load_template('template_newkey')
+            if keyop == 'add':
+                self.template = self._load_template('template_newkey')
+            elif keyop == 'del':
+                self.template = self._load_template('template_delkey')
         self.smtpserver = confopts['email']['smtp']
         self.port = confopts['email']['port']
         self.tls = confopts['email']['tls']
