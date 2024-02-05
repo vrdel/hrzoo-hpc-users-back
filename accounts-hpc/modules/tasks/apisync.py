@@ -106,6 +106,7 @@ class ApiSync(object):
                 )
                 dbkey = await self.dbsession.execute(stmt)
                 dbkey = dbkey.scalars().one()
+                dbkey.name = key['name']
 
             except NoResultFound:
                 dbkey = SshKey(name=key['name'],
