@@ -5,6 +5,7 @@ import sys
 import signal
 import timeit
 import datetime
+import os
 
 from datetime import timedelta
 
@@ -66,17 +67,55 @@ class AhDaemon(object):
         delay = now.replace(second=0, microsecond=0) + timedelta(minutes=self.confopts['tasks']['every_min']) - now
         return delay.total_seconds()
 
+    def _is_running(self, pid):
+        try:
+            os.kill(pid, 0)
+        except OSError:
+            return False
+        else:
+            return True
+
+    def _write_pidfile(self):
+        try:
+            with open(self.confopts['tasks']['pidfile'], 'w') as f:
+                f.write(str(os.getpid()))
+        except OSError:
+            self.logger.exception('PIDFile create failed')
+            raise AhTaskError
+
+    def _read_pidfile(self):
+        try:
+            with open(self.confopts['tasks']['pidfile'], 'r') as f:
+                pid = int(f.read())
+                return pid
+        except OSError:
+            return 0
+
     async def run(self):
         try:
             self.task_apisync, self.task_usermetadata, self.task_ldapupdate = None, None, None
             self.task_fairshare, self.task_createdirectories, self.task_emailsend = None, None, None
             initial_delay, initial_done = self._initial_delay(), False
 
+            runpid, is_running = self._read_pidfile(), False
+            if runpid:
+                is_running = self._is_running(runpid)
+
+            if runpid and is_running:
+                self.logger.info(f'{CALLER_NAME} already running')
+                raise SystemExit(1)
+            elif runpid and not is_running:
+                self.logger.info(f'{CALLER_NAME} cleaning stale pidfile')
+                os.remove(self.confopts['tasks']['pidfile'])
+
+            self._write_pidfile()
+
             while True:
                 calls_str = ', '.join(self.confopts['tasks']['call_list'])
                 self.logger.info(f"* Scheduled tasks ({calls_str}) every {self.confopts['tasks']['every_min']} minutes...")
                 if initial_delay and not initial_done:
                     self.logger.info(f"* Initial delay ({initial_delay})...")
+                    initial_delay = 1
                     await asyncio.sleep(initial_delay)
                     initial_done = True
 
@@ -161,6 +200,7 @@ class AhDaemon(object):
         except asyncio.CancelledError:
             self._cancel_tasks()
             self.logger.info("* Stopping task runner...")
+            os.remove(self.confopts['tasks']['pidfile'])
 
 
 def main():
@@ -184,4 +224,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
