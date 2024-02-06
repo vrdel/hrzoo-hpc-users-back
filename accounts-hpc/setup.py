@@ -56,6 +56,7 @@ setup(
         ('etc/logrotate.d/', ['logrotate/cache', 'logrotate/logfile']),
         ('var/log/', ['helpers/empty']),
         ('var/lib/', ['helpers/empty']),
+        ('var/run/', ['helpers/empty']),
         ('var/lib/backup/', ['helpers/empty']),
         ('alembic/', ['alembic/README', 'alembic/env.py', 'alembic/script.py.mako']),
         ('alembic/versions', glob.glob('alembic/versions/*')),
