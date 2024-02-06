@@ -46,6 +46,7 @@ setup(
         ('bin/', glob.glob('bin/*')),
         ('etc/accounts-hpc', ['config/email-template-new-key.txt',
                               'config/email-template-new-user.txt',
+                              'config/email-template-del-key.txt',
                               'config/email-template-activate-user.txt',
                               'config/email-template-deactivate-user.txt',
                               'config/accounts-hpc.conf.template',
