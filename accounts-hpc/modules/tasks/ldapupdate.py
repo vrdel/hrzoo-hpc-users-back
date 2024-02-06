@@ -270,7 +270,12 @@ class LdapUpdate(object):
         keys_diff_del = set(keys_db).difference(set(user.sshkeys_api))
         if keys_diff_del:
             for key in keys_diff_del:
-                stmt = select(SshKey).where(SshKey.fingerprint == key)
+                stmt = select(SshKey).where(
+                    and_(
+                        SshKey.uid_api == user.uid_api,
+                        SshKey.fingerprint == key
+                    )
+                )
                 target_key = await self.dbsession.execute(stmt)
                 target_key = target_key.scalars().one()
                 user_target_key = await user.awaitable_attrs.sshkey
