@@ -5,6 +5,7 @@ from accounts_hpc.exceptions import AhTaskError
 from accounts_hpc.utils import contains_exception, chunk_list
 
 from sqlalchemy import select
+from sqlalchemy import or_
 
 import asyncio
 import sys
@@ -246,19 +247,10 @@ class SendEmail(object):
                 if exc_raised:
                     raise exc
 
-                stmt = select(User).where(User.mail_is_sshkeyadded == False)
-                users = await self.dbsession.execute(stmt)
-                users = users.scalars().all()
-
-                coros = []
-                for chunk in chunk_list(users):
-                    coros.append(self._email_key(chunk))
-                calrets = await asyncio.gather(*coros, return_exceptions=True)
-                exc_raised, exc = contains_exception(calrets)
-                if exc_raised:
-                    raise exc
-
-                stmt = select(User).where(User.mail_is_sshkeyremoved == False)
+                stmt = select(User).where(or_(
+                    User.mail_is_sshkeyadded == False,
+                    User.mail_is_sshkeyremoved == False
+                ))
                 users = await self.dbsession.execute(stmt)
                 users = users.scalars().all()
 
