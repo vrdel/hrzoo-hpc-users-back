@@ -64,7 +64,8 @@ class AhDaemon(object):
 
     def _next_delay(self):
         now = datetime.datetime.now()
-        delay = now.replace(second=0, microsecond=0) + timedelta(minutes=self.confopts['tasks']['every_min']) - now
+        min_mark = (now.replace(second=0, microsecond=0).minute // self.confopts['tasks']['every_min']) * self.confopts['tasks']['every_min']
+        delay = now.replace(minute=min_mark, second=0, microsecond=0) + timedelta(minutes=self.confopts['tasks']['every_min']) - now
         return delay.total_seconds()
 
     def _is_running(self, pid):
