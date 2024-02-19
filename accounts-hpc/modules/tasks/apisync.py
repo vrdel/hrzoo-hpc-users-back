@@ -139,7 +139,7 @@ class ApiSync(object):
                 continue
 
             try:
-                stmt = select(User).where(User.person_oib == uspr['user']['person_oib'])
+                stmt = select(User).where(User.ldap_username == uspr['user']['person_username'])
                 us = await self.dbsession.execute(stmt)
                 us = us.scalars().one()
             except MultipleResultsFound as exc:
@@ -194,7 +194,9 @@ class ApiSync(object):
 
             try:
                 # use person_oib as unique identifier of user
-                stmt = select(User).where(User.person_oib == uspr['user']['person_oib'])
+                # Mon Feb 19 2024
+                # changed to person_username as username is now uniquely generated on HZSI-WEB
+                stmt = select(User).where(User.ldap_username == uspr['user']['person_username'])
                 us = await self.dbsession.execute(stmt)
                 us = us.scalars().one()
                 projects_api = us.projects_api
