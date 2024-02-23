@@ -62,6 +62,7 @@ async def main():
                 if user.mail_project_is_sshkeyremoved:
                     for project in user.mail_project_is_sshkeyremoved.keys():
                         user.mail_project_is_sshkeyremoved[project] = True
+                user.mail_name_sshkey = []
 
         await dbsession.commit()
         await dbsession.close()
