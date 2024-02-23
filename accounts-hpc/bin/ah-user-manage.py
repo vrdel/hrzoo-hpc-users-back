@@ -141,10 +141,6 @@ def user_update(logger, args, session):
             user.person_mail = args.email
             logger.info(f"Update email with {args.email} for user {args.username}")
 
-        if args.oib:
-            user.person_oib = args.oib
-            logger.info(f"Update OIB with {args.oib} for user {args.username}")
-
         if args.staff:
             user.is_staff = True
             logger.info(f"Promote user {args.username} to staff")
@@ -320,7 +316,6 @@ def user_project_add(logger, args, session):
                   projects_api=[args.project],
                   sshkeys_api=list(),
                   person_uniqueid=f"{args.first}{args.last}@UNIQUEID",
-                  person_oib=0,
                   uid_api=0,
                   ldap_uid=args.uid if args.uid else 0,
                   ldap_gid=0,
@@ -360,7 +355,6 @@ def user_project_list(logger, args, session):
                 table.add_row("First = ", user.first_name)
                 table.add_row("Last = ", user.last_name)
                 table.add_row("Mail = ", user.person_mail)
-                table.add_row("OIB = ", user.person_oib)
                 table.add_row("Username = ", user.ldap_username)
                 table.add_row("LDAP UID = ", str(user.ldap_uid))
                 table.add_row("LDAP GID = ", str(user.ldap_gid))
@@ -402,7 +396,6 @@ def user_project_list(logger, args, session):
                 table.add_row("First = ", user.first_name)
                 table.add_row("Last = ", user.last_name)
                 table.add_row("Mail = ", user.person_mail)
-                table.add_row("OIB = ", user.person_oib)
                 table.add_row("Username = ", user.ldap_username)
                 table.add_row("LDAP UID = ", str(user.ldap_uid))
                 table.add_row("LDAP GID = ", str(user.ldap_gid))
@@ -444,7 +437,6 @@ def user_project_list(logger, args, session):
                 table.add_row("First = ", user.first_name)
                 table.add_row("Last = ", user.last_name)
                 table.add_row("Mail = ", user.person_mail)
-                table.add_row("OIB = ", user.person_oib)
                 table.add_row("Username = ", user.ldap_username)
                 table.add_row("LDAP UID = ", str(user.ldap_uid))
                 table.add_row("LDAP GID = ", str(user.ldap_gid))
@@ -486,7 +478,6 @@ def user_project_list(logger, args, session):
                 table.add_row("First = ", user.first_name)
                 table.add_row("Last = ", user.last_name)
                 table.add_row("Mail = ", user.person_mail)
-                table.add_row("OIB = ", user.person_oib)
                 table.add_row("Username = ", user.ldap_username)
                 table.add_row("LDAP UID = ", str(user.ldap_uid))
                 table.add_row("LDAP GID = ", str(user.ldap_gid))
@@ -526,7 +517,6 @@ def user_project_list(logger, args, session):
             table.add_row("First = ", user.first_name)
             table.add_row("Last = ", user.last_name)
             table.add_row("Mail = ", user.person_mail)
-            table.add_row("OIB = ", user.person_oib)
             table.add_row("Username = ", user.ldap_username)
             table.add_row("LDAP UID = ", str(user.ldap_uid))
             table.add_row("LDAP GID = ", str(user.ldap_gid))
