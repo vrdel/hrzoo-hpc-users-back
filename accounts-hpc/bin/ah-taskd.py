@@ -21,6 +21,8 @@ from accounts_hpc.utils import contains_exception
 
 
 CALLER_NAME = "ah-taskd"
+shared = Shared(CALLER_NAME, daemon=True)
+logger = shared.log[CALLER_NAME].get()
 
 
 class FakeArgs(object):
@@ -32,9 +34,7 @@ class FakeArgs(object):
 class AhDaemon(object):
     def __init__(self):
         self.fakeargs = FakeArgs()
-        shared = Shared(CALLER_NAME, daemon=True)
         self.confopts = shared.confopts
-        self.logger = shared.log[CALLER_NAME].get()
 
     def _cancel_tasks(self):
         if self.task_apisync:
@@ -81,7 +81,7 @@ class AhDaemon(object):
             with open(self.confopts['tasks']['pidfile'], 'w') as f:
                 f.write(str(os.getpid()))
         except OSError:
-            self.logger.exception('PIDFile create failed')
+            logger.exception('PIDFile create failed')
             raise AhTaskError
 
     def _read_pidfile(self):
@@ -103,51 +103,51 @@ class AhDaemon(object):
                 is_running = self._is_running(runpid)
 
             if runpid and is_running:
-                self.logger.info(f'{CALLER_NAME} already running')
+                logger.info(f'{CALLER_NAME} already running')
                 raise SystemExit(1)
             elif runpid and not is_running:
-                self.logger.info(f'{CALLER_NAME} cleaning stale pidfile')
+                logger.info(f'{CALLER_NAME} cleaning stale pidfile')
                 os.remove(self.confopts['tasks']['pidfile'])
 
             self._write_pidfile()
 
             while True:
                 calls_str = ', '.join(self.confopts['tasks']['call_list'])
-                self.logger.info(f"* Scheduled tasks ({calls_str}) every {self.confopts['tasks']['every_min']} minutes...")
+                logger.info(f"* Scheduled tasks ({calls_str}) every {self.confopts['tasks']['every_min']} minutes...")
                 if initial_delay and not initial_done:
-                    self.logger.info(f"* Initial delay ({initial_delay})...")
+                    logger.info(f"* Initial delay ({initial_delay})...")
                     await asyncio.sleep(initial_delay)
                     initial_done = True
 
                 if 'apisync' in self.confopts['tasks']['call_list']:
-                    self.logger.info("> Calling apisync task")
+                    logger.info("> Calling apisync task")
                     start = timeit.default_timer()
                     self.task_apisync = asyncio.create_task(
                         ApiSync(f'{CALLER_NAME}.apisync', self.fakeargs, daemon=True).run()
                     )
                     await self.task_apisync
                     end = timeit.default_timer()
-                    self.logger.info(f"> Ended apisync in {format(end - start, '.2f')} seconds")
+                    logger.info(f"> Ended apisync in {format(end - start, '.2f')} seconds")
 
                 if 'usermetadata' in self.confopts['tasks']['call_list']:
-                    self.logger.info("> Calling usermetadata task")
+                    logger.info("> Calling usermetadata task")
                     start = timeit.default_timer()
                     self.task_usermetadata = asyncio.create_task(
                         UserMetadata(f'{CALLER_NAME}.usermetadata', self.fakeargs, daemon=True).run()
                     )
                     await self.task_usermetadata
                     end = timeit.default_timer()
-                    self.logger.info(f"> Ended usermetadata in {format(end - start, '.2f')} seconds")
+                    logger.info(f"> Ended usermetadata in {format(end - start, '.2f')} seconds")
 
                 if 'ldapupdate' in self.confopts['tasks']['call_list']:
-                    self.logger.info("> Calling ldapupdate task")
+                    logger.info("> Calling ldapupdate task")
                     start = timeit.default_timer()
                     self.task_ldapupdate = asyncio.create_task(
                         LdapUpdate(f'{CALLER_NAME}.ldapupdate', self.fakeargs, daemon=True).run()
                     )
                     await self.task_ldapupdate
                     end = timeit.default_timer()
-                    self.logger.info(f"> Ended ldapupdate in {format(end - start, '.2f')} seconds")
+                    logger.info(f"> Ended ldapupdate in {format(end - start, '.2f')} seconds")
 
                 scheduled = []
                 if 'fairshare' in self.confopts['tasks']['call_list']:
@@ -169,7 +169,7 @@ class AhDaemon(object):
                     scheduled.append('emailsend')
 
                 if scheduled:
-                    self.logger.info(f"> Calling {', '.join(scheduled)} tasks")
+                    logger.info(f"> Calling {', '.join(scheduled)} tasks")
                 start = timeit.default_timer()
                 tasks_concur = []
                 if self.task_fairshare:
@@ -183,23 +183,23 @@ class AhDaemon(object):
                 if exc_raised:
                     for ret in ret_concur:
                         if isinstance(ret, AhTaskError):
-                            self.logger.error("Error in concurrently running tasks")
+                            logger.error("Error in concurrently running tasks")
                             raise ret
                         elif isinstance(ret, asyncio.CancelledError):
-                            self.logger.error("Concurrent task cancelled")
+                            logger.error("Concurrent task cancelled")
 
                 end = timeit.default_timer()
-                self.logger.info(f"> Ended {', '.join(scheduled)} in {format(end - start, '.2f')} seconds")
+                logger.info(f"> Ended {', '.join(scheduled)} in {format(end - start, '.2f')} seconds")
 
                 await asyncio.sleep(self._next_delay())
 
         except AhTaskError:
-            self.logger.error('Critical error, can not continue')
+            logger.error('Critical error, can not continue')
             self._cancel_tasks()
 
         except asyncio.CancelledError:
             self._cancel_tasks()
-            self.logger.info("* Stopping task runner...")
+            logger.info("* Stopping task runner...")
             os.remove(self.confopts['tasks']['pidfile'])
 
 
@@ -208,7 +208,7 @@ def main():
     loop = asyncio.get_event_loop()
 
     def clean_exit(sigstr):
-        ahd.logger.info(f"* Exiting on {sigstr}...")
+        logger.info(f"* Exiting on {sigstr}...")
         scheduled_tasks = asyncio.all_tasks(loop=loop)
         for task in scheduled_tasks:
             task.cancel()
@@ -218,6 +218,10 @@ def main():
 
     try:
         loop.run_until_complete(ahd.run())
+
+    except Exception as exc:
+        logger.exception(exc)
+
     finally:
         loop.close()
 
