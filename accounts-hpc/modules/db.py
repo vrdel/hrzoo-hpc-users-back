@@ -2,11 +2,12 @@ from __future__ import annotations
 
 from typing import List, Dict, Optional
 
-from sqlalchemy import (JSON, Boolean, Column, Date, DateTime, ForeignKey,
-                        Integer, String, Table)
+from sqlalchemy import (Boolean, Column, Date, DateTime, ForeignKey, Integer,
+                        String, Table)
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy_json import MutableJson
 from sqlalchemy.ext.asyncio import AsyncAttrs
+
 
 class Base(AsyncAttrs, DeclarativeBase):
     pass
@@ -23,37 +24,37 @@ user_projects_table = Table(
 class User(Base):
     __tablename__ = 'users'
 
-    id: Mapped[int] = mapped_column(primary_key=True)
     first_name: Mapped[str] = mapped_column(String(20))
-    last_name: Mapped[str] = mapped_column(String(40))
-    person_mail: Mapped[str] = mapped_column(String(60))
-    person_uniqueid: Mapped[str] = mapped_column(String(128))
-    type_create: Mapped[str] = mapped_column(String(10))
-    projects_api: Mapped[List[str]] = mapped_column(MutableJson)
-    uid_api: Mapped[int] = mapped_column(Integer)
+    id: Mapped[int] = mapped_column(primary_key=True)
+    is_activated_project: Mapped[Dict] = mapped_column(MutableJson)
     is_active: Mapped[bool] = mapped_column(Boolean)
     is_deactivated: Mapped[bool] = mapped_column(Boolean)
-    is_activated_project: Mapped[Dict] = mapped_column(MutableJson)
     is_deactivated_project: Mapped[Dict] = mapped_column(MutableJson)
+    is_dir_created: Mapped[bool] = mapped_column(Boolean)
     is_opened: Mapped[bool] = mapped_column(Boolean)
     is_staff: Mapped[bool] = mapped_column(Boolean)
-    is_dir_created: Mapped[bool] = mapped_column(Boolean)
+    last_name: Mapped[str] = mapped_column(String(40))
+    ldap_gid: Mapped[int] = mapped_column(Integer)
+    ldap_uid: Mapped[int] = mapped_column(Integer)
     mail_is_activated: Mapped[bool] = mapped_column(Boolean)
     mail_is_deactivated: Mapped[bool] = mapped_column(Boolean)
     mail_is_opensend: Mapped[bool] = mapped_column(Boolean)
     mail_is_sshkeyadded: Mapped[bool] = mapped_column(Boolean)
     mail_is_sshkeyremoved: Mapped[bool] = mapped_column(Boolean)
     mail_name_sshkey: Mapped[List[str]] = mapped_column(MutableJson)
+    mail_project_is_activated: Mapped[Dict] = mapped_column(MutableJson)
+    mail_project_is_deactivated: Mapped[Dict] = mapped_column(MutableJson)
     mail_project_is_opensend: Mapped[Dict] = mapped_column(MutableJson)
     mail_project_is_sshkeyadded: Mapped[Dict] = mapped_column(MutableJson)
     mail_project_is_sshkeyremoved: Mapped[Dict] = mapped_column(MutableJson)
-    mail_project_is_activated: Mapped[Dict] = mapped_column(MutableJson)
-    mail_project_is_deactivated: Mapped[Dict] = mapped_column(MutableJson)
+    person_mail: Mapped[str] = mapped_column(String(60))
+    person_uniqueid: Mapped[str] = mapped_column(String(128))
+    projects_api: Mapped[List[str]] = mapped_column(MutableJson)
     sshkey: Mapped[List["SshKey"]] = relationship(back_populates="user")
     sshkeys_api: Mapped[List[str]] = mapped_column(MutableJson)
+    type_create: Mapped[str] = mapped_column(String(10))
+    uid_api: Mapped[int] = mapped_column(Integer)
     username_api: Mapped[str] = mapped_column(String(10))
-    ldap_uid: Mapped[int] = mapped_column(Integer)
-    ldap_gid: Mapped[int] = mapped_column(Integer)
     project: Mapped[List[Project]] = \
         relationship(secondary=user_projects_table, back_populates="user")
 
