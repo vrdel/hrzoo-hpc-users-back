@@ -201,14 +201,7 @@ class SendEmail(object):
                 if exc_raised:
                     raise exc
 
-                # await self.email_project_account(users, users_opened)
-                coros = []
-                for chunk in chunk_list(users):
-                    coros.append(self._email_project_key(chunk))
-                calrets = await asyncio.gather(*coros, return_exceptions=True)
-                exc_raised, exc = contains_exception(calrets)
-                if exc_raised:
-                    raise exc
+                await self._email_project_key(users)
 
             else:
                 stmt = select(User).where(User.mail_is_activated == True)
