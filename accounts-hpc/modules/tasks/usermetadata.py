@@ -44,11 +44,11 @@ class UserMetadata(object):
 
                 if not user.ldap_uid and not user.is_staff:
                     if user.type_create == 'manual':
-                        target_user = [tu for tu in mapuser if tu['username'] == user.ldap_username]
+                        target_user = [tu for tu in mapuser if tu['username'] == user.username_api]
                         if target_user:
                             user.ldap_uid = target_user[0]['uid']
                         else:
-                            self.logger.warning(f"UID for manually created user {user.ldap_username} must be defined in mapping file")
+                            self.logger.warning(f"UID for manually created user {user.username_api} must be defined in mapping file")
                             self.logger.warning("Skipping UID set")
                     else:
                         user.ldap_uid = self.confopts['usersetup']['uid_offset'] + user.uid_api
@@ -66,22 +66,22 @@ class UserMetadata(object):
                         user.ldap_gid = self.confopts['usersetup']['gid_offset'] + target_project[0].prjid_api
                         set_metadata = True
                     except IndexError:
-                        self.logger.warning(f"User {user.ldap_username} type={user.type_create} with empty projects_api")
+                        self.logger.warning(f"User {user.username_api} type={user.type_create} with empty projects_api")
                 if user.is_staff and not user.ldap_uid:
-                    target_user = [tu for tu in mapuser if tu['username'] == user.ldap_username]
+                    target_user = [tu for tu in mapuser if tu['username'] == user.username_api]
                     if target_user:
                         user.ldap_uid = target_user[0]['uid']
                     else:
                         user.ldap_uid = self.confopts['usersetup']['uid_manual_offset'] + user.uid_api
                     set_metadata = True
                 if user.is_staff and not user.ldap_gid:
-                    target_user = [tu for tu in mapuser if tu['username'] == user.ldap_username]
+                    target_user = [tu for tu in mapuser if tu['username'] == user.username_api]
                     if target_user:
                         user.ldap_gid = target_user[0]['gid']
                         set_metadata = True
 
                 if set_metadata:
-                    self.logger.info(f"{user.first_name} {user.last_name} set username={user.ldap_username} UID={user.ldap_uid} GID={user.ldap_gid}")
+                    self.logger.info(f"{user.first_name} {user.last_name} set username={user.username_api} UID={user.ldap_uid} GID={user.ldap_gid}")
 
             await self.dbsession.commit()
 

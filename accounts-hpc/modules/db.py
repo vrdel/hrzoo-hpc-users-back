@@ -51,7 +51,7 @@ class User(Base):
     mail_project_is_deactivated: Mapped[Dict] = mapped_column(MutableJson)
     sshkey: Mapped[List["SshKey"]] = relationship(back_populates="user")
     sshkeys_api: Mapped[List[str]] = mapped_column(MutableJson)
-    ldap_username: Mapped[str] = mapped_column(String(8))
+    username_api: Mapped[str] = mapped_column(String(10))
     ldap_uid: Mapped[int] = mapped_column(Integer)
     ldap_gid: Mapped[int] = mapped_column(Integer)
     project: Mapped[List[Project]] = \

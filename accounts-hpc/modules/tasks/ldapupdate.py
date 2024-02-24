@@ -54,15 +54,15 @@ class LdapUpdate(object):
 
     async def new_user_ldap_add(self, user, conn, identifier=None):
         if identifier:
-            ldap_user = bonsai.LDAPEntry(f"cn={user.ldap_username},ou=People,o=PROJECT-{identifier},{self.confopts['ldap']['basedn']}")
+            ldap_user = bonsai.LDAPEntry(f"cn={user.username_api},ou=People,o=PROJECT-{identifier},{self.confopts['ldap']['basedn']}")
         else:
-            ldap_user = bonsai.LDAPEntry(f"cn={user.ldap_username},ou=People,{self.confopts['ldap']['basedn']}")
+            ldap_user = bonsai.LDAPEntry(f"cn={user.username_api},ou=People,{self.confopts['ldap']['basedn']}")
         ldap_user['objectClass'] = ['top', 'account', 'posixAccount', 'shadowAccount', 'ldapPublicKey']
-        ldap_user['cn'] = [user.ldap_username]
-        ldap_user['uid'] = [user.ldap_username]
+        ldap_user['cn'] = [user.username_api]
+        ldap_user['uid'] = [user.username_api]
         ldap_user['uidNumber'] = [user.ldap_uid]
         ldap_user['gidNumber'] = [user.ldap_gid]
-        ldap_user['homeDirectory'] = [f"{self.confopts['usersetup']['homeprefix']}{user.ldap_username}"]
+        ldap_user['homeDirectory'] = [f"{self.confopts['usersetup']['homeprefix']}{user.username_api}"]
         ldap_user['loginShell'] = ['/bin/bash']
         ldap_user['gecos'] = [f"{user.first_name} {user.last_name}"]
         ldap_user['userPassword'] = ['']
@@ -85,9 +85,9 @@ class LdapUpdate(object):
                 existing_members = []
             # TODO: check also is_active
             if onlyops:
-                all_usernames = [user.ldap_username for user in users if user.is_staff]
+                all_usernames = [user.username_api for user in users if user.is_staff]
             else:
-                all_usernames = [user.ldap_username for user in users]
+                all_usernames = [user.username_api for user in users]
             if set(all_usernames) != set(existing_members):
                 ldap_group[0].change_attribute('memberUid', bonsai.LDAPModOp.REPLACE, *all_usernames)
                 await ldap_group[0].modify()
@@ -114,7 +114,7 @@ class LdapUpdate(object):
                                 resource_match = True
                                 break
                     if resource_match:
-                        all_usernames.append(user.ldap_username)
+                        all_usernames.append(user.username_api)
 
                 if all_usernames and set(all_usernames) != set(existing_members):
                     ldap_group[0].change_attribute('memberUid', bonsai.LDAPModOp.REPLACE, *all_usernames)
@@ -177,42 +177,42 @@ class LdapUpdate(object):
             if user.is_active == False and user.is_deactivated == False:
                 ldap_user[0].change_attribute('loginShell', bonsai.LDAPModOp.REPLACE, self.confopts['usersetup']['noshell'])
                 await ldap_user[0].modify()
-                self.logger.info(f"Deactivating {user.ldap_username}, setting disabled shell={self.confopts['usersetup']['noshell']}")
+                self.logger.info(f"Deactivating {user.username_api}, setting disabled shell={self.confopts['usersetup']['noshell']}")
                 user.is_deactivated = True
                 user.mail_is_deactivated = True
 
             if user.is_active == True and user.is_deactivated == True:
                 ldap_user[0].change_attribute('loginShell', bonsai.LDAPModOp.REPLACE, '/bin/bash')
                 await ldap_user[0].modify()
-                self.logger.info(f"Activating {user.ldap_username}, setting default shell=/bin/bash")
+                self.logger.info(f"Activating {user.username_api}, setting default shell=/bin/bash")
                 user.is_deactivated = False
                 user.mail_is_activated = True
         else:
             if user.is_deactivated_project:
                 for proj in user.is_deactivated_project:
                     if not user.is_deactivated_project[proj]:
-                        ldap_user = await ldap_conn.search(f"cn={user.ldap_username},ou=People,o=PROJECT-{proj},{self.confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
+                        ldap_user = await ldap_conn.search(f"cn={user.username_api},ou=People,o=PROJECT-{proj},{self.confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
                         ldap_user[0].change_attribute('loginShell', bonsai.LDAPModOp.REPLACE, self.confopts['usersetup']['noshell'])
                         await ldap_user[0].modify()
-                        self.logger.info(f"Deactivating {user.ldap_username} for {proj}, setting disabled shell={self.confopts['usersetup']['noshell']}")
+                        self.logger.info(f"Deactivating {user.username_api} for {proj}, setting disabled shell={self.confopts['usersetup']['noshell']}")
                         user.is_deactivated_project[proj] = True
                         user.mail_project_is_deactivated[proj] = False
             if user.is_activated_project:
                 for proj in user.is_activated_project:
                     if not user.is_activated_project[proj]:
-                        ldap_user = await ldap_conn.search(f"cn={user.ldap_username},ou=People,o=PROJECT-{proj},{self.confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
+                        ldap_user = await ldap_conn.search(f"cn={user.username_api},ou=People,o=PROJECT-{proj},{self.confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
                         ldap_user[0].change_attribute('loginShell', bonsai.LDAPModOp.REPLACE, '/bin/bash')
                         await ldap_user[0].modify()
-                        self.logger.info(f"Activating {user.ldap_username} for {proj}, setting default shell=/bin/bash")
+                        self.logger.info(f"Activating {user.username_api} for {proj}, setting default shell=/bin/bash")
                         user.is_activated_project[proj] = True
                         user.mail_project_is_activated[proj] = False
                         user.is_deactivated = False
             if user.is_active == False and user.is_deactivated == False:
                 for proj in await user.awaitable_attrs.project:
-                    ldap_user = await ldap_conn.search(f"cn={user.ldap_username},ou=People,o=PROJECT-{proj.identifier},{self.confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
+                    ldap_user = await ldap_conn.search(f"cn={user.username_api},ou=People,o=PROJECT-{proj.identifier},{self.confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
                     ldap_user[0].change_attribute('loginShell', bonsai.LDAPModOp.REPLACE, self.confopts['usersetup']['noshell'])
                     await ldap_user[0].modify()
-                    self.logger.info(f"user.is_active=0, deactivating {user.ldap_username} for {proj.identifier}, setting disabled shell={self.confopts['usersetup']['noshell']}")
+                    self.logger.info(f"user.is_active=0, deactivating {user.username_api} for {proj.identifier}, setting disabled shell={self.confopts['usersetup']['noshell']}")
                     user.is_deactivated_project[proj.identifier] = True
                     user.mail_project_is_deactivated[proj.identifier] = False
                     user.is_deactivated = True
@@ -310,7 +310,7 @@ class LdapUpdate(object):
             ldap_project['cn'] = [project.identifier]
             ldap_project['objectClass'] = ['top', 'posixGroup']
             ldap_project['gidNumber'] = [project.ldap_gid]
-            ldap_project['memberUid'] = [user.ldap_username for user in await project.awaitable_attrs.user]
+            ldap_project['memberUid'] = [user.username_api for user in await project.awaitable_attrs.user]
             await conn.add(ldap_project)
             return ldap_project
 
@@ -320,12 +320,12 @@ class LdapUpdate(object):
             users_project_ldap = ldap_project[0]['memberUid']
         except KeyError:
             users_project_ldap = []
-        if set(users_project_ldap).difference(set([user.ldap_username for user in await project.awaitable_attrs.user])):
+        if set(users_project_ldap).difference(set([user.username_api for user in await project.awaitable_attrs.user])):
             project_members_changed = True
-        elif set([user.ldap_username for user in project.user]).difference(set(users_project_ldap)):
+        elif set([user.username_api for user in project.user]).difference(set(users_project_ldap)):
             project_members_changed = True
         if project_members_changed:
-            project_new_members = [user.ldap_username for user in project.user]
+            project_new_members = [user.username_api for user in project.user]
             if len(project_new_members) == 0:
                 del ldap_project[0]['memberUid']
             else:
@@ -381,11 +381,11 @@ class LdapUpdate(object):
                     raise AhTaskError
 
             for user in users:
-                if not user.ldap_username:
+                if not user.username_api:
                     continue
                 if self.confopts['ldap']['mode'] == 'flat':
                     async with self.client.connect(is_async=True, timeout=None) as conn:
-                        ldap_user = await conn.search(f"cn={user.ldap_username},ou=People,{self.confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
+                        ldap_user = await conn.search(f"cn={user.username_api},ou=People,{self.confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
                         try:
                             if not ldap_user or not user.is_opened:
                                 ldap_user = await self.new_user_ldap_add(user, conn)
@@ -398,20 +398,20 @@ class LdapUpdate(object):
                                 await self.user_key_update(user, ldap_user)
                             user.is_opened = True
                         except bonsai.errors.AlreadyExists as exc:
-                            self.logger.warning(f'LDAP user {user.ldap_username} - {repr(exc)}')
+                            self.logger.warning(f'LDAP user {user.username_api} - {repr(exc)}')
                             await self.user_sync_api_db(user, ldap_user)
                             await self.user_active_deactive(user, ldap_user)
                             await self.user_key_update(user, ldap_user)
                             user.is_opened = True
                         except bonsai.errors.LDAPError as exc:
-                            self.logger.error(f'Error adding/updating LDAP user {user.ldap_username} - {repr(exc)}')
+                            self.logger.error(f'Error adding/updating LDAP user {user.username_api} - {repr(exc)}')
                 else:
                     async with self.client.connect(is_async=True) as conn:
                         for identifier in user.projects_api:
                             ldap_org_proj = await conn.search(f"o=PROJECT-{identifier},{self.confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
                             if not ldap_org_proj:
                                 await self.new_organisation_project(identifier)
-                            ldap_user = await conn.search(f"cn={user.ldap_username},ou=People,o=PROJECT-{identifier},{self.confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
+                            ldap_user = await conn.search(f"cn={user.username_api},ou=People,o=PROJECT-{identifier},{self.confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
                             try:
                                 if not ldap_user or not user.is_opened:
                                     ldap_user = await self.new_user_ldap_add(user, conn, identifier)
@@ -422,12 +422,12 @@ class LdapUpdate(object):
                                     await self.user_key_update(user, ldap_user)
                                 user.is_opened = True
                             except bonsai.errors.AlreadyExists as exc:
-                                self.logger.warning(f'LDAP user {user.ldap_username} - {repr(exc)}')
+                                self.logger.warning(f'LDAP user {user.username_api} - {repr(exc)}')
                                 await self.user_sync_api_db(user, ldap_user)
                                 await self.user_key_update(user, ldap_user)
                                 user.is_opened = True
                             except bonsai.errors.LDAPError as exc:
-                                self.logger.error(f'Error adding/updating LDAP user {user.ldap_username} - {repr(exc)}')
+                                self.logger.error(f'Error adding/updating LDAP user {user.username_api} - {repr(exc)}')
                         await self.user_active_deactive(user, ldap_conn=conn)
 
             stmt = select(Project)

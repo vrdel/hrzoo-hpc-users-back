@@ -26,7 +26,7 @@ def flush_users(logger, session):
     for user in users:
         if len(user.sshkey) == 0 and len(user.project) == 0:
             session.delete(user)
-            logger.info(f'Flushing {user.ldap_username}')
+            logger.info(f'Flushing {user.username_api}')
 
 
 def flush_sshkeys(logger, session):
@@ -41,7 +41,7 @@ def flush_sshkeys(logger, session):
 
 def user_delete(logger, args, session):
     try:
-        user = session.query(User).filter(User.ldap_username == args.username).one()
+        user = session.query(User).filter(User.username_api == args.username).one()
         user_keys = user.sshkey
 
         if args.pubkey:
@@ -69,16 +69,16 @@ def user_delete(logger, args, session):
 
             if args.project in user.projects_api:
                 user.projects_api.remove(project.identifier)
-                logger.info(f"Removed {user.ldap_username} from {project.identifier}")
+                logger.info(f"Removed {user.username_api} from {project.identifier}")
 
             if args.force:
                 try:
                     project.user.remove(user)
                     session.add(project)
-                    logger.info(f"Removed {user.ldap_username} DB relation from {project.identifier}")
+                    logger.info(f"Removed {user.username_api} DB relation from {project.identifier}")
 
                 except ValueError:
-                    logger.error(f"{user.ldap_username} not in {project.identifier}")
+                    logger.error(f"{user.username_api} not in {project.identifier}")
 
         else:
             if args.force:
@@ -99,7 +99,7 @@ def user_delete(logger, args, session):
 
 def user_update(logger, args, session):
     try:
-        user = session.query(User).filter(User.ldap_username == args.username).one()
+        user = session.query(User).filter(User.username_api == args.username).one()
 
         if args.pubkey:
             try:
@@ -168,15 +168,15 @@ def user_update(logger, args, session):
             if not projects_api:
                 projects_api = list()
             if args.project in projects_api:
-                logger.info(f"User {user.ldap_username} already assigned to project {args.project}")
+                logger.info(f"User {user.username_api} already assigned to project {args.project}")
             elif args.project not in projects_api:
                 projects_api.append(args.project)
-                logger.info(f"User {user.ldap_username} added to project {args.project}")
+                logger.info(f"User {user.username_api} added to project {args.project}")
             user.projects_api = projects_api
 
             if args.force:
                 project.user.append(user)
-                logger.info(f"Project {args.project} DB relation added for user {user.ldap_username}")
+                logger.info(f"Project {args.project} DB relation added for user {user.username_api}")
                 session.add(project)
 
         if args.flagisdircreated and args.flagisdircreated > 0:
@@ -184,21 +184,21 @@ def user_update(logger, args, session):
         elif args.flagisdircreated == 0:
             user.is_dir_created = False
         if args.flagisdircreated != None:
-            logger.info(f"Set is_dir_created={args.flagisdircreated} for {user.ldap_username}")
+            logger.info(f"Set is_dir_created={args.flagisdircreated} for {user.username_api}")
 
         if args.flagisdeactivated and args.flagisdeactivated > 0:
             user.is_deactivated = True
         elif args.flagisdeactivated == 0:
             user.is_deactivated = False
         if args.flagisdeactivated != None:
-            logger.info(f"Set is_deactivated={args.flagisdeactivated} for {user.ldap_username}")
+            logger.info(f"Set is_deactivated={args.flagisdeactivated} for {user.username_api}")
 
         if args.flagisopensend and args.flagisopensend > 0:
             user.mail_is_opensend = True
         elif args.flagisopensend == 0:
             user.mail_is_opensend = False
         if args.flagisopensend != None:
-            logger.info(f"Set mail_is_opensend={args.flagisopensend} for {user.ldap_username}")
+            logger.info(f"Set mail_is_opensend={args.flagisopensend} for {user.username_api}")
 
         if args.flagissshkeyadded and args.flagissshkeyadded > 0:
             user.mail_is_sshkeyadded = True
@@ -206,21 +206,21 @@ def user_update(logger, args, session):
         elif args.flagissshkeyadded == 0:
             user.mail_is_sshkeyadded = False
         if args.flagissshkeyadded != None:
-            logger.info(f"Set mail_is_sshkeyadded={args.flagissshkeyadded} for {user.ldap_username}")
+            logger.info(f"Set mail_is_sshkeyadded={args.flagissshkeyadded} for {user.username_api}")
 
         if args.flagisactive and args.flagisactive > 0:
             user.is_active = True
         elif args.flagisactive == 0:
             user.is_active = False
         if args.flagisactive != None:
-            logger.info(f"Set is_active={args.flagisactive} for {user.ldap_username}")
+            logger.info(f"Set is_active={args.flagisactive} for {user.username_api}")
 
         if args.typecreate != None:
-            logger.info(f"Set type_create={args.typecreate} for {user.ldap_username}")
+            logger.info(f"Set type_create={args.typecreate} for {user.username_api}")
             user.type_create = args.typecreate
 
         if args.ssouid != None:
-            logger.info(f"Set type_create={args.ssouid} for {user.ldap_username}")
+            logger.info(f"Set type_create={args.ssouid} for {user.username_api}")
             user.person_uniqueid = args.ssouid
 
     except NoResultFound:
@@ -319,7 +319,7 @@ def user_project_add(logger, args, session):
                   uid_api=0,
                   ldap_uid=args.uid if args.uid else 0,
                   ldap_gid=0,
-                  ldap_username='',
+                  username_api='',
                   type_create='manual')
 
     if args.force and not already_exists:
@@ -355,7 +355,7 @@ def user_project_list(logger, args, session):
                 table.add_row("First = ", user.first_name)
                 table.add_row("Last = ", user.last_name)
                 table.add_row("Mail = ", user.person_mail)
-                table.add_row("Username = ", user.ldap_username)
+                table.add_row("Username = ", user.username_api)
                 table.add_row("LDAP UID = ", str(user.ldap_uid))
                 table.add_row("LDAP GID = ", str(user.ldap_gid))
                 table.add_row("Type create = ", str(user.type_create))
@@ -396,7 +396,7 @@ def user_project_list(logger, args, session):
                 table.add_row("First = ", user.first_name)
                 table.add_row("Last = ", user.last_name)
                 table.add_row("Mail = ", user.person_mail)
-                table.add_row("Username = ", user.ldap_username)
+                table.add_row("Username = ", user.username_api)
                 table.add_row("LDAP UID = ", str(user.ldap_uid))
                 table.add_row("LDAP GID = ", str(user.ldap_gid))
                 table.add_row("Type create = ", str(user.type_create))
@@ -437,7 +437,7 @@ def user_project_list(logger, args, session):
                 table.add_row("First = ", user.first_name)
                 table.add_row("Last = ", user.last_name)
                 table.add_row("Mail = ", user.person_mail)
-                table.add_row("Username = ", user.ldap_username)
+                table.add_row("Username = ", user.username_api)
                 table.add_row("LDAP UID = ", str(user.ldap_uid))
                 table.add_row("LDAP GID = ", str(user.ldap_gid))
                 table.add_row("Type create = ", str(user.type_create))
@@ -471,14 +471,14 @@ def user_project_list(logger, args, session):
         table.add_column()
 
         for user in all_users:
-            if args.username.lower() in user.ldap_username.lower():
+            if args.username.lower() in user.username_api.lower():
                 sshkeys = ', '.join(
                     ['\[{}...{}]'.format(key.public_key[0:32], key.public_key[-32:]) for key in user.sshkey]
                 )
                 table.add_row("First = ", user.first_name)
                 table.add_row("Last = ", user.last_name)
                 table.add_row("Mail = ", user.person_mail)
-                table.add_row("Username = ", user.ldap_username)
+                table.add_row("Username = ", user.username_api)
                 table.add_row("LDAP UID = ", str(user.ldap_uid))
                 table.add_row("LDAP GID = ", str(user.ldap_gid))
                 table.add_row("Type create = ", str(user.type_create))
@@ -517,7 +517,7 @@ def user_project_list(logger, args, session):
             table.add_row("First = ", user.first_name)
             table.add_row("Last = ", user.last_name)
             table.add_row("Mail = ", user.person_mail)
-            table.add_row("Username = ", user.ldap_username)
+            table.add_row("Username = ", user.username_api)
             table.add_row("LDAP UID = ", str(user.ldap_uid))
             table.add_row("LDAP GID = ", str(user.ldap_gid))
             table.add_row("Type create = ", str(user.type_create))

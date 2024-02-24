@@ -139,7 +139,7 @@ class ApiSync(object):
                 continue
 
             try:
-                stmt = select(User).where(User.ldap_username == uspr['user']['person_username'])
+                stmt = select(User).where(User.username_api == uspr['user']['person_username'])
                 us = await self.dbsession.execute(stmt)
                 us = us.scalars().one()
             except MultipleResultsFound as exc:
@@ -196,7 +196,7 @@ class ApiSync(object):
                 # use person_oib as unique identifier of user
                 # Mon Feb 19 2024
                 # changed to person_username as username is now uniquely generated on HZSI-WEB
-                stmt = select(User).where(User.ldap_username == uspr['user']['person_username'])
+                stmt = select(User).where(User.username_api == uspr['user']['person_username'])
                 us = await self.dbsession.execute(stmt)
                 us = us.scalars().one()
                 projects_api = us.projects_api
@@ -242,14 +242,14 @@ class ApiSync(object):
                         del us.is_deactivated_project[uspr['project']['identifier']]
                         del us.mail_project_is_activated[uspr['project']['identifier']]
                         del us.mail_project_is_deactivated[uspr['project']['identifier']]
-                        self.logger.info(f"Reset activated/deactivated flags for {us.ldap_username} - {uspr['project']['identifier']}")
+                        self.logger.info(f"Reset activated/deactivated flags for {us.username_api} - {uspr['project']['identifier']}")
                 # always up to date fields
                 us.person_mail = uspr['user']['person_mail']
                 us.person_uniqueid = uspr['user']['username']
                 us.is_active = uspr['user']['status']
                 us.is_staff = uspr['user']['is_staff']
                 us.uid_api = uspr['user']['id']
-                us.ldap_username = uspr['user']['person_username']
+                us.username_api = uspr['user']['person_username']
 
             except NoResultFound:
                 if self.confopts['ldap']['mode'] == 'project_organisation':
@@ -280,7 +280,7 @@ class ApiSync(object):
                               uid_api=uspr['user']['id'],
                               ldap_uid=0,
                               ldap_gid=0,
-                              ldap_username=uspr['user']['person_username'],
+                              username_api=uspr['user']['person_username'],
                               type_create='api')
                 else:
                     us = User(first_name=only_alnum(unidecode(uspr['user']['first_name'])),
@@ -310,7 +310,7 @@ class ApiSync(object):
                               uid_api=uspr['user']['id'],
                               ldap_uid=0,
                               ldap_gid=0,
-                              ldap_username=uspr['user']['person_username'],
+                              username_api=uspr['user']['person_username'],
                               type_create='api')
 
             except MultipleResultsFound as exc:
@@ -341,7 +341,7 @@ class ApiSync(object):
             users_db = await self.dbsession.execute(stmt)
             user_without_projects = users_db.scalars().all()
             self.logger.info("Found users in local DB without any registered project on HRZOO-SIGNUP-API: {}"
-                             .format(', '.join([user.ldap_username for user in user_without_projects])))
+                             .format(', '.join([user.username_api for user in user_without_projects])))
             self.logger.info("Nullifying user.projects_api and setting user.is_active=0,ldap_gid=0 for such")
             await self.dbsession.execute(
                 update(User),

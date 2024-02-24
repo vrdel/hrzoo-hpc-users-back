@@ -52,7 +52,7 @@ def project_list(logger, args, session):
     for project in projects:
         if (args.name and args.name.lower() in project.name.lower()) or \
            (args.identifier and args.identifier.lower() in project.identifier.lower()):
-            users = ', '.join([user.ldap_username for user in project.user])
+            users = ', '.join([user.username_api for user in project.user])
             resources = ', '.join(project.staff_resources_type_api)
             table.add_row('Name =', project.name)
             table.add_row('Identifier =', project.identifier)
@@ -65,7 +65,7 @@ def project_list(logger, args, session):
             table.add_row('Users =', users)
             table.add_row(' ')
         if not args.name and not args.identifier:
-            users = ', '.join([user.ldap_username for user in project.user])
+            users = ', '.join([user.username_api for user in project.user])
             resources = ', '.join(project.staff_resources_type_api)
             table.add_row('Name =', project.name)
             table.add_row('Identifier =', project.identifier)

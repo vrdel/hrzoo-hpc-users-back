@@ -37,7 +37,7 @@ class DirectoriesCreate(object):
 
                     for dir in self.confopts['usersetup']['userdirs_in']:
                         try:
-                            await aiofiles.os.mkdir(dir + user.ldap_username, 0o700)
+                            await aiofiles.os.mkdir(dir + user.username_api, 0o700)
 
                         except FileExistsError:
                             pass
@@ -46,7 +46,7 @@ class DirectoriesCreate(object):
                             break
 
                         try:
-                            await aioshutil.chown(dir + user.ldap_username, user.ldap_uid, user.ldap_gid)
+                            await aioshutil.chown(dir + user.username_api, user.ldap_uid, user.ldap_gid)
                             completed += 1
 
                         except (PermissionError, OSError, FileNotFoundError) as exc:
@@ -60,9 +60,9 @@ class DirectoriesCreate(object):
                             project_info = await self.dbsession.execute(stmt)
                             project_info = project_info.scalars().one()
 
-                            self.logger.info(f"Created {dir + user.ldap_username} with perm {user.ldap_uid}:{user.ldap_gid} ({user.ldap_username}:{project_info.identifier})")
+                            self.logger.info(f"Created {dir + user.username_api} with perm {user.ldap_uid}:{user.ldap_gid} ({user.username_api}:{project_info.identifier})")
                         except sqlalchemy.exc.NoResultFound:
-                            self.logger.info(f"Created {dir + user.ldap_username} with perm {user.ldap_uid}:{user.ldap_gid}")
+                            self.logger.info(f"Created {dir + user.username_api} with perm {user.ldap_uid}:{user.ldap_gid}")
 
             projects = await self.dbsession.execute(select(Project))
             projects = projects.scalars().all()
@@ -99,7 +99,7 @@ class DirectoriesCreate(object):
                     if completed == len(self.confopts['usersetup']['groupdirs_in']):
                         project.is_dir_created = True
                         for dir in self.confopts['usersetup']['groupdirs_in']:
-                            self.logger.info(f"Created {dir + project.identifier} with perm {userown.ldap_uid}:{project.ldap_gid} ({userown.ldap_username}:{project.identifier})")
+                            self.logger.info(f"Created {dir + project.identifier} with perm {userown.ldap_uid}:{project.ldap_gid} ({userown.username_api}:{project.identifier})")
 
         except PermissionError as exc:
             self.logger.error(exc)

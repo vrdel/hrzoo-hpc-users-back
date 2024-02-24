@@ -10,7 +10,7 @@ import asyncio
 def latest_project(username):
     shared = Shared('utils.latest_project()')
     dbsession = shared.dbsession
-    user = dbsession.query(User).filter(User.ldap_username == username).one()
+    user = dbsession.query(User).filter(User.username_api == username).one()
     last_project = user.project[-1]
     return last_project
 
