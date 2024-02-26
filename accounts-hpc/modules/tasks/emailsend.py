@@ -132,6 +132,9 @@ class SendEmail(object):
                               username=user.username_api, deactivated=True)
             if await email.send():
                 user.mail_is_deactivated = False
+                user.mail_is_sshkeyadded = True
+                user.mail_is_sshkeyremoved = True
+                user.mail_name_sshkey = list()
                 self.logger.info(f"Send email for deactivated account {user.username_api} @ {user.person_mail}")
 
     async def _email_key(self, users):
