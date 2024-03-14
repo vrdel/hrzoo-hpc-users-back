@@ -94,7 +94,7 @@ class ApiSync(object):
 
             except NoResultFound:
                 self.logger.warning('{} - No username found: {}'.format(self.sshkeys_add.__name__, key['user']['username']))
-                return
+                continue
 
             if key['fingerprint'] not in us.sshkeys_api:
                 us.sshkeys_api.append(key['fingerprint'])
