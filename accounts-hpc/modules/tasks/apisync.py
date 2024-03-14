@@ -92,6 +92,10 @@ class ApiSync(object):
                 self.logger.error('{} - Troublesome DB entry: {}'.format(self.sshkeys_add.__name__, repr(key)))
                 raise SystemExit(1)
 
+            except NoResultFound:
+                self.logger.warning('{} - No username found: {}'.format(self.sshkeys_add.__name__, key['user']['username']))
+                return
+
             if key['fingerprint'] not in us.sshkeys_api:
                 us.sshkeys_api.append(key['fingerprint'])
 
