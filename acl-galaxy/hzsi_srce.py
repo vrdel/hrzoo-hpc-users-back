@@ -41,7 +41,7 @@ def hzsi_users():
     allowed_users = set()
 
     try:
-        resp = requests.get(f"http://{confopts['fqdn']}/api/v1/usersprojects?tags={confopts['tag']}", headers=headers)
+        resp = requests.get(f"https://{confopts['fqdn']}/api/v1/usersprojects?tags={confopts['tag']}", headers=headers)
 
         if resp.status_code == 200:
             users_projects = json.loads(resp.content)
