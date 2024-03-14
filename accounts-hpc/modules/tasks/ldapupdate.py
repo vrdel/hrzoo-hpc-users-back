@@ -163,7 +163,8 @@ class LdapUpdate(object):
             target_gid = 0
 
         if projects_diff_add:
-            if user.project[-1].type == 'srce-workshop' and len(user.projects_api) > 1 and not user.is_staff:
+            all_workshops = all([pr.type == 'srce-workshop' for pr in user.project])
+            if user.project[-1].type == 'srce-workshop' and len(user.projects_api) > 1 and not user.is_staff and not all_workshops:
                 self.logger.info(f"Skip set gidNumber={target_gid} of srce-workshop as user {user.person_uniqueid} is already active on other projects")
                 user.skip_defgid = True
                 return
