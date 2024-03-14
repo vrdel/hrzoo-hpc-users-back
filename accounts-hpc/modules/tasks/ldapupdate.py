@@ -159,6 +159,11 @@ class LdapUpdate(object):
         except IndexError:
             target_gid = 0
 
+        if projects_diff_add:
+            if user.project[-1].type == 'srce-workshop' and len(user.projects_api) > 1:
+                self.logger.info(f"Skip setting default gidNumber={target_gid} of srce-workshop as user {user.person_uniqueid} is already active on other projects")
+                return
+
         if projects_diff_add or projects_diff_del:
             if not user.is_staff:
                 ldap_user[0].change_attribute('gidNumber', bonsai.LDAPModOp.REPLACE, target_gid)
