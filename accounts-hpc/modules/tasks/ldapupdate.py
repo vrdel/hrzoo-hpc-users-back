@@ -191,7 +191,7 @@ class LdapUpdate(object):
                 if user.skip_defgid:
                     user.skip_defgid = False
 
-        self.update_default_gid(projects_diff_add, projects_diff_del, user, ldap_user)
+        await self.update_default_gid(projects_diff_add, projects_diff_del, user, ldap_user)
 
     async def user_active_deactive(self, user, ldap_user=None, ldap_conn=None):
         if self.confopts['ldap']['mode'] == 'flat':
@@ -352,7 +352,10 @@ class LdapUpdate(object):
             else:
                 ldap_project[0].change_attribute('memberUid', bonsai.LDAPModOp.REPLACE, *project_new_members)
             await ldap_project[0].modify()
-            self.logger.info(f"Updating memberUid for LDAP cn={project.identifier},ou=Group new members: {', '.join(project_new_members)}")
+            if project_new_members:
+                self.logger.info(f"Updating memberUid for LDAP cn={project.identifier},ou=Group new members: {', '.join(project_new_members)}")
+            else:
+                self.logger.info(f"Emptied LDAP cn={project.identifier},ou=Group")
 
     async def create_default_groups(self):
         async with self.client.connect(is_async=True) as conn:
