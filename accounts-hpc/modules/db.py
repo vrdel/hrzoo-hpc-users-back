@@ -48,6 +48,7 @@ class User(Base):
     mail_project_is_sshkeyadded: Mapped[Dict] = mapped_column(MutableJson)
     mail_project_is_sshkeyremoved: Mapped[Dict] = mapped_column(MutableJson)
     person_mail: Mapped[str] = mapped_column(String(60))
+    person_type: Mapped[str] = mapped_column(String(32))
     person_uniqueid: Mapped[str] = mapped_column(String(128))
     projects_api: Mapped[List[str]] = mapped_column(MutableJson)
     skip_defgid: Mapped[bool] = mapped_column(Boolean)
