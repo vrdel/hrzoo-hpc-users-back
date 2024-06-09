@@ -254,6 +254,7 @@ class ApiSync(object):
                 us.is_staff = uspr['user']['is_staff']
                 us.uid_api = uspr['user']['id']
                 us.username_api = uspr['user']['person_username']
+                us.person_type = uspr['user']['person_type']
 
             except NoResultFound:
                 if self.confopts['ldap']['mode'] == 'project_organisation':
@@ -282,6 +283,7 @@ class ApiSync(object):
                               skip_defgid=False,
                               sshkeys_api=list(),
                               person_uniqueid=uspr['user']['username'],
+                              person_type=uspr['user']['person_type'],
                               uid_api=uspr['user']['id'],
                               ldap_uid=0,
                               ldap_gid=0,
@@ -313,6 +315,7 @@ class ApiSync(object):
                               skip_defgid=False,
                               sshkeys_api=list(),
                               person_uniqueid=uspr['user']['username'],
+                              person_type=uspr['user']['person_type'],
                               uid_api=uspr['user']['id'],
                               ldap_uid=0,
                               ldap_gid=0,
