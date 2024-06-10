@@ -1,0 +1,12 @@
+User account on Supek deactivated
+----
+Dear,
+
+Your user account for access to the Supek resource has been deactivated because you are
+no longer registered on an active project that grants access to the resource.
+
+Best regards,
+-- 
+Advanced Computing
+University of Zagreb, University Computing Centre (Srce), www.srce.unizg.hr
+computing@srce.hr, tel: +385 1 616 5555, fax: +385 1 616 5559
