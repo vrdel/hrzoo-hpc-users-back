@@ -27,7 +27,8 @@ class SendEmail(object):
             for project in user.mail_project_is_opensend.keys():
                 if user.mail_project_is_opensend[project] == False:
                     email = EmailSend(self.logger, self.confopts, user.person_mail,
-                                      username=user.username_api, project=project)
+                                      username=user.username_api, project=project,
+                                      foreign=user.person_type == 'foreign')
                     if await email.send():
                         user.mail_project_is_opensend[project] = True
                         if not self.users_project_opened.get(project, False):
@@ -58,7 +59,8 @@ class SendEmail(object):
                         email = EmailSend(self.logger, self.confopts,
                                           user.person_mail,
                                           sshkeyname=key_name,
-                                          project=project, keyop='add')
+                                          project=project, keyop='add',
+                                          foreign=user.person_type == 'foreign')
                         if await email.send():
                             nmail += 1
                             self.logger.info(f"Send email for added key {key_name} of {user.username_api} - {project}")
@@ -73,7 +75,8 @@ class SendEmail(object):
                         email = EmailSend(self.logger, self.confopts,
                                           user.person_mail,
                                           sshkeyname=key_name,
-                                          project=project, keyop='del')
+                                          project=project, keyop='del',
+                                          foreign=user.person_type == 'foreign')
                         if await email.send():
                             nmail += 1
                             self.logger.info(f"Send email for removed key {key_name} of {user.username_api} - {project}")
@@ -84,7 +87,8 @@ class SendEmail(object):
     async def _email_account(self, users):
         for user in users:
             email = EmailSend(self.logger, self.confopts, user.person_mail,
-                              username=user.username_api)
+                              username=user.username_api,
+                              foreign=user.person_type == 'foreign')
             if await email.send():
                 user.mail_is_opensend = True
                 self.users_opened.add(user.username_api)
@@ -96,7 +100,8 @@ class SendEmail(object):
                 for proj in user.mail_project_is_deactivated:
                     if not user.mail_project_is_deactivated[proj]:
                         email = EmailSend(self.logger, self.confopts, user.person_mail,
-                                          username=user.username_api, project=proj, deactivated=True)
+                                          username=user.username_api, project=proj, deactivated=True,
+                                          foreign=user.person_type == 'foreign')
                         if await email.send():
                             user.mail_project_is_deactivated[proj] = True
                             self.logger.info(f"Send email for deactivated account {user.username_api} - {proj} @ {user.person_mail}")
@@ -107,7 +112,8 @@ class SendEmail(object):
                 for proj in user.mail_project_is_activated:
                     if not user.mail_project_is_activated[proj]:
                         email = EmailSend(self.logger, self.confopts, user.person_mail,
-                                          username=user.username_api, project=proj, activated=True)
+                                          username=user.username_api, project=proj, activated=True,
+                                          foreign=user.person_type == 'foreign')
                         if await email.send():
                             user.mail_project_is_activated[proj] = True
                             user.mail_project_is_opensend[proj] = True
@@ -117,7 +123,8 @@ class SendEmail(object):
     async def _email_activate(self, users):
         for user in users:
             email = EmailSend(self.logger, self.confopts, user.person_mail,
-                              username=user.username_api, activated=True)
+                              username=user.username_api, activated=True,
+                              foreign=user.person_type == 'foreign')
             if await email.send():
                 user.mail_is_activated = False
                 user.mail_is_sshkeyadded = True
@@ -129,7 +136,8 @@ class SendEmail(object):
     async def _email_deactivate(self, users):
         for user in users:
             email = EmailSend(self.logger, self.confopts, user.person_mail,
-                              username=user.username_api, deactivated=True)
+                              username=user.username_api, deactivated=True,
+                              foreign=user.person_type == 'foreign')
             if await email.send():
                 user.mail_is_deactivated = False
                 user.mail_is_sshkeyadded = True
@@ -154,7 +162,8 @@ class SendEmail(object):
             for sshkeyname in added_keys:
                 key_name = sshkeyname.split('ADD:', 1)[1]
                 email = EmailSend(self.logger, self.confopts, user.person_mail,
-                                  sshkeyname=key_name, keyop='add')
+                                  sshkeyname=key_name, keyop='add',
+                                  foreign=user.person_type == 'foreign')
                 if await email.send():
                     nmail += 1
                     self.logger.info(f"Send email for added key {key_name} of {user.username_api}")
@@ -166,7 +175,8 @@ class SendEmail(object):
             for sshkeyname in removed_keys:
                 key_name = sshkeyname.split('DEL:', 1)[1]
                 email = EmailSend(self.logger, self.confopts, user.person_mail,
-                                  sshkeyname=key_name, keyop='del')
+                                  sshkeyname=key_name, keyop='del',
+                                  foreign=user.person_type == 'foreign')
                 if await email.send():
                     nmail += 1
                     self.logger.info(f"Send email for removed key {key_name} of {user.username_api}")
