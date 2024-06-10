@@ -4,11 +4,14 @@ include setup.py
 include requirements.txt
 include alembic.ini
 
-include etc/*
+include config/*.template
+include config/*.json
+include config/*.sh
+include config/emails/*
 include cron/*
 include bin/*
 include modules/*
 include alembic/versions/*
 include alembic/*
 
-exclude etc/*.conf
+exclude config/*.conf
