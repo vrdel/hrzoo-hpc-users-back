@@ -219,6 +219,10 @@ def user_update(logger, args, session):
             logger.info(f"Set type_create={args.typecreate} for {user.username_api}")
             user.type_create = args.typecreate
 
+        if args.typeperson != None:
+            logger.info(f"Set person_type={args.typeperson} for {user.username_api}")
+            user.person_type = args.typeperson
+
         if args.ssouid != None:
             logger.info(f"Set type_create={args.ssouid} for {user.username_api}")
             user.person_uniqueid = args.ssouid
@@ -320,7 +324,8 @@ def user_project_add(logger, args, session):
                   ldap_uid=args.uid if args.uid else 0,
                   ldap_gid=0,
                   username_api='',
-                  type_create='manual')
+                  type_create='manual',
+                  person_type=args.typeperson)
 
     if args.force and not already_exists:
         pr.user.append(us)
@@ -567,6 +572,8 @@ def main():
     parser_create.add_argument('--staff', dest='staff', action='store_true',
                                default=False,
                                required=False, help='Flag user as staff')
+    parser_create.add_argument('--type-person', dest='typeperson', type=str, metavar='local/foreign',
+                               required=False, help='Set person_type')
 
     parser_update = subparsers.add_parser('update', help='Update user metadata')
     parser_update.add_argument('--username', dest='username', type=str,
@@ -596,6 +603,8 @@ def main():
                                required=False, help='Set flag mail_is_opensend')
     parser_update.add_argument('--type-create', dest='typecreate', type=str, metavar='api/manual',
                                required=False, help='Set type_create')
+    parser_update.add_argument('--type-person', dest='typeperson', type=str, metavar='local/foreign',
+                               required=False, help='Set person_type')
     parser_update.add_argument('--sso-uid', dest='ssouid', type=str,
                                required=False, help='Set SSO UID')
     parser_update.add_argument('--null-gid', dest='nullgid', default=False, action='store_true',
