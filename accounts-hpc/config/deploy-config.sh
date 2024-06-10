@@ -34,11 +34,25 @@ done
 let ok=0
 if [ ! -z "$suffix" ]
 then
+    echo "* deploying configs..."
     for file in $(echo "*.${suffix}")
     do
         echo cp -f $file ${file%.${suffix}}
         cp -f $file ${file%.${suffix}}
         ok=1
     done
-    sudo chown root:root ../logrotate.d/*
+
+    if [ -d ../logrotate.d ]
+    then
+        echo "* chowning ../logrotate.d"
+        sudo chown root:root ../logrotate.d/*
+    fi
+
+    echo "* deploying emails..."
+    for file in $(echo "emails/*.${suffix}")
+    do
+        echo cp -f $file ${file%.${suffix}}
+        cp -f $file ${file%.${suffix}}
+        ok=1
+    done
 fi
