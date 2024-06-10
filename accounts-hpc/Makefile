@@ -16,6 +16,7 @@ clean:
 	docker exec -u user -t $(container_name) bash -c 'source /opt/hrzoo-accounts-hpc/bin/activate && cd /home/user/accounts-hpc-source/ && rm -rf dist/'
 	docker exec -u user -t $(container_name) bash -c 'source /opt/hrzoo-accounts-hpc/bin/activate && cd /home/user/accounts-hpc-source/ && rm -rf accounts-hpc/'
 	docker exec -u user -t $(container_name) bash -c 'source /opt/hrzoo-accounts-hpc/bin/activate && cd /home/user/accounts-hpc-source/ && rm -rf alembic/versions/__pycache__/'
+	docker exec -u user -t $(container_name) bash -c 'source /opt/hrzoo-accounts-hpc/bin/activate && cd /home/user/accounts-hpc-source/ && rm -rf accountshpc.egg-info'
 
 devel-wheel:
 	docker exec -u user -t $(container_name) bash -c 'source /opt/hrzoo-accounts-hpc/bin/activate && cd /home/user/accounts-hpc-source/ && make clean-contenv && python setup.py egg_info --tag-date --tag-build=dev bdist_wheel'
