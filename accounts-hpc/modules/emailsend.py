@@ -116,15 +116,20 @@ class EmailSend(object):
 
         else:
             try:
-                if self.port == 25:
-                    s = aiosmtplib.SMTP(hostname=self.smtpserver, port=self.port, timeout=self.timeout)
-                else:
-                    s = aiosmtplib.SMTP(hostname=self.smtpserver, port=self.port, timeout=self.timeout)
-                    context = ssl.create_default_context()
-                    await s.starttls(tls_context=context)
-                    await s.login(self.user, self.password)
+                s = aiosmtplib.SMTP(hostname=self.smtpserver, port=self.port, timeout=self.timeout)
+                context = ssl.create_default_context()
+
+                await s.starttls(tls_context=context)
+                await s.login(self.user, self.password)
                 await s.connect()
-                await s.sendmail(self.emailfrom, [self.emailbcc, self.emailto], email_text)
+
+                if ',' in self.emailbcc:
+                    self.emailbcc = self.emailbcc.split(',')
+                    self.emailbcc = [email.strip() for email in self.emailbcc]
+                    await s.sendmail(self.emailfrom, self.emailbcc + [self.emailto], email_text)
+                else:
+                    await s.sendmail(self.emailfrom, [self.emailbcc, self.emailto], email_text)
+
                 await s.quit()
 
                 return True
