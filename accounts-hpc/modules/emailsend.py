@@ -46,7 +46,10 @@ class EmailSend(object):
         self.user = confopts['email']['user']
         self.password = confopts['email']['password']
         self.timeout = confopts['email']['timeout']
-        self.emailfrom = confopts['email']['from']
+        if foreign:
+            self.emailfrom = confopts['email']['fromen']
+        else:
+            self.emailfrom = confopts['email']['from']
         self.emailbcc = confopts['email']['bcc']
         self.emailto = emailto
         self.logger = logger

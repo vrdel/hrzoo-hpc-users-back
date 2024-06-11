@@ -48,6 +48,7 @@ noshell = /sbin/nologin
 
 [email]
 from = Napredno računanje <computing@srce.hr>
+fromen = Advanced Computing <computing@srce.hr>
 bcc = isabella-dezurni@srce.hr
 smtp = smtp.srce.hr
 port = 25

@@ -50,6 +50,7 @@ def parse_config(logger=None):
 
                 if section.startswith('email'):
                     confopts['email'] = ({'from': config.get(section, 'from')})
+                    confopts['email'].update({'fromen': config.get(section, 'fromen')})
                     confopts['email'].update({'bcc': config.get(section, 'bcc')})
                     confopts['email'].update({'smtp': config.get(section, 'smtp')})
                     confopts['email'].update({'template_newuser': config.get(section, 'template_newuser')})
