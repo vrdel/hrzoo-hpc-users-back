@@ -7,7 +7,7 @@ User account has been created for you to access the Supek resource.
 Username: __USERNAME__
 
 Instructions for access can be found at the following address:
-https://wiki.srce.hr/display/AC/Access .
+https://wiki.srce.hr/pages/viewpage.action?pageId=142624911 .
 
 Best regards,
 -- 
