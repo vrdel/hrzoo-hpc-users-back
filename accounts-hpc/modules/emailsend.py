@@ -117,10 +117,13 @@ class EmailSend(object):
         else:
             try:
                 s = aiosmtplib.SMTP(hostname=self.smtpserver, port=self.port, timeout=self.timeout)
-                context = ssl.create_default_context()
 
-                await s.starttls(tls_context=context)
-                await s.login(self.user, self.password)
+                if self.port != 25:
+                    context = ssl.create_default_context()
+                    await s.starttls(tls_context=context)
+                if self.user and self.password:
+                    await s.login(self.user, self.password)
+
                 await s.connect()
 
                 if ',' in self.emailbcc:
