@@ -52,13 +52,13 @@ class EmailSend(object):
         self.logger = logger
 
     def _load_en(self):
-        return self.template.replace('.', '-en.')
+        return self.template.replace('.txt', '-en.txt')
 
     def _load_template(self, template):
         template_file = None
         if self.confopts['ldap']['mode'] == 'project_organisation':
             template_file = self.confopts['email'][template]
-            template_file = template_file.replace('.', f'_{self.project}.')
+            template_file = template_file.replace('.txt', f'_{self.project}.txt')
         else:
             template_file = self.confopts['email'][template]
         return template_file
