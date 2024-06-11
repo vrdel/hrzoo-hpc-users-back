@@ -1,13 +1,13 @@
-User Account on Supek
+User account on Supek
 ----
 Dear,
 
-A user account has been created for you to access the Supek resource.
+User account has been created for you to access the Supek resource.
 
 Username: __USERNAME__
 
 Instructions for access can be found at the following address:
-https://wiki.srce.hr/display/NR/Pristup+i+kopiranje+datoteka .
+https://wiki.srce.hr/display/AC/Access .
 
 Best regards,
 -- 

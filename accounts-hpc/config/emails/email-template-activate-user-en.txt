@@ -1,4 +1,4 @@
-User Account on Supek Re-Activated
+User account on Supek re-activated
 ----
 Dear,
 
@@ -7,7 +7,7 @@ Your user account for access to the Supek resource has been re-activated.
 Username: __USERNAME__
 
 Instructions for access can be found at the following address:
-https://wiki.srce.hr/display/NR/Pristup+i+kopiranje+datoteka
+https://wiki.srce.hr/display/AC/Access
 
 Best regards,
 -- 
