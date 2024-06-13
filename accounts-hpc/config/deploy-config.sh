@@ -2,10 +2,13 @@
 
 IFS=" "
 suffix=""
+CHOWN_USER1="dvrcic"
+CHOWN_USER2="root"
 
 usage()
 {
 	printf "Usage: %s [argument]\n" $(basename $0) >&2
+	printf "       [-c]            - change permissions of copied over files\n" >&2
 	printf "       [-s]            - suffix extension of config files that will be copied over\n" >&2
 	exit 2
 }
@@ -15,13 +18,15 @@ then
     usage
 fi
 
-while getopts 'hs:' OPTION
+while getopts 'chs:' OPTION
 do
     case $OPTION in
         s)
             suffix=$OPTARG
              ;;
-
+        c)
+            chown=1
+            ;;
         h)
             usage
             ;;
@@ -50,16 +55,21 @@ then
         do
             echo "cp -f ${file} ${file%.${suffix}}"
             cp -f ${file} ${file%.${suffix}}
+            if [ ! -z "${chown}" ]
+            then
+                echo "chowning ${CHOWN_USER1}: ${file%.${suffix}}"
+                chown ${CHOWN_USER1} ${file%.${suffix}}
+            fi
         done
     fi
 
-    if [ -d ../logrotate.d ]
-    then
-        echo "* chowning ../logrotate.d"
-        sudo chown root:root ../logrotate.d/*
-    fi
+		if [[ ! -z "${chown}" && -d ../logrotate.d ]]
+		then
+				echo -e "\n* chowning ../logrotate.d"
+				chown ${CHOWN_USER2} ../logrotate.d/*
+		fi
 
-    echo "* deploying emails..."
+    echo -e "\n* deploying emails..."
     pattern="*.${suffix}"
     files=()
     while read line
@@ -75,6 +85,11 @@ then
         do
             echo "cp -f ${file} ${file%.${suffix}}"
             cp -f ${file} ${file%.${suffix}}
+            if [ ! -z "${chown}" ]
+            then
+                echo "chowning ${CHOWN_USER1}: ${file%.${suffix}}"
+                chown ${CHOWN_USER1} ${file%.${suffix}}
+            fi
         done
     fi
 fi
