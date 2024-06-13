@@ -35,12 +35,23 @@ let ok=0
 if [ ! -z "$suffix" ]
 then
     echo "* deploying configs..."
-    for file in $(echo "*.${suffix}")
+    pattern="*.${suffix}"
+    files=()
+    while read line
     do
-        echo cp -f $file ${file%.${suffix}}
-        cp -f $file ${file%.${suffix}}
-        ok=1
-    done
+        files+=("$line")
+    done < <(find . -maxdepth 1 -type f -name "$pattern")
+
+    if [ ${#files[@]} -eq 0 ] || [ "${files[0]}" = "$pattern" ]
+    then
+        echo "No files matching pattern ${pattern} found."
+    else
+        for file in "${files[@]}"
+        do
+            echo "cp -f ${file} ${file%.${suffix}}"
+            cp -f ${file} ${file%.${suffix}}
+        done
+    fi
 
     if [ -d ../logrotate.d ]
     then
@@ -49,10 +60,21 @@ then
     fi
 
     echo "* deploying emails..."
-    for file in $(echo "emails/*.${suffix}")
+    pattern="*.${suffix}"
+    files=()
+    while read line
     do
-        echo cp -f $file ${file%.${suffix}}
-        cp -f $file ${file%.${suffix}}
-        ok=1
-    done
+        files+=("$line")
+    done < <(find ./emails/ -maxdepth 1 -type f -name "$pattern")
+
+    if [ ${#files[@]} -eq 0 ] || [ "${files[0]}" = "$pattern" ]
+    then
+        echo "No files matching pattern ${pattern} found."
+    else
+        for file in "${files[@]}"
+        do
+            echo "cp -f ${file} ${file%.${suffix}}"
+            cp -f ${file} ${file%.${suffix}}
+        done
+    fi
 fi
