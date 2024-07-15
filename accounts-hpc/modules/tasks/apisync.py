@@ -83,7 +83,7 @@ class ApiSync(object):
                 continue
 
             try:
-                stmt = select(User).where(User.person_uniqueid == key['user']['username'])
+                stmt = select(User).where(User.username_api == key['user']['person_username'])
                 us = await self.dbsession.execute(stmt)
                 us = us.scalars().one()
 
@@ -93,7 +93,7 @@ class ApiSync(object):
                 raise SystemExit(1)
 
             except NoResultFound:
-                self.logger.warning('{} - No username found: {}'.format(self.sshkeys_add.__name__, key['user']['username']))
+                self.logger.warning('{} - No username found: {}'.format(self.sshkeys_add.__name__, key['user']['person_username']))
                 continue
 
             if key['fingerprint'] not in us.sshkeys_api:
