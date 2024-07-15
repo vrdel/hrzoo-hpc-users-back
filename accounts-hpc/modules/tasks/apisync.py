@@ -44,24 +44,24 @@ class ApiSync(object):
             if key['user']['id'] not in interested_users:
                 continue
 
-            if key['user']['username'] not in hzsi_api_user_keys:
-                hzsi_api_user_keys[key['user']['username']] = list()
+            if key['user']['person_username'] not in hzsi_api_user_keys:
+                hzsi_api_user_keys[key['user']['person_username']] = list()
 
-            hzsi_api_user_keys[key['user']['username']].append(key['fingerprint'])
+            hzsi_api_user_keys[key['user']['person_username']].append(key['fingerprint'])
 
         stmt = select(User).where(User.type_create == 'api')
         users = await self.dbsession.execute(stmt)
         users = users.scalars().all()
 
         for us in users:
-            if us.person_uniqueid not in hzsi_api_user_keys.keys():
-                hzsi_api_user_keys[us.person_uniqueid] = list()
+            if us.username_api not in hzsi_api_user_keys.keys():
+                hzsi_api_user_keys[us.username_api] = list()
 
-            if len(await us.awaitable_attrs.sshkey) > len(hzsi_api_user_keys[us.person_uniqueid]):
+            if len(await us.awaitable_attrs.sshkey) > len(hzsi_api_user_keys[us.username_api]):
                 rem_keys = list(
                     set(us.sshkeys_api)
-                    .difference(hzsi_api_user_keys[us.person_uniqueid]))
-                us.sshkeys_api = hzsi_api_user_keys[us.person_uniqueid]
+                    .difference(hzsi_api_user_keys[us.username_api]))
+                us.sshkeys_api = hzsi_api_user_keys[us.username_api]
                 if self.args.initset:
                     stmt = select(SshKey).where(
                         and_(
