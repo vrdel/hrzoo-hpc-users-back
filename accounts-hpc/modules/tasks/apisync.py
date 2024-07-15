@@ -129,12 +129,12 @@ class ApiSync(object):
         hzsi_api_user_projects = dict()
 
         for uspr in projects_users:
-            if uspr['user']['username'] not in hzsi_api_user_projects:
+            if uspr['user']['person_username'] not in hzsi_api_user_projects:
                 hzsi_api_user_projects.update({
-                    uspr['user']['username']: list()
+                    uspr['user']['person_username']: list()
                 })
-            if uspr['project']['identifier'] not in hzsi_api_user_projects[uspr['user']['username']]:
-                hzsi_api_user_projects[uspr['user']['username']].\
+            if uspr['project']['identifier'] not in hzsi_api_user_projects[uspr['user']['person_username']]:
+                hzsi_api_user_projects[uspr['user']['person_username']].\
                     append(uspr['project']['identifier'])
 
         visited_users = set()
@@ -151,17 +151,17 @@ class ApiSync(object):
                 self.logger.error('{} - Troublesome DB entry: {}'.format(self.users_projects_del.__name__, repr(uspr)))
                 raise SystemExit(1)
 
-            if len(us.projects_api) > len(hzsi_api_user_projects[uspr['user']['username']]):
+            if len(us.projects_api) > len(hzsi_api_user_projects[uspr['user']['person_username']]):
                 prjs_diff = list(
                     set(us.projects_api)
                     .difference(
-                        set(hzsi_api_user_projects[uspr['user']['username']])
+                        set(hzsi_api_user_projects[uspr['user']['person_username']])
                     ))
                 stmt = select(Project).where(Project.identifier.in_(prjs_diff))
                 prjs_diff_db = await self.dbsession.execute(stmt)
                 prjs_diff_db = prjs_diff_db.scalars().all()
 
-                us.projects_api = hzsi_api_user_projects[uspr['user']['username']]
+                us.projects_api = hzsi_api_user_projects[uspr['user']['person_username']]
 
                 if self.args.initset:
                     for pr in prjs_diff_db:
