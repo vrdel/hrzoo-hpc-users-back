@@ -33,6 +33,7 @@ RUN \
       sqlite \
       telnet \
       the_silver_searcher \
+      tmux \
       vifm \
       vim \
       wget \
@@ -53,7 +54,7 @@ RUN sed -r -i 's/(^Defaults.*always_set_home)/# \1/' /etc/sudoers
 RUN echo -e "user ALL=(ALL) NOPASSWD: ALL\nDefaults env_keep += \"HOME\"" >> /etc/sudoers
 USER user
 WORKDIR /home/user
-RUN sudo python3.9 -m venv /opt/hrzoo-ldapsync
+RUN sudo python3.9 -m venv /opt/hrzoo-accounts-hpc
 COPY ldap-conf/ /home/user/ldap-conf/
 COPY certs/ /home/user/certs/
 RUN mkdir /home/user/rpms/
