@@ -1,0 +1,98 @@
+[tool.poetry]
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.9"
+aiohttp = "*"
+aiofiles = "*"
+aiosqlite = "*"
+aioshutil = "*"
+aiosmtplib = "*"
+alembic = "*"
+bonsai = "*"
+psutil = "*"
+requests = "*"
+SQLAlchemy = "*"
+sqlalchemy-json = "*"
+Unidecode = "*"
+rich = "*"
+
+[tool.poetry.group.devel]
+optional = true
+
+[tool.poetry.group.devel.dependencies]
+build = "*"
+ipdb = "*"
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "accountshpc"
+dynamic = ["version"]
+authors = [
+	{ name = "Daniel Vrcic", email = "dvrcic@srce.hr" }
+]
+description = """
+    Set of backend tools that run on frontend node of HRZOO HPC clusters,
+    sync with HRZOO Signup API, set user entries in LDAP and performs
+    other actions for user to get access
+"""
+classifiers = [
+	"License :: OSI Approved :: Apache Software License",
+	"Operating System :: POSIX",
+	"Programming Language :: Python :: 3.9",
+]
+
+[tool.setuptools]
+packages = [
+	'accounts_hpc',
+    'accounts_hpc.tasks'
+]
+include-package-data = true
+
+[tool.setuptools.package-dir]
+accounts_hpc = "modules/"
+"accounts_hpc.tasks" = "modules/tasks/"
+
+[tool.setuptools.data-files]
+"" = ["pyproject.toml", "poetry.lock", "alembic.ini"]
+"etc/accounts-hpc" = [
+    "config/accounts-hpc.conf.template", "config/replacestring_map.json",
+    "config/deploy-config.sh", "config/users_map.json"
+]
+"etc/accounts-hpc/emails/" = [
+    "config/emails/email-template-new-key.txt",
+    "config/emails/email-template-new-user.txt",
+    "config/emails/email-template-del-key.txt",
+    "config/emails/email-template-activate-user.txt",
+    "config/emails/email-template-deactivate-user.txt",
+    "config/emails/email-template-new-key-en.txt",
+    "config/emails/email-template-new-user-en.txt",
+    "config/emails/email-template-del-key-en.txt",
+    "config/emails/email-template-activate-user-en.txt",
+    "config/emails/email-template-deactivate-user-en.txt"
+]
+"etc/logrotate.d/" = ["logrotate/cache", "logrotate/logfile"]
+"helpers/" = ["helpers/rename_username.sql"]
+"alembic/" = ["alembic/README", "alembic/env.py", "alembic/script.py.mako"]
+"alembic/versions" = [
+    "alembic/versions/1b04100c64f1_added_is_deactivated_field.py",
+    "alembic/versions/3eaf5dccc6b4_remove_person_oib_field.py",
+    "alembic/versions/4f28e6e80197_added_type_create_field.py",
+    "alembic/versions/33e86c0fde3b_added_person_type_field.py",
+    "alembic/versions/279bca80e20b_added_is_activated_project_and_is_.py",
+    "alembic/versions/421b74b19d9c_added_mail_project_is_activated_and_mail_.py",
+    "alembic/versions/6949b64768df_remove_mail_is_subscribed.py",
+    "alembic/versions/5424372ed0c7_add_new_fields_related_to_ssh_key_.py",
+    "alembic/versions/bd754fd260ed_add_skip_defgid_field.py",
+    "alembic/versions/d0dccfda2b05_added_mail_project__mapping_flag_fields.py",
+    "alembic/versions/f9637001882f_added_mail_is_deactivated_and_mail_is_.py",
+]
+"var/lib/" = ["helpers/empty"]
+"var/run/" = ["helpers/empty"]
+"var/log/" = ["helpers/empty"]
+
+[tool.setuptools.dynamic]
+version = { attr = "version.vernum" }
