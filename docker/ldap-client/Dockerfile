@@ -55,6 +55,12 @@ RUN echo -e "user ALL=(ALL) NOPASSWD: ALL\nDefaults env_keep += \"HOME\"" >> /et
 USER user
 WORKDIR /home/user
 RUN sudo python3.9 -m venv /opt/hrzoo-accounts-hpc
+RUN python3.9 -m venv /opt/poetry-tool/
+RUN sh -c '\
+  . /opt/poetry-tool/bin/activate \
+  && pip install -U pip \
+  && pip install -U poetry'
+RUN ln -s /opt/poetry-tool/bin/poetry /usr/local/bin/
 COPY ldap-conf/ /home/user/ldap-conf/
 COPY certs/ /home/user/certs/
 RUN mkdir /home/user/rpms/
