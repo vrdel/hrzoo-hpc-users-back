@@ -58,6 +58,7 @@ RUN sudo python3.9 -m venv /opt/hrzoo-accounts-hpc
 RUN sudo sh -c '\
   . /opt/hrzoo-accounts-hpc/bin/activate \
   && pip install -U pip'
+RUN sudo chown -R user:user /opt/hrzoo-accounts-hpc
 RUN sudo python3.9 -m venv /opt/poetry-tool/
 RUN sudo sh -c '\
   . /opt/poetry-tool/bin/activate \
