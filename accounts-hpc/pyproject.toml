@@ -58,6 +58,19 @@ accounts_hpc = "modules/"
 
 [tool.setuptools.data-files]
 "" = ["pyproject.toml", "poetry.lock", "alembic.ini"]
+"bin" = [
+    "bin/ah-all-flags-set.py",
+    "bin/ah-api-sync.py",
+    "bin/ah-db-tool.py",
+    "bin/ah-directories-create.py",
+    "bin/ah-email-send.py",
+    "bin/ah-fairshare-update.py",
+    "bin/ah-ldap-update.py",
+    "bin/ah-project-manage.py",
+    "bin/ah-taskd.py",
+    "bin/ah-user-manage.py",
+    "bin/ah-user-metadata-setup.py",
+]
 "etc/accounts-hpc" = [
     "config/accounts-hpc.conf.template", "config/replacestring_map.json",
     "config/deploy-config.sh", "config/users_map.json"
