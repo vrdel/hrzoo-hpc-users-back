@@ -1,0 +1,13 @@
+[Unit]
+Description=hrzoo accounts task daemon
+After=network.target
+
+[Service]
+Type=simple
+Environment=VIRTUAL_ENV=/opt/hrzoo-accounts-hpc/
+ExecStart=/opt/hrzoo-accounts-hpc/bin/python /opt/hrzoo-accounts-hpc/bin/ah-taskd.py
+KillMode=process
+SyslogIdentifier=ah-taskd
+
+[Install]
+WantedBy=multi-user.target
