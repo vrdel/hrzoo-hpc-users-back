@@ -103,6 +103,7 @@ accounts_hpc = "modules/"
     "alembic/versions/d0dccfda2b05_added_mail_project__mapping_flag_fields.py",
     "alembic/versions/f9637001882f_added_mail_is_deactivated_and_mail_is_.py",
 ]
+"usr/lib/systemd/system" = ["init/hrzoo-accounts-taskd.service"]
 "var/lib/" = ["helpers/empty"]
 "var/lib/backup/" = ["helpers/empty"]
 "var/log/" = ["helpers/empty"]
