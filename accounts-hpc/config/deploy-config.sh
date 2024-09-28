@@ -4,6 +4,8 @@ IFS=" "
 suffix=""
 CHOWN_USER1="dvrcic"
 CHOWN_USER2="root"
+SYSTEMD_PATH="/usr/lib/systemd/system/"
+SYSTEMD_UNIT="hrzoo-accounts-taskd.service"
 
 usage()
 {
@@ -92,4 +94,13 @@ then
             fi
         done
     fi
+
+		if [ ! -e ${SYSTEMD_PATH}/${SYSTEMD_UNIT} ] && [ ! -L ${SYSTEMD_PATH}/${SYSTEMD_UNIT} ]
+		then
+			echo -e "\n* deploying systemd unit..."
+			echo -e "ln -s ${PWD}/../usr/lib/systemd/system/${SYSTEMD_UNIT} ${SYSTEMD_PATH}"
+			ln -s ${PWD}/../../usr/lib/systemd/system/${SYSTEMD_UNIT} ${SYSTEMD_PATH}
+			echo -e "systemctl daemon-reload"
+			systemctl daemon-reload
+		fi
 fi
