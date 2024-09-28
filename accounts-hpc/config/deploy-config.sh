@@ -99,7 +99,7 @@ then
 		then
 			echo -e "\n* deploying systemd unit..."
 			echo -e "ln -s ${PWD}/../usr/lib/systemd/system/${SYSTEMD_UNIT} ${SYSTEMD_PATH}"
-			ln -s ${PWD}/../usr/lib/systemd/system/${SYSTEMD_UNIT} ${SYSTEMD_PATH}
+			ln -s ${PWD}/../../usr/lib/systemd/system/${SYSTEMD_UNIT} ${SYSTEMD_PATH}
 			echo -e "systemctl daemon-reload"
 			systemctl daemon-reload
 		fi
