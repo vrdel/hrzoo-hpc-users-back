@@ -128,6 +128,12 @@ class LdapUpdate(object):
         try:
             user_project = await user.awaitable_attrs.project
             target_gid = self.confopts['usersetup']['gid_offset'] + user_project[-1].prjid_api
+            stmt = select(Project).where(Project.identifier == user.projects_api[-1])
+            target_project = await self.dbsession.execute(stmt)
+            target_project = target_project.scalars().one()
+            target_gid_api = target_project.ldap_gid
+            if target_gid_api != target_gid:
+                self.logger.warn(f"User {user.person_uniqueid} projects_api and project cache relations out of sync")
         except IndexError:
             target_gid = 0
 
