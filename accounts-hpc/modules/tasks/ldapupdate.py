@@ -134,6 +134,12 @@ class LdapUpdate(object):
             return 0
 
     async def update_default_gid(self, proj_add, proj_del, user, ldap_user):
+        """
+            ensure that user's GID is always correctly set to the GID of last
+            assigned project. as order of relations of users to projects might not be
+            strictly correct and match what's on HZSI-WEB-API, we exclusively rely
+            on projects_api field list of user's project order assignements.
+        """
         target_gid = await self.find_target_gid(user)
 
         if proj_add:
