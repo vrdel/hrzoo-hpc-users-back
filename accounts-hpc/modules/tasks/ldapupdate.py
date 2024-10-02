@@ -124,18 +124,17 @@ class LdapUpdate(object):
                         diff_res = set(existing_members).difference(set(all_usernames))
                     self.logger.info(f"Updated resource group {group} because of difference: {', '.join(diff_res)}")
 
-    async def update_default_gid(self, proj_add, proj_del, user, ldap_user):
+    async def find_target_gid(self, user):
         try:
-            user_project = await user.awaitable_attrs.project
-            target_gid = self.confopts['usersetup']['gid_offset'] + user_project[-1].prjid_api
             stmt = select(Project).where(Project.identifier == user.projects_api[-1])
             target_project = await self.dbsession.execute(stmt)
             target_project = target_project.scalars().one()
-            target_gid_api = target_project.ldap_gid
-            if target_gid_api != target_gid:
-                self.logger.warn(f"User {user.person_uniqueid} projects_api and project cache relations out of sync")
+            return target_project.ldap_gid
         except IndexError:
-            target_gid = 0
+            return 0
+
+    async def update_default_gid(self, proj_add, proj_del, user, ldap_user):
+        target_gid = await self.find_target_gid(user)
 
         if proj_add:
             all_workshops = all([pr.type == 'srce-workshop' for pr in user.project])
@@ -149,6 +148,7 @@ class LdapUpdate(object):
 
         if proj_add or proj_del:
             if not user.is_staff and len(user.projects_api) > 1 and user.project[-1].type == 'srce-workshop':
+                # rely on user.projects_api order here
                 for pr in reversed(user.project):
                     if pr.type != 'srce-workshop':
                         target_gid = self.confopts['usersetup']['gid_offset'] + pr.prjid_api
@@ -158,7 +158,7 @@ class LdapUpdate(object):
                 await ldap_user[0].modify()
                 self.logger.info(f"User {user.person_uniqueid} gidNumber updated to {target_gid}")
         # trigger default gid update when associated projects remain same
-        if not user.is_staff and not user.skip_defgid and user.ldap_gid != target_gid:
+        if target_gid != user.ldap_gid and not user.is_staff and not user.skip_defgid:
             ldap_user[0].change_attribute('gidNumber', bonsai.LDAPModOp.REPLACE, target_gid)
             await ldap_user[0].modify()
             self.logger.info(f"Enforce user {user.person_uniqueid} gidNumber update to {target_gid}")
