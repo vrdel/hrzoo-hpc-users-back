@@ -124,12 +124,32 @@ class LdapUpdate(object):
                         diff_res = set(existing_members).difference(set(all_usernames))
                     self.logger.info(f"Updated resource group {group} because of difference: {', '.join(diff_res)}")
 
+    async def gid_last_not_workshop(self, user):
+        for pr in reversed(user.projects_api):
+            stmt = select(Project).where(Project.identifier == pr)
+            interested_project = await self.dbsession.execute(stmt)
+            interested_project = interested_project.scalars().one()
+            if interested_project.type != 'srce-workshop':
+                return interested_project.ldap_gid
+        return 0
+
     async def find_target_gid(self, user):
         try:
+            all_workshops = all([pr.type == 'srce-workshop' for pr in user.project])
+            if (user.project[-1].type == 'srce-workshop' and len(user.projects_api) > 1
+                and not user.is_staff and not all_workshops):
+                last_gid_project_not_workshop = await self.gid_last_not_workshop(user)
+                if not user.skip_defgid:
+                    self.logger.info(f"Skip set gidNumber={user.project[-1].ldap_gid} of srce-workshop as user {user.person_uniqueid} is already active on other projects")
+                user.skip_defgid = True
+                return last_gid_project_not_workshop
+
             stmt = select(Project).where(Project.identifier == user.projects_api[-1])
             target_project = await self.dbsession.execute(stmt)
             target_project = target_project.scalars().one()
+            user.skip_defgid = False
             return target_project.ldap_gid
+
         except IndexError:
             return 0
 
@@ -138,34 +158,17 @@ class LdapUpdate(object):
             ensure that user's GID is always correctly set to the GID of last
             assigned project. as order of relations of users to projects might not be
             strictly correct and match what's on HZSI-WEB-API, we exclusively rely
-            on projects_api field list of user's project order assignements.
+            on projects_api field list of user's project order assignements. additionally
+            if user's last assignment was on srce-workshop project, but it has already been
+            before assigned to some other type project, don't update his GID to srce-workshop
+            GID
         """
         target_gid = await self.find_target_gid(user)
 
-        if proj_add:
-            all_workshops = all([pr.type == 'srce-workshop' for pr in user.project])
-            if user.project[-1].type == 'srce-workshop' and len(user.projects_api) > 1 and not user.is_staff and not all_workshops:
-                self.logger.info(f"Skip set gidNumber={target_gid} of srce-workshop as user {user.person_uniqueid} is already active on other projects")
-                user.skip_defgid = True
-                return
-
-            elif user.project[-1].type != 'srce-workshop' and user.skip_defgid:
-                user.skip_defgid = False
-
-        if proj_add or proj_del:
-            if not user.is_staff and len(user.projects_api) > 1 and user.project[-1].type == 'srce-workshop':
-                for pr in reversed(user.projects_api):
-                    stmt = select(Project).where(Project.identifier == pr)
-                    interested_project = await self.dbsession.execute(stmt)
-                    interested_project = interested_project.scalars().one()
-                    if interested_project.type != 'srce-workshop':
-                        target_gid = interested_project.ldap_gid
-                        break
-        if target_gid != user.ldap_gid and not user.is_staff and not user.skip_defgid:
+        if target_gid != user.ldap_gid and not user.is_staff:
             ldap_user[0].change_attribute('gidNumber', bonsai.LDAPModOp.REPLACE, target_gid)
             await ldap_user[0].modify()
             self.logger.info(f"User {user.person_uniqueid} gidNumber updated to {target_gid}")
-        if not user.is_staff and not user.skip_defgid:
             user.ldap_gid = target_gid
 
     async def user_sync_api_db(self, user, ldap_user):

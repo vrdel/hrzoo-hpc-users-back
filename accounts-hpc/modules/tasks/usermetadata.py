@@ -11,6 +11,9 @@ import asyncio
 
 
 class UserMetadata(object):
+    """
+        Initial set of user's UID and GID (when both or one is 0)
+    """
     def __init__(self, caller, args, daemon=False):
         shared = Shared(caller, daemon)
         self.confopts = shared.confopts
