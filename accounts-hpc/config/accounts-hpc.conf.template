@@ -1,6 +1,9 @@
 [DEFAULT]
 VENV = /opt/hrzoo-accounts-hpc
 
+[general]
+loggers = stdout, file, syslog
+
 [tasks]
 call_list = apisync, usermetadata, ldapupdate, fairshare, createdirectories, emailsend
 every_min = 1

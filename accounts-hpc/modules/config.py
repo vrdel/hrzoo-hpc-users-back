@@ -13,6 +13,11 @@ def parse_config(logger=None):
         config = configparser.ConfigParser()
         if config.read(conf):
             for section in config.sections():
+                if section.startswith('general'):
+                    confopts['general'] = ({'loggers': config.get(section, 'loggers')})
+                    if confopts['general'].get('loggers', None):
+                        confopts['general']['loggers'] = [logopt.strip() for logopt in confopts['general']['loggers'].split(',')]
+
                 if section.startswith('ldap'):
                     confopts['ldap'] = ({'server': config.get(section, 'server')})
                     confopts['ldap'].update({'user': config.get(section, 'user')})

@@ -21,12 +21,16 @@ class Shared(object):
     def __init__(self, caller, daemon=False):
         if not getattr(self.__class__, 'log', False):
             self.__class__.log = dict()
-        if caller not in self.__class__.log.keys():
-            self.__class__.log[caller] = Logger(caller, daemon)
 
         if not getattr(self.__class__, 'confopts', False):
             confopts = parse_config()
             self.__class__.confopts = confopts
+
+        if caller not in self.__class__.log.keys():
+            conf_loggers = self.__class__.confopts.get('general', None)
+            if conf_loggers:
+                conf_loggers = conf_loggers.get('loggers', None)
+            self.__class__.log[caller] = Logger(caller, daemon, conf_loggers)
 
         if not getattr(self.__class__, 'dbsession', False):
             self.__class__.dbsession = dict()
