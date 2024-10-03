@@ -58,13 +58,22 @@ class Logger(object):
         sf.setLevel(lv)
         self.logger.addHandler(sf)
 
-    def __init__(self, caller, daemon):
+    def __init__(self, caller, daemon, conf_loggers=None):
         self._caller = os.path.basename(caller)
         self._daemon = daemon
+
         try:
-            self._init_stdout()
-            self._init_syslog()
-            self._init_filelog()
+            if conf_loggers:
+                if 'stdout' in conf_loggers:
+                    self._init_stdout()
+                if 'syslog' in conf_loggers:
+                    self._init_syslog()
+                if 'file' in conf_loggers:
+                    self._init_filelog()
+            else:
+                self._init_stdout()
+                self._init_syslog()
+                self._init_filelog()
         except (OSError, IOError) as e:
             sys.stderr.write('ERROR ' + self._caller + ' - ' + str(e) + '\n')
             raise SystemExit(1)
