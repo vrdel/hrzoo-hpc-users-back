@@ -171,6 +171,15 @@ class LdapUpdate(object):
             self.logger.info(f"User {user.person_uniqueid} gidNumber updated to {target_gid}")
             user.ldap_gid = target_gid
 
+        # explicitly set GID here for reactivated in separate clause
+        # as ldap_gid is previously set in usermetadata task so previous
+        # does not apply
+        if target_gid and user.is_deactivated and not user.is_staff:
+            ldap_user[0].change_attribute('gidNumber', bonsai.LDAPModOp.REPLACE, target_gid)
+            await ldap_user[0].modify()
+            self.logger.info(f"Re-activated user {user.person_uniqueid} gidNumber updated to {target_gid}")
+            user.ldap_gid = target_gid
+
     async def user_sync_api_db(self, user, ldap_user):
         """
             check if there are differencies between user's project just
@@ -217,6 +226,7 @@ class LdapUpdate(object):
             if user.is_active == True and user.is_deactivated == True:
                 ldap_user[0].change_attribute('loginShell', bonsai.LDAPModOp.REPLACE, '/bin/bash')
                 await ldap_user[0].modify()
+
                 self.logger.info(f"Activating {user.username_api}, setting default shell=/bin/bash")
                 user.is_deactivated = False
                 user.mail_is_activated = True
