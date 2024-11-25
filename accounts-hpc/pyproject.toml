@@ -47,8 +47,8 @@ classifiers = [
 
 [tool.setuptools]
 packages = [
-	'accounts_hpc',
-  'accounts_hpc.tasks'
+    'accounts_hpc',
+    'accounts_hpc.tasks'
 ]
 include-package-data = true
 
