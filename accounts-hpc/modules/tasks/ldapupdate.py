@@ -264,9 +264,6 @@ class LdapUpdate(object):
         """
             check if sshkeys are added or removed
         """
-        if user.username_api == 'gthakkar':
-            import ipdb; ipdb.set_trace()
-
         keys_diff_add, keys_diff_del = set(), set()
         keys_db = [key.fingerprint for key in await user.awaitable_attrs.sshkey]
         keys_diff_add = set(user.sshkeys_api).difference(set(keys_db))
@@ -301,7 +298,11 @@ class LdapUpdate(object):
                         target_key = await self.dbsession.execute(stmt)
                         target_key = target_key.scalars().one()
                 user_sshkey = await user.awaitable_attrs.sshkey
-                user_sshkey.append(target_key)
+                # update (user,sshkey) relation only at the end (last project)
+                # ensuring that SSH keys will be propagated for all LDAP
+                # subtrees/projects
+                if identifier == user.projects_api[-1]:
+                    user_sshkey.append(target_key)
                 user.mail_name_sshkey.append(f'ADD:{target_key.name}')
                 if self.confopts['ldap']['mode'] == 'project_organisation':
                     mp = user.mail_project_is_sshkeyadded
@@ -328,7 +329,11 @@ class LdapUpdate(object):
                 target_key = await self.dbsession.execute(stmt)
                 target_key = target_key.scalars().one()
                 user_target_key = await user.awaitable_attrs.sshkey
-                user_target_key.remove(target_key)
+                # update (user,sshkey) relation only at the end (last project)
+                # ensuring that SSH keys will be propagated for all LDAP
+                # subtrees/projects
+                if identifier == user.projects_api[-1]:
+                    user_target_key.remove(target_key)
                 user.mail_name_sshkey.append(f'DEL:{target_key.name}')
                 if self.confopts['ldap']['mode'] == 'project_organisation':
                     mp = user.mail_project_is_sshkeyremoved
@@ -474,7 +479,7 @@ class LdapUpdate(object):
                                 if not ldap_user or not user.is_opened:
                                     ldap_user = await self.new_user_ldap_add(user, conn, identifier)
                                     await self.user_sync_api_db(user, [ldap_user])
-                                    await self.user_key_update(user, [ldap_user])
+                                    await self.user_key_update(user, [ldap_user], identifier)
                                 else:
                                     await self.user_sync_api_db(user, ldap_user)
                                     await self.user_key_update(user, ldap_user, identifier)
