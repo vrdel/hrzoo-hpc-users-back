@@ -260,7 +260,7 @@ class LdapUpdate(object):
                     user.mail_project_is_deactivated[proj.identifier] = False
                     user.is_deactivated = True
 
-    async def user_key_update(self, user, ldap_user):
+    async def user_key_update(self, user, ldap_user, identifier=None):
         """
             check if sshkeys are added or removed
         """
@@ -298,7 +298,11 @@ class LdapUpdate(object):
                         target_key = await self.dbsession.execute(stmt)
                         target_key = target_key.scalars().one()
                 user_sshkey = await user.awaitable_attrs.sshkey
-                user_sshkey.append(target_key)
+                # update (user,sshkey) relation only at the end (last project)
+                # ensuring that SSH keys will be propagated for all LDAP
+                # subtrees/projects
+                if identifier == user.projects_api[-1]:
+                    user_sshkey.append(target_key)
                 user.mail_name_sshkey.append(f'ADD:{target_key.name}')
                 if self.confopts['ldap']['mode'] == 'project_organisation':
                     mp = user.mail_project_is_sshkeyadded
@@ -308,7 +312,10 @@ class LdapUpdate(object):
                     user.mail_project_is_sshkeyadded = mp
                 else:
                     user.mail_is_sshkeyadded = False
-                self.logger.info(f"Added key {target_key.name} for user {user.person_uniqueid}")
+                if self.confopts['ldap']['mode'] == 'project_organisation':
+                    self.logger.info(f"Added key {target_key.name} for user {user.person_uniqueid},{identifier}")
+                else:
+                    self.logger.info(f"Added key {target_key.name} for user {user.person_uniqueid}")
 
         keys_diff_del = set(keys_db).difference(set(user.sshkeys_api))
         if keys_diff_del:
@@ -322,7 +329,11 @@ class LdapUpdate(object):
                 target_key = await self.dbsession.execute(stmt)
                 target_key = target_key.scalars().one()
                 user_target_key = await user.awaitable_attrs.sshkey
-                user_target_key.remove(target_key)
+                # update (user,sshkey) relation only at the end (last project)
+                # ensuring that SSH keys will be propagated for all LDAP
+                # subtrees/projects
+                if identifier == user.projects_api[-1]:
+                    user_target_key.remove(target_key)
                 user.mail_name_sshkey.append(f'DEL:{target_key.name}')
                 if self.confopts['ldap']['mode'] == 'project_organisation':
                     mp = user.mail_project_is_sshkeyremoved
@@ -332,7 +343,10 @@ class LdapUpdate(object):
                     user.mail_project_is_sshkeyremoved = mp
                 else:
                     user.mail_is_sshkeyremoved = False
-                self.logger.info(f"Removed key {target_key.name} for user {user.person_uniqueid}")
+                if self.confopts['ldap']['mode'] == 'project_organisation':
+                    self.logger.info(f"Removed key {target_key.name} for user {user.person_uniqueid},{identifier}")
+                else:
+                    self.logger.info(f"Removed key {target_key.name} for user {user.person_uniqueid}")
 
         if keys_diff_add or keys_diff_del:
             updated_keys = [sshkey.public_key for sshkey in user.sshkey]
@@ -342,7 +356,10 @@ class LdapUpdate(object):
                 ldap_user[0].change_attribute('sshPublicKey', bonsai.LDAPModOp.REPLACE, *updated_keys)
             await ldap_user[0].modify()
             self.dbsession.add(user)
-            self.logger.info(f"User {user.person_uniqueid} LDAP SSH keys updated")
+            if self.confopts['ldap']['mode'] == 'project_organisation':
+                self.logger.info(f"User {user.person_uniqueid},{identifier} LDAP SSH keys updated")
+            else:
+                self.logger.info(f"User {user.person_uniqueid} LDAP SSH keys updated")
 
     async def new_group_ldap_add(self, project):
         async with self.client.connect(is_async=True) as conn:
@@ -462,10 +479,10 @@ class LdapUpdate(object):
                                 if not ldap_user or not user.is_opened:
                                     ldap_user = await self.new_user_ldap_add(user, conn, identifier)
                                     await self.user_sync_api_db(user, [ldap_user])
-                                    await self.user_key_update(user, [ldap_user])
+                                    await self.user_key_update(user, [ldap_user], identifier)
                                 else:
                                     await self.user_sync_api_db(user, ldap_user)
-                                    await self.user_key_update(user, ldap_user)
+                                    await self.user_key_update(user, ldap_user, identifier)
                                 user.is_opened = True
                             except bonsai.errors.AlreadyExists as exc:
                                 self.logger.warning(f'LDAP user {user.username_api} - {repr(exc)}')
