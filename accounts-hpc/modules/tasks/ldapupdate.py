@@ -321,7 +321,6 @@ class LdapUpdate(object):
         keys_diff_del = set(keys_db).difference(set(user.sshkeys_api))
         if keys_diff_del:
             for key in keys_diff_del:
-                mail_key = set()
                 stmt = select(SshKey).where(
                     and_(
                         SshKey.uid_api == user.uid_api,
@@ -338,7 +337,6 @@ class LdapUpdate(object):
                     user_target_key.remove(target_key)
                 if f'DEL:{target_key.name}' not in user.mail_name_sshkey:
                     user.mail_name_sshkey.append(f'DEL:{target_key.name}')
-                mail_key.add(target_key.name)
                 if self.confopts['ldap']['mode'] == 'project_organisation':
                     mp = user.mail_project_is_sshkeyremoved
                     for prj in mp.keys():
