@@ -31,6 +31,7 @@ RUN \
       supervisor \
       telnet \
       the_silver_searcher \
+      tmux \
       vifm \
       vim \
       wget \
