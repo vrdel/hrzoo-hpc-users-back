@@ -298,10 +298,13 @@ class LdapUpdate(object):
                         target_key = await self.dbsession.execute(stmt)
                         target_key = target_key.scalars().one()
                 user_sshkey = await user.awaitable_attrs.sshkey
-                # update (user,sshkey) relation only at the end (last project)
-                # ensuring that SSH keys will be propagated for all LDAP
-                # subtrees/projects
-                if identifier == user.projects_api[-1]:
+                if self.confopts['ldap']['mode'] == 'project_organisation':
+                    # update (user,sshkey) relation only at the end (last project)
+                    # ensuring that SSH keys will be propagated for all LDAP
+                    # subtrees/projects
+                    if identifier == user.projects_api[-1]:
+                        user_sshkey.append(target_key)
+                else:
                     user_sshkey.append(target_key)
                 if f'ADD:{target_key.name}' not in user.mail_name_sshkey:
                     user.mail_name_sshkey.append(f'ADD:{target_key.name}')
@@ -330,10 +333,13 @@ class LdapUpdate(object):
                 target_key = await self.dbsession.execute(stmt)
                 target_key = target_key.scalars().one()
                 user_target_key = await user.awaitable_attrs.sshkey
-                # update (user,sshkey) relation only at the end (last project)
-                # ensuring that SSH keys will be propagated for all LDAP
-                # subtrees/projects
-                if identifier == user.projects_api[-1]:
+                if self.confopts['ldap']['mode'] == 'project_organisation':
+                    # update (user,sshkey) relation only at the end (last project)
+                    # ensuring that SSH keys will be propagated for all LDAP
+                    # subtrees/projects
+                    if identifier == user.projects_api[-1]:
+                        user_target_key.remove(target_key)
+                else:
                     user_target_key.remove(target_key)
                 if f'DEL:{target_key.name}' not in user.mail_name_sshkey:
                     user.mail_name_sshkey.append(f'DEL:{target_key.name}')
