@@ -1,5 +1,5 @@
 /opt/hrzoo-accounts-hpc/var/lib/cache.db {
-    rotate 7
+    rotate 30
     compress
     daily
     copy
