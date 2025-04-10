@@ -1,6 +1,6 @@
 /opt/hrzoo-accounts-hpc/var/log/accounts-hpc.log {
     size 1M
-    rotate 100
+    rotate 365
     compress
     missingok
     notifempty
