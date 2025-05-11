@@ -1,1 +1,1 @@
-2 * * * * root . /opt/hrzoo-accounts-hpc/bin/activate; $VIRTUAL_ENV/helpers/ah-setgid.py --path /storage/group/
+1 * * * * root . /opt/hrzoo-accounts-hpc/bin/activate; $VIRTUAL_ENV/helpers/ah-setgid.py --path /storage/group/
