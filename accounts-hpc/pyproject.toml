@@ -87,8 +87,11 @@ accounts_hpc = "modules/"
     "config/emails/email-template-activate-user-en.txt",
     "config/emails/email-template-deactivate-user-en.txt"
 ]
+"etc/cron.d" = [
+  "cron/ah-setgid"
+]
 "etc/logrotate.d/" = ["logrotate/cache", "logrotate/logfile"]
-"helpers/" = ["helpers/rename_username.sql"]
+"helpers/" = ["helpers/rename_username.sql", "helpers/ah-setgid.py"]
 "alembic/" = ["alembic/README", "alembic/env.py", "alembic/script.py.mako"]
 "alembic/versions" = [
     "alembic/versions/1b04100c64f1_added_is_deactivated_field.py",
