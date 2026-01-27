@@ -5,7 +5,7 @@ import argparse
 
 from accounts_hpc.shared import Shared  # type: ignore
 from accounts_hpc.db import Base, Project, User, SshKey  # type: ignore
-from accounts_hpc.utils import only_alnum, all_none, contains_exception, get_ssh_key_fingerprint
+from accounts_hpc.utils import only_alnum, get_ssh_key_fingerprint, gen_username  # type: ignore
 
 from rich import print
 from rich.columns import Columns
@@ -306,7 +306,9 @@ def user_project_add(logger, args, session):
         raise SystemExit(1)
 
     except NoResultFound:
-        us = User(first_name=only_alnum(unidecode(args.first)),
+        first_name = only_alnum(unidecode(args.first))
+        last_name = only_alnum(unidecode(args.last))
+        us = User(first_name=first_name,
                   is_active=True,
                   is_opened=False,
                   is_dir_created=False,
@@ -325,7 +327,7 @@ def user_project_add(logger, args, session):
                   mail_project_is_deactivated=dict(),
                   mail_name_sshkey=list(),
                   is_staff=args.staff,
-                  last_name=only_alnum(unidecode(args.last)),
+                  last_name=last_name,
                   person_mail=args.email,
                   projects_api=[args.project],
                   skip_defgid=False,
@@ -335,7 +337,7 @@ def user_project_add(logger, args, session):
                   uid_api=0,
                   ldap_uid=args.uid if args.uid else 0,
                   ldap_gid=0,
-                  username_api='',
+                  username_api=gen_username(first_name, last_name, session),
                   type_create='manual')
 
     if args.force and not already_exists:
@@ -532,7 +534,7 @@ def user_project_list(logger, args, session):
 
         for user in all_users:
             sshkeys = ', '.join(
-                ['\[{}...{}]'.format(key.public_key[0:32], key.public_key[-32:]) for key in user.sshkey]
+                ['[{}...{}]'.format(key.public_key[0:32], key.public_key[-32:]) for key in user.sshkey]
             )
             table.add_row("First = ", user.first_name)
             table.add_row("Last = ", user.last_name)
