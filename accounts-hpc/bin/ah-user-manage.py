@@ -306,26 +306,37 @@ def user_project_add(logger, args, session):
         raise SystemExit(1)
 
     except NoResultFound:
-        us = User(first_name=args.first,
+        us = User(first_name=only_alnum(unidecode(args.first)),
                   is_active=True,
                   is_opened=False,
                   is_dir_created=False,
                   is_deactivated=False,
                   mail_is_opensend=False,
                   mail_is_sshkeyadded=False,
+                  mail_is_sshkeyremoved=False,
+                  mail_is_activated=False,
+                  mail_is_deactivated=False,
+                  is_activated_project=dict(),
+                  is_deactivated_project=dict(),
+                  mail_project_is_opensend=dict(),
+                  mail_project_is_sshkeyadded=dict(),
+                  mail_project_is_sshkeyremoved=dict(),
+                  mail_project_is_activated=dict(),
+                  mail_project_is_deactivated=dict(),
                   mail_name_sshkey=list(),
                   is_staff=args.staff,
-                  last_name=args.last,
+                  last_name=only_alnum(unidecode(args.last)),
                   person_mail=args.email,
                   projects_api=[args.project],
+                  skip_defgid=False,
                   sshkeys_api=list(),
                   person_uniqueid=f"{args.first}{args.last}@UNIQUEID",
+                  person_type=args.typeperson,
                   uid_api=0,
                   ldap_uid=args.uid if args.uid else 0,
                   ldap_gid=0,
                   username_api='',
-                  type_create='manual',
-                  person_type=args.typeperson)
+                  type_create='manual')
 
     if args.force and not already_exists:
         pr.user.append(us)
@@ -355,7 +366,7 @@ def user_project_list(logger, args, session):
         for project in projects:
             for user in project.user:
                 sshkeys = ', '.join(
-                    ['\[{}...{}]'.format(key.public_key[0:32], key.public_key[-32:]) for key in user.sshkey]
+                    ['[{}...{}]'.format(key.public_key[0:32], key.public_key[-32:]) for key in user.sshkey]
                 )
                 table.add_row("First = ", user.first_name)
                 table.add_row("Last = ", user.last_name)
@@ -397,7 +408,7 @@ def user_project_list(logger, args, session):
         for user in all_users:
             if args.first.lower() in user.first_name.lower():
                 sshkeys = ', '.join(
-                    ['\[{}...{}]'.format(key.public_key[0:32], key.public_key[-32:]) for key in user.sshkey]
+                    ['[{}...{}]'.format(key.public_key[0:32], key.public_key[-32:]) for key in user.sshkey]
                 )
                 table.add_row("First = ", user.first_name)
                 table.add_row("Last = ", user.last_name)
@@ -439,7 +450,7 @@ def user_project_list(logger, args, session):
         for user in all_users:
             if args.last.lower() in user.last_name.lower():
                 sshkeys = ', '.join(
-                    ['\[{}...{}]'.format(key.public_key[0:32], key.public_key[-32:]) for key in user.sshkey]
+                    ['[{}...{}]'.format(key.public_key[0:32], key.public_key[-32:]) for key in user.sshkey]
                 )
                 table.add_row("First = ", user.first_name)
                 table.add_row("Last = ", user.last_name)
@@ -481,7 +492,7 @@ def user_project_list(logger, args, session):
         for user in all_users:
             if args.username.lower() in user.username_api.lower():
                 sshkeys = ', '.join(
-                    ['\[{}...{}]'.format(key.public_key[0:32], key.public_key[-32:]) for key in user.sshkey]
+                    ['[{}...{}]'.format(key.public_key[0:32], key.public_key[-32:]) for key in user.sshkey]
                 )
                 table.add_row("First = ", user.first_name)
                 table.add_row("Last = ", user.last_name)
@@ -509,7 +520,7 @@ def user_project_list(logger, args, session):
             console.print(table)
     else:
         table = Table(
-            title=f"All users",
+            title="All users",
             title_justify="left",
             box=None,
             show_lines=True,
@@ -547,7 +558,6 @@ def user_project_list(logger, args, session):
         if table.row_count:
             console = Console()
             console.print(table)
-
 
 
 def main():
@@ -639,7 +649,7 @@ def main():
     args = parser.parse_args()
 
     shared = Shared(sys.argv[0])
-    confopts = shared.confopts
+    _ = shared.confopts
     logger = shared.log[sys.argv[0]].get()
     dbsession = shared.dbsession_sync[sys.argv[0]]
 
