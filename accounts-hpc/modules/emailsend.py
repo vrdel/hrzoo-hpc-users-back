@@ -1,15 +1,8 @@
 # -*- coding: utf-8 -*-
 
 from email.message import EmailMessage
-from email.header import Header
 from email.headerregistry import Address
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
 
-from accounts_hpc.utils import latest_project
-
-import datetime
-import re
 import aiosmtplib
 import aiofiles
 import socket

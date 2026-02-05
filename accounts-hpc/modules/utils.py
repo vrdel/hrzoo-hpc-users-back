@@ -1,18 +1,35 @@
-from typing import Any, Union
-from accounts_hpc.shared import Shared  # type: ignore
 from accounts_hpc.db import User  # type: ignore
-from accounts_hpc.exceptions import SyncHttpError
+from accounts_hpc.shared import Shared  # type: ignore
+from typing import Any
+from unidecode import unidecode
 
 import aiohttp
 import asyncio
 
 
-def latest_project(username):
-    shared = Shared('utils.latest_project()')
-    dbsession = shared.dbsession
-    user = dbsession.query(User).filter(User.username_api == username).one()
-    last_project = user.project[-1]
-    return last_project
+def gen_username(first, last, session):
+    """
+       Taken from hrzoo-signup and used on manual creation of user
+       via CLI helper tools
+    """
+    # ASCII convert
+    name = only_alnum(unidecode(first.lower()))
+    surname = only_alnum(unidecode(last.lower()))
+    # take first char of name and first seven from surname
+    username = name[0] + surname[:7]
+    existing_usernames = session.query(User).filter(User.username_api == username)
+
+    if username in existing_usernames:
+        match = list()
+        if len(username) < 8:
+            match = list(filter(lambda u: u.startswith(username), existing_usernames))
+        else:
+            match = list(filter(lambda u: u.startswith(username[:-1]), existing_usernames))
+
+        return username + str(len(match))
+
+    else:
+        return username
 
 
 def chunk_list(lst):
