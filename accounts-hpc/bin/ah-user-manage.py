@@ -590,7 +590,7 @@ def main():
                                default=False,
                                required=False, help='Flag user as staff')
     parser_create.add_argument('--type-person', dest='typeperson', type=str, metavar='local/foreign',
-                               required=False, help='Set person_type')
+                               required=False, default='local', help='Set person_type')
 
     parser_update = subparsers.add_parser('update', help='Update user metadata')
     parser_update.add_argument('--username', dest='username', type=str,
