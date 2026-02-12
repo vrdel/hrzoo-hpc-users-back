@@ -31,7 +31,7 @@ sshkeys = http://hzsidev.hr:8001/api/v1/sshkeys
 userproject = http://hzsidev.hr:8001/api/v1/usersprojects
 token = 3nmQkL2u.TCFKrZy0kQ2sSDSShTynnynQCl8LOScA
 project_state = approve
-project_resources = GPU, CPU, BIGMEM
+project_resources = GPU, CPU, BIGMEM, GPU-BIGMEM
 replacestring_map = %(VENV)s/etc/accounts-hpc/replacestring_map.json
 
 [usersetup]
@@ -40,7 +40,7 @@ gid_offset = 2993
 uid_manual_offset = 2009
 gid_manual_offset = 2000
 default_groups = hpc, hpc-users
-resource_groups = hpc-gpu, hpc-bigmem
+resource_groups = hpc-gpu, hpc-bigmem, hpc-gpu-bigmem
 homeprefix = /lustre/home/
 usermap = %(VENV)s/etc/accounts-hpc/users_map.json
 userdirs_in = /storage/home/
