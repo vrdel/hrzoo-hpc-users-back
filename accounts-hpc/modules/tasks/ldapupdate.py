@@ -528,6 +528,7 @@ class LdapUpdate(object):
                 # handle resource groups associations
                 task_update_resgroup1 = asyncio.create_task(self.update_resource_groups(users, "hpc-bigmem"))
                 task_update_resgroup2 = asyncio.create_task(self.update_resource_groups(users, "hpc-gpu"))
+                task_update_resgroup3 = asyncio.create_task(self.update_resource_groups(users, "hpc-gpubigmem"))
 
                 await task_update_defgroups
                 await task_update_resgroup1
