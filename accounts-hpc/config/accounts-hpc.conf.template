@@ -31,7 +31,7 @@ sshkeys = http://hzsidev.hr:8001/api/v1/sshkeys
 userproject = http://hzsidev.hr:8001/api/v1/usersprojects
 token = 3nmQkL2u.TCFKrZy0kQ2sSDSShTynnynQCl8LOScA
 project_state = approve
-project_resources = GPU, CPU, BIGMEM
+project_resources = GPU, CPU, BIGMEM, GPU-BIGMEM
 replacestring_map = %(VENV)s/etc/accounts-hpc/replacestring_map.json
 
 [usersetup]
