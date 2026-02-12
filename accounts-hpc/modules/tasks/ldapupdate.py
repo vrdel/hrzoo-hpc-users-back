@@ -110,7 +110,7 @@ class LdapUpdate(object):
                     resource_match = False
                     for project in user.project:
                         for rt in project.staff_resources_type_api:
-                            if rt in group.upper():
+                            if f"HPC-{rt}" == group.upper():
                                 resource_match = True
                                 break
                     if resource_match:
@@ -528,7 +528,7 @@ class LdapUpdate(object):
                 # handle resource groups associations
                 task_update_resgroup1 = asyncio.create_task(self.update_resource_groups(users, "hpc-bigmem"))
                 task_update_resgroup2 = asyncio.create_task(self.update_resource_groups(users, "hpc-gpu"))
-                task_update_resgroup3 = asyncio.create_task(self.update_resource_groups(users, "hpc-gpubigmem"))
+                task_update_resgroup3 = asyncio.create_task(self.update_resource_groups(users, "hpc-gpu-bigmem"))
 
                 await task_update_defgroups
                 await task_update_resgroup1
