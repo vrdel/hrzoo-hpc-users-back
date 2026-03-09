@@ -39,6 +39,95 @@ def flush_sshkeys(logger, session):
         logger.info('No keys without owner found')
 
 
+def reset_all_flags(logger, session):
+    users = session.query(User).all()
+
+    for user in users:
+        if not user.mail_is_opensend:
+            user.mail_is_opensend = True
+            logger.info(f"Reset mail_is_opensend flag to True for {user.username_api}")
+
+        if not user.mail_is_sshkeyadded:
+            user.mail_is_sshkeyadded = True
+            logger.info(f"Reset mail_is_sshkeyadded flag to True for {user.username_api}")
+
+        if not user.mail_is_sshkeyremoved:
+            user.mail_is_sshkeyremoved = True
+            logger.info(f"Reset mail_is_sshkeyremoved flag to True for {user.username_api}")
+
+        if user.mail_is_activated:
+            user.mail_is_activated = False
+            logger.info(f"Reset mail_is_activated flag to False for {user.username_api}")
+
+        if user.mail_is_deactivated:
+            user.mail_is_deactivated = False
+            logger.info(f"Reset mail_is_deactivated flag to False for {user.username_api}")
+
+        sshkeyadded_flag = user.mail_project_is_sshkeyadded
+        sshkeyadded_changed = False
+        for k, v in sshkeyadded_flag.items():
+            if not v:
+                sshkeyadded_flag[k] = True
+                sshkeyadded_changed = True
+        if sshkeyadded_changed:
+            user.mail_project_is_sshkeyadded = sshkeyadded_flag
+            logger.info(f"Reset mail_project_is_sshkeyadded flags to True for {user.username_api}")
+
+        sshkeyremoved_flag = user.mail_project_is_sshkeyremoved
+        sshkeyremoved_changed = False
+        for k, v in sshkeyremoved_flag.items():
+            if not v:
+                sshkeyremoved_flag[k] = True
+                sshkeyremoved_changed = True
+        if sshkeyremoved_changed:
+            user.mail_project_is_sshkeyremoved = sshkeyremoved_flag
+            logger.info(f"Reset mail_project_is_sshkeyremoved flags to True for {user.username_api}")
+
+        activated_project_flag = user.is_activated_project
+        activated_changed = False
+        for k, v in activated_project_flag.items():
+            if not v:
+                activated_project_flag[k] = True
+                activated_changed = True
+        if activated_changed:
+            user.is_activated_project = activated_project_flag
+            logger.info(f"Reset is_activated_project flags to True for {user.username_api}")
+
+        deactivated_project_flag = user.is_deactivated_project
+        deactivated_changed = False
+        for k, v in deactivated_project_flag.items():
+            if not v:
+                deactivated_project_flag[k] = True
+                deactivated_changed = True
+        if deactivated_changed:
+            user.is_deactivated_project = deactivated_project_flag
+            logger.info(f"Reset is_deactivated_project flags to True for {user.username_api}")
+
+        mail_project_activated_flag = user.mail_project_is_activated
+        mail_activated_changed = False
+        for k, v in mail_project_activated_flag.items():
+            if not v:
+                mail_project_activated_flag[k] = True
+                mail_activated_changed = True
+        if mail_activated_changed:
+            user.mail_project_is_activated = mail_project_activated_flag
+            logger.info(f"Reset mail_project_is_activated flags to True for {user.username_api}")
+
+        mail_project_deactivated_flag = user.mail_project_is_deactivated
+        mail_deactivated_changed = False
+        for k, v in mail_project_deactivated_flag.items():
+            if not v:
+                mail_project_deactivated_flag[k] = True
+                mail_deactivated_changed = True
+        if mail_deactivated_changed:
+            user.mail_project_is_deactivated = mail_project_deactivated_flag
+            logger.info(f"Reset mail_project_is_deactivated flags to True for {user.username_api}")
+
+        if len(user.mail_name_sshkey) > 0:
+            user.mail_name_sshkey = []
+            logger.info(f"Reset mail_name_sshkey to empty for {user.username_api}")
+
+
 def user_delete(logger, args, session):
     try:
         user = session.query(User).filter(User.username_api == args.username).one()
@@ -240,91 +329,6 @@ def user_update(logger, args, session):
                 if k not in user.mail_name_sshkey:
                     user.mail_name_sshkey.append(k)
                     logger.info(f"Added {k} to mail_name_sshkey for {user.username_api}")
-
-        if args.resetallflags:
-            if not user.mail_is_opensend:
-                user.mail_is_opensend = True
-                logger.info(f"Reset mail_is_opensend flag to True for {user.username_api}")
-
-            if not user.mail_is_sshkeyadded:
-                user.mail_is_sshkeyadded = True
-                logger.info(f"Reset mail_is_sshkeyadded flag to True for {user.username_api}")
-
-            if not user.mail_is_sshkeyremoved:
-                user.mail_is_sshkeyremoved = True
-                logger.info(f"Reset mail_is_sshkeyremoved flag to True for {user.username_api}")
-
-            if user.mail_is_activated:
-                user.mail_is_activated = False
-                logger.info(f"Reset mail_is_activated flag to False for {user.username_api}")
-
-            if user.mail_is_deactivated:
-                user.mail_is_deactivated = False
-                logger.info(f"Reset mail_is_deactivated flag to False for {user.username_api}")
-
-            sshkeyadded_flag = user.mail_project_is_sshkeyadded
-            sshkeyadded_changed = False
-            for k, v in sshkeyadded_flag.items():
-                if not v:
-                    sshkeyadded_flag[k] = True
-                    sshkeyadded_changed = True
-            if sshkeyadded_changed:
-                user.mail_project_is_sshkeyadded = sshkeyadded_flag
-                logger.info(f"Reset mail_project_is_sshkeyadded flags to True for {user.username_api}")
-
-            sshkeyremoved_flag = user.mail_project_is_sshkeyremoved
-            sshkeyremoved_changed = False
-            for k, v in sshkeyremoved_flag.items():
-                if not v:
-                    sshkeyremoved_flag[k] = True
-                    sshkeyremoved_changed = True
-            if sshkeyremoved_changed:
-                user.mail_project_is_sshkeyremoved = sshkeyremoved_flag
-                logger.info(f"Reset mail_project_is_sshkeyremoved flags to True for {user.username_api}")
-
-            activated_project_flag = user.is_activated_project
-            activated_changed = False
-            for k, v in activated_project_flag.items():
-                if not v:
-                    activated_project_flag[k] = True
-                    activated_changed = True
-            if activated_changed:
-                user.is_activated_project = activated_project_flag
-                logger.info(f"Reset is_activated_project flags to True for {user.username_api}")
-
-            deactivated_project_flag = user.is_deactivated_project
-            deactivated_changed = False
-            for k, v in deactivated_project_flag.items():
-                if not v:
-                    deactivated_project_flag[k] = True
-                    deactivated_changed = True
-            if deactivated_changed:
-                user.is_deactivated_project = deactivated_project_flag
-                logger.info(f"Reset is_deactivated_project flags to True for {user.username_api}")
-
-            mail_project_activated_flag = user.mail_project_is_activated
-            mail_activated_changed = False
-            for k, v in mail_project_activated_flag.items():
-                if not v:
-                    mail_project_activated_flag[k] = True
-                    mail_activated_changed = True
-            if mail_activated_changed:
-                user.mail_project_is_activated = mail_project_activated_flag
-                logger.info(f"Reset mail_project_is_activated flags to True for {user.username_api}")
-
-            mail_project_deactivated_flag = user.mail_project_is_deactivated
-            mail_deactivated_changed = False
-            for k, v in mail_project_deactivated_flag.items():
-                if not v:
-                    mail_project_deactivated_flag[k] = True
-                    mail_deactivated_changed = True
-            if mail_deactivated_changed:
-                user.mail_project_is_deactivated = mail_project_deactivated_flag
-                logger.info(f"Reset mail_project_is_deactivated flags to True for {user.username_api}")
-
-            if len(user.mail_name_sshkey) > 0:
-                user.mail_name_sshkey = []
-                logger.info(f"Reset mail_name_sshkey to empty for {user.username_api}")
 
     except NoResultFound:
         logger.error(f"User {args.username} not found")
@@ -739,6 +743,8 @@ def main():
                         help='Flush all keys not associated to any user')
     parser.add_argument('--flush-users', dest='flushusers', action='store_true', required=False,
                         help='Flush all users without any keys and projects associated')
+    parser.add_argument('--reset-all-flags', dest='resetallflags', action='store_true', required=False,
+                        help='Reset all mail flags to sent state suppressing pending emails for all users')
     subparsers = parser.add_subparsers(help="User subcommands", dest="command")
 
     parser_create = subparsers.add_parser('create', help='Create user based on passed metadata')
@@ -801,8 +807,6 @@ def main():
                                required=False, help='Add one or multiple keys to mail_name_sshkey list indicating a key was added')
     parser_update.add_argument('--mailname-sshkey-remove', dest='mailnamesshkeyremove', type=str, nargs='+',
                                required=False, help='Add one or multiple keys to mail_name_sshkey list indicating a key was removed')
-    parser_update.add_argument('--reset-all-flags', dest='resetallflags', action='store_true', default=False,
-                               required=False, help='Reset all mail flags to "sent" state suppressing pending emails for both flat and project_organisation mode')
 
     parser_delete = subparsers.add_parser('delete', help='Delete user metadata')
     parser_delete.add_argument('--username', dest='username', type=str,
@@ -846,6 +850,9 @@ def main():
 
     if args.flushusers:
         flush_users(logger, dbsession)
+
+    if args.resetallflags:
+        reset_all_flags(logger, dbsession)
 
     try:
         dbsession.commit()
