@@ -242,6 +242,26 @@ def user_update(logger, args, session):
                     logger.info(f"Added {k} to mail_name_sshkey for {user.username_api}")
 
         if args.resetallflags:
+            if not user.mail_is_opensend:
+                user.mail_is_opensend = True
+                logger.info(f"Reset mail_is_opensend flag to True for {user.username_api}")
+
+            if not user.mail_is_sshkeyadded:
+                user.mail_is_sshkeyadded = True
+                logger.info(f"Reset mail_is_sshkeyadded flag to True for {user.username_api}")
+
+            if not user.mail_is_sshkeyremoved:
+                user.mail_is_sshkeyremoved = True
+                logger.info(f"Reset mail_is_sshkeyremoved flag to True for {user.username_api}")
+
+            if user.mail_is_activated:
+                user.mail_is_activated = False
+                logger.info(f"Reset mail_is_activated flag to False for {user.username_api}")
+
+            if user.mail_is_deactivated:
+                user.mail_is_deactivated = False
+                logger.info(f"Reset mail_is_deactivated flag to False for {user.username_api}")
+
             sshkeyadded_flag = user.mail_project_is_sshkeyadded
             sshkeyadded_changed = False
             for k, v in sshkeyadded_flag.items():
@@ -782,7 +802,7 @@ def main():
     parser_update.add_argument('--mailname-sshkey-remove', dest='mailnamesshkeyremove', type=str, nargs='+',
                                required=False, help='Add one or multiple keys to mail_name_sshkey list indicating a key was removed')
     parser_update.add_argument('--reset-all-flags', dest='resetallflags', action='store_true', default=False,
-                               required=False, help='Reset mail_project_is_sshkeyadded and mail_project_is_sshkeyremoved values to True')
+                               required=False, help='Reset all mail flags to "sent" state suppressing pending emails for both flat and project_organisation mode')
 
     parser_delete = subparsers.add_parser('delete', help='Delete user metadata')
     parser_delete.add_argument('--username', dest='username', type=str,
