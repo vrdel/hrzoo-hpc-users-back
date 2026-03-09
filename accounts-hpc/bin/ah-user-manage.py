@@ -268,41 +268,27 @@ def user_update(logger, args, session):
                 logger.info(f"Project {args.project} DB relation added for user {user.username_api}")
                 session.add(project)
 
-        if args.flagisdircreated and args.flagisdircreated > 0:
-            user.is_dir_created = True
-        elif args.flagisdircreated == 0:
-            user.is_dir_created = False
-        if args.flagisdircreated != None:
-            logger.info(f"Set is_dir_created={args.flagisdircreated} for {user.username_api}")
+        if args.flagisdircreated is not None:
+            user.is_dir_created = args.flagisdircreated > 0
+            logger.info(f"Set is_dir_created={user.is_dir_created} for {user.username_api}")
 
-        if args.flagisdeactivated and args.flagisdeactivated > 0:
-            user.is_deactivated = True
-        elif args.flagisdeactivated == 0:
-            user.is_deactivated = False
-        if args.flagisdeactivated != None:
-            logger.info(f"Set is_deactivated={args.flagisdeactivated} for {user.username_api}")
+        if args.flagisdeactivated is not None:
+            user.is_deactivated = args.flagisdeactivated > 0
+            logger.info(f"Set is_deactivated={user.is_deactivated} for {user.username_api}")
 
-        if args.flagisopensend and args.flagisopensend > 0:
-            user.mail_is_opensend = True
-        elif args.flagisopensend == 0:
-            user.mail_is_opensend = False
-        if args.flagisopensend != None:
-            logger.info(f"Set mail_is_opensend={args.flagisopensend} for {user.username_api}")
+        if args.flagisopensend is not None:
+            user.mail_is_opensend = args.flagisopensend > 0
+            logger.info(f"Set mail_is_opensend={user.mail_is_opensend} for {user.username_api}")
 
-        if args.flagissshkeyadded and args.flagissshkeyadded > 0:
-            user.mail_is_sshkeyadded = True
-            user.mail_name_sshkey = []
-        elif args.flagissshkeyadded == 0:
-            user.mail_is_sshkeyadded = False
-        if args.flagissshkeyadded != None:
-            logger.info(f"Set mail_is_sshkeyadded={args.flagissshkeyadded} for {user.username_api}")
+        if args.flagissshkeyadded is not None:
+            user.mail_is_sshkeyadded = args.flagissshkeyadded > 0
+            if user.mail_is_sshkeyadded:
+                user.mail_name_sshkey = []
+            logger.info(f"Set mail_is_sshkeyadded={user.mail_is_sshkeyadded} for {user.username_api}")
 
-        if args.flagisactive and args.flagisactive > 0:
-            user.is_active = True
-        elif args.flagisactive == 0:
-            user.is_active = False
-        if args.flagisactive != None:
-            logger.info(f"Set is_active={args.flagisactive} for {user.username_api}")
+        if args.flagisactive is not None:
+            user.is_active = args.flagisactive > 0
+            logger.info(f"Set is_active={user.is_active} for {user.username_api}")
 
         if args.typecreate != None:
             logger.info(f"Set type_create={args.typecreate} for {user.username_api}")
