@@ -243,44 +243,68 @@ def user_update(logger, args, session):
 
         if args.resetallflags:
             sshkeyadded_flag = user.mail_project_is_sshkeyadded
+            sshkeyadded_changed = False
             for k, v in sshkeyadded_flag.items():
                 if not v:
                     sshkeyadded_flag[k] = True
-            user.mail_project_is_sshkeyadded = sshkeyadded_flag
+                    sshkeyadded_changed = True
+            if sshkeyadded_changed:
+                user.mail_project_is_sshkeyadded = sshkeyadded_flag
+                logger.info(f"Reset mail_project_is_sshkeyadded flags to True for {user.username_api}")
 
             sshkeyremoved_flag = user.mail_project_is_sshkeyremoved
+            sshkeyremoved_changed = False
             for k, v in sshkeyremoved_flag.items():
                 if not v:
                     sshkeyremoved_flag[k] = True
-            user.mail_project_is_sshkeyremoved = sshkeyremoved_flag
+                    sshkeyremoved_changed = True
+            if sshkeyremoved_changed:
+                user.mail_project_is_sshkeyremoved = sshkeyremoved_flag
+                logger.info(f"Reset mail_project_is_sshkeyremoved flags to True for {user.username_api}")
 
             activated_project_flag = user.is_activated_project
+            activated_changed = False
             for k, v in activated_project_flag.items():
                 if not v:
                     activated_project_flag[k] = True
-            user.is_activated_project = activated_project_flag
+                    activated_changed = True
+            if activated_changed:
+                user.is_activated_project = activated_project_flag
+                logger.info(f"Reset is_activated_project flags to True for {user.username_api}")
 
             deactivated_project_flag = user.is_deactivated_project
+            deactivated_changed = False
             for k, v in deactivated_project_flag.items():
                 if not v:
                     deactivated_project_flag[k] = True
-            user.is_deactivated_project = deactivated_project_flag
+                    deactivated_changed = True
+            if deactivated_changed:
+                user.is_deactivated_project = deactivated_project_flag
+                logger.info(f"Reset is_deactivated_project flags to True for {user.username_api}")
 
             mail_project_activated_flag = user.mail_project_is_activated
+            mail_activated_changed = False
             for k, v in mail_project_activated_flag.items():
                 if not v:
                     mail_project_activated_flag[k] = True
-            user.mail_project_is_activated = mail_project_activated_flag
+                    mail_activated_changed = True
+            if mail_activated_changed:
+                user.mail_project_is_activated = mail_project_activated_flag
+                logger.info(f"Reset mail_project_is_activated flags to True for {user.username_api}")
 
             mail_project_deactivated_flag = user.mail_project_is_deactivated
+            mail_deactivated_changed = False
             for k, v in mail_project_deactivated_flag.items():
                 if not v:
                     mail_project_deactivated_flag[k] = True
-            user.mail_project_is_deactivated = mail_project_deactivated_flag
+                    mail_deactivated_changed = True
+            if mail_deactivated_changed:
+                user.mail_project_is_deactivated = mail_project_deactivated_flag
+                logger.info(f"Reset mail_project_is_deactivated flags to True for {user.username_api}")
 
-            user.mail_name_sshkey = []
-
-            logger.info(f"Reset all mail_project_is_sshkey[added/removed], is_[activated/deactivated]_project, and mail_project_is_[activated/deactivated] flags to True and mail_name_sshkey to empty for {user.username_api}")
+            if len(user.mail_name_sshkey) > 0:
+                user.mail_name_sshkey = []
+                logger.info(f"Reset mail_name_sshkey to empty for {user.username_api}")
 
     except NoResultFound:
         logger.error(f"User {args.username} not found")
