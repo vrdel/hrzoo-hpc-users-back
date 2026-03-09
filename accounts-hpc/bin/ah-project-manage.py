@@ -61,7 +61,7 @@ def project_list(logger, args, session):
             table.add_row('API ID =', str(project.prjid_api))
             table.add_row('Type create =', str(project.type))
             table.add_row('Directory =', str(project.is_dir_created))
-            table.add_row('PBS =', str(project.is_dir_created))
+            table.add_row('PBS =', str(project.is_pbsfairshare_added))
             table.add_row('Users =', users)
             table.add_row(' ')
         if not args.name and not args.identifier:
@@ -73,7 +73,7 @@ def project_list(logger, args, session):
             table.add_row('LDAP GID =', str(project.ldap_gid))
             table.add_row('API ID =', str(project.prjid_api))
             table.add_row('Directory =', str(project.is_dir_created))
-            table.add_row('PBS =', str(project.is_dir_created))
+            table.add_row('PBS =', str(project.is_pbsfairshare_added))
             table.add_row('Users =', users)
             table.add_row(' ')
     if table.row_count:
