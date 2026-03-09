@@ -227,6 +227,20 @@ def user_update(logger, args, session):
             logger.info(f"Set type_create={args.ssouid} for {user.username_api}")
             user.person_uniqueid = args.ssouid
 
+        if args.mailnamesshkeyadd:
+            for key in args.mailnamesshkeyadd:
+                k = f"ADD:{key}"
+                if k not in user.mail_name_sshkey:
+                    user.mail_name_sshkey.append(k)
+                    logger.info(f"Added {k} to mail_name_sshkey for {user.username_api}")
+
+        if args.mailnamesshkeyremove:
+            for key in args.mailnamesshkeyremove:
+                k = f"DEL:{key}"
+                if k not in user.mail_name_sshkey:
+                    user.mail_name_sshkey.append(k)
+                    logger.info(f"Added {k} to mail_name_sshkey for {user.username_api}")
+
     except NoResultFound:
         logger.error(f"User {args.username} not found")
         raise SystemExit(1)
@@ -698,6 +712,10 @@ def main():
                                required=False, help='Set LDAP GID for user to 0')
     parser_update.add_argument('--null-uid', dest='nulluid', default=False, action='store_true',
                                required=False, help='Set LDAP UID for user to 0')
+    parser_update.add_argument('--mailname-sshkey-add', dest='mailnamesshkeyadd', type=str, nargs='+',
+                               required=False, help='Add one or multiple keys to mail_name_sshkey list indicating a key was added')
+    parser_update.add_argument('--mailname-sshkey-remove', dest='mailnamesshkeyremove', type=str, nargs='+',
+                               required=False, help='Add one or multiple keys to mail_name_sshkey list indicating a key was removed')
 
     parser_delete = subparsers.add_parser('delete', help='Delete user metadata')
     parser_delete.add_argument('--username', dest='username', type=str,
