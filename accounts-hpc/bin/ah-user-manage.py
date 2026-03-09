@@ -241,6 +241,21 @@ def user_update(logger, args, session):
                     user.mail_name_sshkey.append(k)
                     logger.info(f"Added {k} to mail_name_sshkey for {user.username_api}")
 
+        if args.resetallflags:
+            sshkeyadded_flag = user.mail_project_is_sshkeyadded
+            for k, v in sshkeyadded_flag.items():
+                if not v:
+                    sshkeyadded_flag[k] = True
+            user.mail_project_is_sshkeyadded = sshkeyadded_flag
+
+            sshkeyremoved_flag = user.mail_project_is_sshkeyremoved
+            for k, v in sshkeyremoved_flag.items():
+                if not v:
+                    sshkeyremoved_flag[k] = True
+            user.mail_project_is_sshkeyremoved = sshkeyremoved_flag
+
+            logger.info(f"Reset all mail_project_is_sshkey* flags to True for {user.username_api}")
+
     except NoResultFound:
         logger.error(f"User {args.username} not found")
         raise SystemExit(1)
@@ -716,6 +731,8 @@ def main():
                                required=False, help='Add one or multiple keys to mail_name_sshkey list indicating a key was added')
     parser_update.add_argument('--mailname-sshkey-remove', dest='mailnamesshkeyremove', type=str, nargs='+',
                                required=False, help='Add one or multiple keys to mail_name_sshkey list indicating a key was removed')
+    parser_update.add_argument('--reset-all-flags', dest='resetallflags', action='store_true', default=False,
+                               required=False, help='Reset mail_project_is_sshkeyadded and mail_project_is_sshkeyremoved values to True')
 
     parser_delete = subparsers.add_parser('delete', help='Delete user metadata')
     parser_delete.add_argument('--username', dest='username', type=str,
