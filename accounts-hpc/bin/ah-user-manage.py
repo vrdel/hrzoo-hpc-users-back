@@ -254,9 +254,21 @@ def user_update(logger, args, session):
                     sshkeyremoved_flag[k] = True
             user.mail_project_is_sshkeyremoved = sshkeyremoved_flag
 
+            activated_project_flag = user.is_activated_project
+            for k, v in activated_project_flag.items():
+                if not v:
+                    activated_project_flag[k] = True
+            user.is_activated_project = activated_project_flag
+
+            deactivated_project_flag = user.is_deactivated_project
+            for k, v in deactivated_project_flag.items():
+                if not v:
+                    deactivated_project_flag[k] = True
+            user.is_deactivated_project = deactivated_project_flag
+
             user.mail_name_sshkey = []
 
-            logger.info(f"Reset all mail_project_is_sshkey* flags to True and mail_name_sshkey to empty for {user.username_api}")
+            logger.info(f"Reset all mail_project_is_sshkey* and is_*_project flags to True and mail_name_sshkey to empty for {user.username_api}")
 
     except NoResultFound:
         logger.error(f"User {args.username} not found")
