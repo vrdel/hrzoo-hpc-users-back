@@ -59,7 +59,6 @@ accounts_hpc = "modules/"
 [tool.setuptools.data-files]
 "" = ["pyproject.toml", "poetry.lock", "alembic.ini"]
 "bin" = [
-    "bin/ah-all-flags-set.py",
     "bin/ah-api-sync.py",
     "bin/ah-db-tool.py",
     "bin/ah-directories-create.py",

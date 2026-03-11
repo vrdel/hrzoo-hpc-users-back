@@ -26,6 +26,8 @@ clean:
 	rm -rf **/*.pyo
 	rm -rf *.egg-info/
 	rm -rf **/*__pycache__*
+	rm -rf __pycache__
+	rm -rf *.whl
 
 
 .PHONY: clean wheel-devel wheel-prod

@@ -39,6 +39,95 @@ def flush_sshkeys(logger, session):
         logger.info('No keys without owner found')
 
 
+def reset_all_flags(logger, session):
+    users = session.query(User).all()
+
+    for user in users:
+        if not user.mail_is_opensend:
+            user.mail_is_opensend = True
+            logger.info(f"Reset mail_is_opensend flag to True for {user.username_api}")
+
+        if not user.mail_is_sshkeyadded:
+            user.mail_is_sshkeyadded = True
+            logger.info(f"Reset mail_is_sshkeyadded flag to True for {user.username_api}")
+
+        if not user.mail_is_sshkeyremoved:
+            user.mail_is_sshkeyremoved = True
+            logger.info(f"Reset mail_is_sshkeyremoved flag to True for {user.username_api}")
+
+        if user.mail_is_activated:
+            user.mail_is_activated = False
+            logger.info(f"Reset mail_is_activated flag to False for {user.username_api}")
+
+        if user.mail_is_deactivated:
+            user.mail_is_deactivated = False
+            logger.info(f"Reset mail_is_deactivated flag to False for {user.username_api}")
+
+        sshkeyadded_flag = user.mail_project_is_sshkeyadded
+        sshkeyadded_changed = False
+        for k, v in sshkeyadded_flag.items():
+            if not v:
+                sshkeyadded_flag[k] = True
+                sshkeyadded_changed = True
+        if sshkeyadded_changed:
+            user.mail_project_is_sshkeyadded = sshkeyadded_flag
+            logger.info(f"Reset mail_project_is_sshkeyadded flags to True for {user.username_api}")
+
+        sshkeyremoved_flag = user.mail_project_is_sshkeyremoved
+        sshkeyremoved_changed = False
+        for k, v in sshkeyremoved_flag.items():
+            if not v:
+                sshkeyremoved_flag[k] = True
+                sshkeyremoved_changed = True
+        if sshkeyremoved_changed:
+            user.mail_project_is_sshkeyremoved = sshkeyremoved_flag
+            logger.info(f"Reset mail_project_is_sshkeyremoved flags to True for {user.username_api}")
+
+        activated_project_flag = user.is_activated_project
+        activated_changed = False
+        for k, v in activated_project_flag.items():
+            if not v:
+                activated_project_flag[k] = True
+                activated_changed = True
+        if activated_changed:
+            user.is_activated_project = activated_project_flag
+            logger.info(f"Reset is_activated_project flags to True for {user.username_api}")
+
+        deactivated_project_flag = user.is_deactivated_project
+        deactivated_changed = False
+        for k, v in deactivated_project_flag.items():
+            if not v:
+                deactivated_project_flag[k] = True
+                deactivated_changed = True
+        if deactivated_changed:
+            user.is_deactivated_project = deactivated_project_flag
+            logger.info(f"Reset is_deactivated_project flags to True for {user.username_api}")
+
+        mail_project_activated_flag = user.mail_project_is_activated
+        mail_activated_changed = False
+        for k, v in mail_project_activated_flag.items():
+            if not v:
+                mail_project_activated_flag[k] = True
+                mail_activated_changed = True
+        if mail_activated_changed:
+            user.mail_project_is_activated = mail_project_activated_flag
+            logger.info(f"Reset mail_project_is_activated flags to True for {user.username_api}")
+
+        mail_project_deactivated_flag = user.mail_project_is_deactivated
+        mail_deactivated_changed = False
+        for k, v in mail_project_deactivated_flag.items():
+            if not v:
+                mail_project_deactivated_flag[k] = True
+                mail_deactivated_changed = True
+        if mail_deactivated_changed:
+            user.mail_project_is_deactivated = mail_project_deactivated_flag
+            logger.info(f"Reset mail_project_is_deactivated flags to True for {user.username_api}")
+
+        if len(user.mail_name_sshkey) > 0:
+            user.mail_name_sshkey = []
+            logger.info(f"Reset mail_name_sshkey to empty for {user.username_api}")
+
+
 def user_delete(logger, args, session):
     try:
         user = session.query(User).filter(User.username_api == args.username).one()
@@ -179,41 +268,27 @@ def user_update(logger, args, session):
                 logger.info(f"Project {args.project} DB relation added for user {user.username_api}")
                 session.add(project)
 
-        if args.flagisdircreated and args.flagisdircreated > 0:
-            user.is_dir_created = True
-        elif args.flagisdircreated == 0:
-            user.is_dir_created = False
-        if args.flagisdircreated != None:
-            logger.info(f"Set is_dir_created={args.flagisdircreated} for {user.username_api}")
+        if args.flagisdircreated is not None:
+            user.is_dir_created = args.flagisdircreated > 0
+            logger.info(f"Set is_dir_created={user.is_dir_created} for {user.username_api}")
 
-        if args.flagisdeactivated and args.flagisdeactivated > 0:
-            user.is_deactivated = True
-        elif args.flagisdeactivated == 0:
-            user.is_deactivated = False
-        if args.flagisdeactivated != None:
-            logger.info(f"Set is_deactivated={args.flagisdeactivated} for {user.username_api}")
+        if args.flagisdeactivated is not None:
+            user.is_deactivated = args.flagisdeactivated > 0
+            logger.info(f"Set is_deactivated={user.is_deactivated} for {user.username_api}")
 
-        if args.flagisopensend and args.flagisopensend > 0:
-            user.mail_is_opensend = True
-        elif args.flagisopensend == 0:
-            user.mail_is_opensend = False
-        if args.flagisopensend != None:
-            logger.info(f"Set mail_is_opensend={args.flagisopensend} for {user.username_api}")
+        if args.flagisopensend is not None:
+            user.mail_is_opensend = args.flagisopensend > 0
+            logger.info(f"Set mail_is_opensend={user.mail_is_opensend} for {user.username_api}")
 
-        if args.flagissshkeyadded and args.flagissshkeyadded > 0:
-            user.mail_is_sshkeyadded = True
-            user.mail_name_sshkey = []
-        elif args.flagissshkeyadded == 0:
-            user.mail_is_sshkeyadded = False
-        if args.flagissshkeyadded != None:
-            logger.info(f"Set mail_is_sshkeyadded={args.flagissshkeyadded} for {user.username_api}")
+        if args.flagissshkeyadded is not None:
+            user.mail_is_sshkeyadded = args.flagissshkeyadded > 0
+            if user.mail_is_sshkeyadded:
+                user.mail_name_sshkey = []
+            logger.info(f"Set mail_is_sshkeyadded={user.mail_is_sshkeyadded} for {user.username_api}")
 
-        if args.flagisactive and args.flagisactive > 0:
-            user.is_active = True
-        elif args.flagisactive == 0:
-            user.is_active = False
-        if args.flagisactive != None:
-            logger.info(f"Set is_active={args.flagisactive} for {user.username_api}")
+        if args.flagisactive is not None:
+            user.is_active = args.flagisactive > 0
+            logger.info(f"Set is_active={user.is_active} for {user.username_api}")
 
         if args.typecreate != None:
             logger.info(f"Set type_create={args.typecreate} for {user.username_api}")
@@ -226,6 +301,20 @@ def user_update(logger, args, session):
         if args.ssouid != None:
             logger.info(f"Set type_create={args.ssouid} for {user.username_api}")
             user.person_uniqueid = args.ssouid
+
+        if args.mailnamesshkeyadd:
+            for key in args.mailnamesshkeyadd:
+                k = f"ADD:{key}"
+                if k not in user.mail_name_sshkey:
+                    user.mail_name_sshkey.append(k)
+                    logger.info(f"Added {k} to mail_name_sshkey for {user.username_api}")
+
+        if args.mailnamesshkeyremove:
+            for key in args.mailnamesshkeyremove:
+                k = f"DEL:{key}"
+                if k not in user.mail_name_sshkey:
+                    user.mail_name_sshkey.append(k)
+                    logger.info(f"Added {k} to mail_name_sshkey for {user.username_api}")
 
     except NoResultFound:
         logger.error(f"User {args.username} not found")
@@ -370,6 +459,7 @@ def user_project_list(logger, args, session):
                 sshkeys = ', '.join(
                     ['[{}...{}]'.format(key.public_key[0:32], key.public_key[-32:]) for key in user.sshkey]
                 )
+                table.add_row("ID = ", str(user.id))
                 table.add_row("First = ", user.first_name)
                 table.add_row("Last = ", user.last_name)
                 table.add_row("Mail = ", user.person_mail)
@@ -379,16 +469,29 @@ def user_project_list(logger, args, session):
                 table.add_row("Type create = ", str(user.type_create))
                 table.add_row("Person type = ", str(user.person_type))
                 table.add_row("SSO UID = ", user.person_uniqueid)
+                table.add_row("UID API = ", str(user.uid_api))
                 table.add_row("Projects API = ", ', '.join(user.projects_api))
                 table.add_row("SSH keys API = ", ', '.join(user.sshkeys_api))
                 table.add_row("SSH keys = ", sshkeys)
+                table.add_row("Opened = ", str(user.is_opened))
                 table.add_row("Active = ", str(user.is_active))
                 table.add_row("Deactivated = ", str(user.is_deactivated))
                 table.add_row("Staff = ", str(user.is_staff))
                 table.add_row("Directories = ", str(user.is_dir_created))
+                table.add_row("Skip DefGID = ", str(user.skip_defgid))
                 table.add_row("Mail open = ", str(user.mail_is_opensend))
-                table.add_row("Mail SSH key = ", str(user.mail_is_sshkeyadded))
+                table.add_row("Mail SSH key add = ", str(user.mail_is_sshkeyadded))
                 table.add_row("Mail key name = ", ', '.join(user.mail_name_sshkey))
+                table.add_row("Mail SSH key remove = ", str(user.mail_is_sshkeyremoved))
+                table.add_row("Mail activated = ", str(user.mail_is_activated))
+                table.add_row("Mail deactivated = ", str(user.mail_is_deactivated))
+                table.add_row("Activated project = ", str(user.is_activated_project))
+                table.add_row("Deactivated project = ", str(user.is_deactivated_project))
+                table.add_row("Mail project open = ", str(user.mail_project_is_opensend))
+                table.add_row("Mail project SSH key add = ", str(user.mail_project_is_sshkeyadded))
+                table.add_row("Mail project SSH key remove = ", str(user.mail_project_is_sshkeyremoved))
+                table.add_row("Mail project activated = ", str(user.mail_project_is_activated))
+                table.add_row("Mail project deactivated = ", str(user.mail_project_is_deactivated))
                 table.add_row(" ")
 
         if table.row_count:
@@ -412,6 +515,7 @@ def user_project_list(logger, args, session):
                 sshkeys = ', '.join(
                     ['[{}...{}]'.format(key.public_key[0:32], key.public_key[-32:]) for key in user.sshkey]
                 )
+                table.add_row("ID = ", str(user.id))
                 table.add_row("First = ", user.first_name)
                 table.add_row("Last = ", user.last_name)
                 table.add_row("Mail = ", user.person_mail)
@@ -421,16 +525,29 @@ def user_project_list(logger, args, session):
                 table.add_row("Type create = ", str(user.type_create))
                 table.add_row("Person type = ", str(user.person_type))
                 table.add_row("SSO UID = ", user.person_uniqueid)
+                table.add_row("UID API = ", str(user.uid_api))
                 table.add_row("Projects API = ", ', '.join(user.projects_api))
                 table.add_row("SSH keys API = ", ', '.join(user.sshkeys_api))
                 table.add_row("SSH keys = ", sshkeys)
+                table.add_row("Opened = ", str(user.is_opened))
                 table.add_row("Active = ", str(user.is_active))
                 table.add_row("Deactivated = ", str(user.is_deactivated))
                 table.add_row("Staff = ", str(user.is_staff))
                 table.add_row("Directories = ", str(user.is_dir_created))
+                table.add_row("Skip DefGID = ", str(user.skip_defgid))
                 table.add_row("Mail open = ", str(user.mail_is_opensend))
-                table.add_row("Mail SSH key = ", str(user.mail_is_sshkeyadded))
+                table.add_row("Mail SSH key add = ", str(user.mail_is_sshkeyadded))
                 table.add_row("Mail key name = ", ', '.join(user.mail_name_sshkey))
+                table.add_row("Mail SSH key remove = ", str(user.mail_is_sshkeyremoved))
+                table.add_row("Mail activated = ", str(user.mail_is_activated))
+                table.add_row("Mail deactivated = ", str(user.mail_is_deactivated))
+                table.add_row("Activated project = ", str(user.is_activated_project))
+                table.add_row("Deactivated project = ", str(user.is_deactivated_project))
+                table.add_row("Mail project open = ", str(user.mail_project_is_opensend))
+                table.add_row("Mail project SSH key add = ", str(user.mail_project_is_sshkeyadded))
+                table.add_row("Mail project SSH key remove = ", str(user.mail_project_is_sshkeyremoved))
+                table.add_row("Mail project activated = ", str(user.mail_project_is_activated))
+                table.add_row("Mail project deactivated = ", str(user.mail_project_is_deactivated))
                 table.add_row(" ")
 
         if table.row_count:
@@ -454,6 +571,7 @@ def user_project_list(logger, args, session):
                 sshkeys = ', '.join(
                     ['[{}...{}]'.format(key.public_key[0:32], key.public_key[-32:]) for key in user.sshkey]
                 )
+                table.add_row("ID = ", str(user.id))
                 table.add_row("First = ", user.first_name)
                 table.add_row("Last = ", user.last_name)
                 table.add_row("Mail = ", user.person_mail)
@@ -463,16 +581,29 @@ def user_project_list(logger, args, session):
                 table.add_row("Type create = ", str(user.type_create))
                 table.add_row("Person type = ", str(user.person_type))
                 table.add_row("SSO UID = ", user.person_uniqueid)
+                table.add_row("UID API = ", str(user.uid_api))
                 table.add_row("Projects API = ", ', '.join(user.projects_api))
                 table.add_row("SSH keys API = ", ', '.join(user.sshkeys_api))
                 table.add_row("SSH keys = ", sshkeys)
+                table.add_row("Opened = ", str(user.is_opened))
                 table.add_row("Active = ", str(user.is_active))
                 table.add_row("Deactivated = ", str(user.is_deactivated))
                 table.add_row("Staff = ", str(user.is_staff))
                 table.add_row("Directories = ", str(user.is_dir_created))
+                table.add_row("Skip DefGID = ", str(user.skip_defgid))
                 table.add_row("Mail open = ", str(user.mail_is_opensend))
-                table.add_row("Mail SSH key = ", str(user.mail_is_sshkeyadded))
+                table.add_row("Mail SSH key add = ", str(user.mail_is_sshkeyadded))
                 table.add_row("Mail key name = ", ', '.join(user.mail_name_sshkey))
+                table.add_row("Mail SSH key remove = ", str(user.mail_is_sshkeyremoved))
+                table.add_row("Mail activated = ", str(user.mail_is_activated))
+                table.add_row("Mail deactivated = ", str(user.mail_is_deactivated))
+                table.add_row("Activated project = ", str(user.is_activated_project))
+                table.add_row("Deactivated project = ", str(user.is_deactivated_project))
+                table.add_row("Mail project open = ", str(user.mail_project_is_opensend))
+                table.add_row("Mail project SSH key add = ", str(user.mail_project_is_sshkeyadded))
+                table.add_row("Mail project SSH key remove = ", str(user.mail_project_is_sshkeyremoved))
+                table.add_row("Mail project activated = ", str(user.mail_project_is_activated))
+                table.add_row("Mail project deactivated = ", str(user.mail_project_is_deactivated))
                 table.add_row(" ")
 
         if table.row_count:
@@ -496,6 +627,7 @@ def user_project_list(logger, args, session):
                 sshkeys = ', '.join(
                     ['[{}...{}]'.format(key.public_key[0:32], key.public_key[-32:]) for key in user.sshkey]
                 )
+                table.add_row("ID = ", str(user.id))
                 table.add_row("First = ", user.first_name)
                 table.add_row("Last = ", user.last_name)
                 table.add_row("Mail = ", user.person_mail)
@@ -505,16 +637,29 @@ def user_project_list(logger, args, session):
                 table.add_row("Type create = ", str(user.type_create))
                 table.add_row("Person type = ", str(user.person_type))
                 table.add_row("SSO UID = ", user.person_uniqueid)
+                table.add_row("UID API = ", str(user.uid_api))
                 table.add_row("Projects API = ", ', '.join(user.projects_api))
                 table.add_row("SSH keys API = ", ', '.join(user.sshkeys_api))
                 table.add_row("SSH keys = ", sshkeys)
+                table.add_row("Opened = ", str(user.is_opened))
                 table.add_row("Active = ", str(user.is_active))
                 table.add_row("Deactivated = ", str(user.is_deactivated))
                 table.add_row("Staff = ", str(user.is_staff))
                 table.add_row("Directories = ", str(user.is_dir_created))
+                table.add_row("Skip DefGID = ", str(user.skip_defgid))
                 table.add_row("Mail open = ", str(user.mail_is_opensend))
-                table.add_row("Mail SSH key = ", str(user.mail_is_sshkeyadded))
+                table.add_row("Mail SSH key add = ", str(user.mail_is_sshkeyadded))
                 table.add_row("Mail key name = ", ', '.join(user.mail_name_sshkey))
+                table.add_row("Mail SSH key removed = ", str(user.mail_is_sshkeyremoved))
+                table.add_row("Mail activated = ", str(user.mail_is_activated))
+                table.add_row("Mail deactivated = ", str(user.mail_is_deactivated))
+                table.add_row("Activated project = ", str(user.is_activated_project))
+                table.add_row("Deactivated project = ", str(user.is_deactivated_project))
+                table.add_row("Mail project open = ", str(user.mail_project_is_opensend))
+                table.add_row("Mail project SSH key add = ", str(user.mail_project_is_sshkeyadded))
+                table.add_row("Mail project SSH key remove = ", str(user.mail_project_is_sshkeyremoved))
+                table.add_row("Mail project activated = ", str(user.mail_project_is_activated))
+                table.add_row("Mail project deactivated = ", str(user.mail_project_is_deactivated))
                 table.add_row(" ")
 
         if table.row_count:
@@ -536,6 +681,7 @@ def user_project_list(logger, args, session):
             sshkeys = ', '.join(
                 ['[{}...{}]'.format(key.public_key[0:32], key.public_key[-32:]) for key in user.sshkey]
             )
+            table.add_row("ID = ", str(user.id))
             table.add_row("First = ", user.first_name)
             table.add_row("Last = ", user.last_name)
             table.add_row("Mail = ", user.person_mail)
@@ -545,16 +691,29 @@ def user_project_list(logger, args, session):
             table.add_row("Type create = ", str(user.type_create))
             table.add_row("Person type = ", str(user.person_type))
             table.add_row("SSO UID = ", user.person_uniqueid)
+            table.add_row("UID API = ", str(user.uid_api))
             table.add_row("Projects API = ", ', '.join(user.projects_api))
             table.add_row("SSH keys API = ", ', '.join(user.sshkeys_api))
             table.add_row("SSH keys = ", sshkeys)
+            table.add_row("Opened = ", str(user.is_opened))
             table.add_row("Active = ", str(user.is_active))
             table.add_row("Deactivated = ", str(user.is_deactivated))
             table.add_row("Staff = ", str(user.is_staff))
             table.add_row("Directories = ", str(user.is_dir_created))
+            table.add_row("Skip DefGID = ", str(user.skip_defgid))
             table.add_row("Mail open = ", str(user.mail_is_opensend))
-            table.add_row("Mail SSH key = ", str(user.mail_is_sshkeyadded))
+            table.add_row("Mail SSH key add = ", str(user.mail_is_sshkeyadded))
             table.add_row("Mail key name = ", ', '.join(user.mail_name_sshkey))
+            table.add_row("Mail SSH key remove = ", str(user.mail_is_sshkeyremoved))
+            table.add_row("Mail activated = ", str(user.mail_is_activated))
+            table.add_row("Mail deactivated = ", str(user.mail_is_deactivated))
+            table.add_row("Activated project = ", str(user.is_activated_project))
+            table.add_row("Deactivated project = ", str(user.is_deactivated_project))
+            table.add_row("Mail project open = ", str(user.mail_project_is_opensend))
+            table.add_row("Mail project SSH key add = ", str(user.mail_project_is_sshkeyadded))
+            table.add_row("Mail project SSH key remove = ", str(user.mail_project_is_sshkeyremoved))
+            table.add_row("Mail project activated = ", str(user.mail_project_is_activated))
+            table.add_row("Mail project deactivated = ", str(user.mail_project_is_deactivated))
             table.add_row(" ")
 
         if table.row_count:
@@ -570,6 +729,8 @@ def main():
                         help='Flush all keys not associated to any user')
     parser.add_argument('--flush-users', dest='flushusers', action='store_true', required=False,
                         help='Flush all users without any keys and projects associated')
+    parser.add_argument('--reset-all-flags', dest='resetallflags', action='store_true', required=False,
+                        help='Reset all mail flags to sent state suppressing pending emails for all users')
     subparsers = parser.add_subparsers(help="User subcommands", dest="command")
 
     parser_create = subparsers.add_parser('create', help='Create user based on passed metadata')
@@ -628,6 +789,10 @@ def main():
                                required=False, help='Set LDAP GID for user to 0')
     parser_update.add_argument('--null-uid', dest='nulluid', default=False, action='store_true',
                                required=False, help='Set LDAP UID for user to 0')
+    parser_update.add_argument('--mailname-sshkey-add', dest='mailnamesshkeyadd', type=str, nargs='+',
+                               required=False, help='Add one or multiple keys to mail_name_sshkey list indicating a key was added')
+    parser_update.add_argument('--mailname-sshkey-remove', dest='mailnamesshkeyremove', type=str, nargs='+',
+                               required=False, help='Add one or multiple keys to mail_name_sshkey list indicating a key was removed')
 
     parser_delete = subparsers.add_parser('delete', help='Delete user metadata')
     parser_delete.add_argument('--username', dest='username', type=str,
@@ -671,6 +836,9 @@ def main():
 
     if args.flushusers:
         flush_users(logger, dbsession)
+
+    if args.resetallflags:
+        reset_all_flags(logger, dbsession)
 
     try:
         dbsession.commit()
