@@ -232,7 +232,7 @@ class AhDaemon(object):
 
 
 def main():
-    ahd = AhDaemon()
+    ahd = AhDaemon(dry_run=args.dry_run)
     loop = asyncio.get_event_loop()
 
     def clean_exit(sigstr):

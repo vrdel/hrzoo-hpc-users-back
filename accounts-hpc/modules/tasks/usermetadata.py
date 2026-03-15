@@ -14,13 +14,14 @@ class UserMetadata(object):
     """
         Initial set of user's UID and GID (when both or one is 0)
     """
-    def __init__(self, caller, args, daemon=False):
+    def __init__(self, caller, args, daemon=False, dry_run=False):
         shared = Shared(caller, daemon)
         self.confopts = shared.confopts
         self.confopts = shared.confopts
         self.logger = shared.log[caller].get()
         self.dbsession = shared.dbsession[caller]
         self.args = args
+        self.dry_run = dry_run
 
     async def run(self):
         try:
@@ -84,7 +85,8 @@ class UserMetadata(object):
                         set_metadata = True
 
                 if set_metadata:
-                    self.logger.info(f"{user.first_name} {user.last_name} set username={user.username_api} UID={user.ldap_uid} GID={user.ldap_gid}")
+                    prefix = "DRY-RUN would set" if self.dry_run else "set"
+                    self.logger.info(f"{user.first_name} {user.last_name} {prefix} username={user.username_api} UID={user.ldap_uid} GID={user.ldap_gid}")
 
             await self.dbsession.commit()
 
