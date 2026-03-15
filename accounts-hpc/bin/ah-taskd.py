@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import argparse
 import asyncio
 import sys
 import signal
@@ -20,8 +21,17 @@ from accounts_hpc.exceptions import AhTaskError
 from accounts_hpc.utils import contains_exception
 
 
+def parse_args():
+    parser = argparse.ArgumentParser(description="accounts-hpc task daemon")
+    parser.add_argument('--dry-run', action='store_true', default=False,
+                        dest='dry_run',
+                        help='run all tasks once with in-memory DB, only apisync writes data, other tasks only print what would be done')
+    return parser.parse_args()
+
+
 CALLER_NAME = "ah-taskd"
-shared = Shared(CALLER_NAME, daemon=True)
+args = parse_args()
+shared = Shared(CALLER_NAME, daemon=True, dry_run=args.dry_run)
 logger = shared.log[CALLER_NAME].get()
 
 
