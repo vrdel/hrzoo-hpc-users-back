@@ -12,13 +12,14 @@ import sys
 
 
 class SendEmail(object):
-    def __init__(self, caller, args, daemon=False):
+    def __init__(self, caller, args, daemon=False, dry_run=False):
         shared = Shared(caller, daemon)
         self.confopts = shared.confopts
         self.logger = shared.log[caller].get()
         self.dbsession = shared.dbsession[caller]
         self.args = args
         self.daemon = daemon
+        self.dry_run = dry_run
         self.users_opened = set()
         self.users_project_opened = dict()
 
@@ -184,7 +185,66 @@ class SendEmail(object):
                 user.mail_is_sshkeyremoved = True
                 user.mail_name_sshkey = [key for key in user.mail_name_sshkey if not key.startswith('DEL:')]
 
+    async def run_dry(self):
+        try:
+            users = await self.dbsession.execute(select(User))
+            users = users.scalars().all()
+
+            if self.confopts['ldap']['mode'] == 'project_organisation':
+                for user in users:
+                    if user.is_activated_project:
+                        for proj in user.is_activated_project:
+                            if not user.is_activated_project[proj]:
+                                self.logger.info(f"DRY-RUN: would send reactivation email to {user.username_api} - {proj} @ {user.person_mail}")
+                    if user.mail_project_is_deactivated:
+                        for proj in user.mail_project_is_deactivated:
+                            if not user.mail_project_is_deactivated[proj]:
+                                self.logger.info(f"DRY-RUN: would send deactivation email to {user.username_api} - {proj} @ {user.person_mail}")
+                    for project in user.mail_project_is_opensend.keys():
+                        if user.mail_project_is_opensend[project] == False:
+                            self.logger.info(f"DRY-RUN: would send new account email to {user.username_api} - {project} @ {user.person_mail}")
+                    added_keys = [key for key in user.mail_name_sshkey if key.startswith('ADD:')]
+                    removed_keys = [key for key in user.mail_name_sshkey if key.startswith('DEL:')]
+                    for sshkeyname in added_keys:
+                        key_name = sshkeyname.split('ADD:', 1)[1]
+                        for project in user.mail_project_is_sshkeyadded.keys():
+                            if user.mail_project_is_sshkeyadded[project] == False:
+                                self.logger.info(f"DRY-RUN: would send added key {key_name} email to {user.username_api} - {project}")
+                    for sshkeyname in removed_keys:
+                        key_name = sshkeyname.split('DEL:', 1)[1]
+                        for project in user.mail_project_is_sshkeyremoved.keys():
+                            if user.mail_project_is_sshkeyremoved[project] == False:
+                                self.logger.info(f"DRY-RUN: would send removed key {key_name} email to {user.username_api} - {project}")
+            else:
+                for user in users:
+                    if user.mail_is_activated:
+                        self.logger.info(f"DRY-RUN: would send reactivation email to {user.username_api} @ {user.person_mail}")
+                    if user.mail_is_deactivated:
+                        self.logger.info(f"DRY-RUN: would send deactivation email to {user.username_api} @ {user.person_mail}")
+                    if not user.mail_is_opensend:
+                        self.logger.info(f"DRY-RUN: would send new account email to {user.username_api} @ {user.person_mail}")
+                    if not user.mail_is_sshkeyadded:
+                        added_keys = [key for key in user.mail_name_sshkey if key.startswith('ADD:')]
+                        for sshkeyname in added_keys:
+                            key_name = sshkeyname.split('ADD:', 1)[1]
+                            self.logger.info(f"DRY-RUN: would send added key {key_name} email to {user.username_api}")
+                    if not user.mail_is_sshkeyremoved:
+                        removed_keys = [key for key in user.mail_name_sshkey if key.startswith('DEL:')]
+                        for sshkeyname in removed_keys:
+                            key_name = sshkeyname.split('DEL:', 1)[1]
+                            self.logger.info(f"DRY-RUN: would send removed key {key_name} email to {user.username_api}")
+
+        except asyncio.CancelledError as exc:
+            self.logger.info('* Cancelling emailsend...')
+            raise exc
+
+        finally:
+            await self.dbsession.close()
+
     async def run(self):
+        if self.dry_run:
+            return await self.run_dry()
+
         try:
             if self.confopts['ldap']['mode'] == 'project_organisation':
                 users = await self.dbsession.execute(select(User))
