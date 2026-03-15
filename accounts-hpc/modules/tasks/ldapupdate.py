@@ -526,13 +526,14 @@ class LdapUpdate(object):
                 # update_default_groups(self.confopts, conn, self.logger, users, "hpc", onlyops=True)
 
                 # handle resource groups associations
-                task_update_resgroup1 = asyncio.create_task(self.update_resource_groups(users, "hpc-bigmem"))
-                task_update_resgroup2 = asyncio.create_task(self.update_resource_groups(users, "hpc-gpu"))
-                task_update_resgroup3 = asyncio.create_task(self.update_resource_groups(users, "hpc-gpu-bigmem"))
+                tasks_update_resgroups = [
+                    asyncio.create_task(self.update_resource_groups(users, gr))
+                    for gr in self.confopts['usersetup']['resource_groups']
+                ]
 
                 await task_update_defgroups
-                await task_update_resgroup1
-                await task_update_resgroup2
+                for task in tasks_update_resgroups:
+                    await task
 
             await self.dbsession.commit()
 
