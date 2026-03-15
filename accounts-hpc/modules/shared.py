@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import create_async_engine
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine
+from sqlalchemy.pool import StaticPool
 
 
 class Shared(object):
@@ -42,7 +43,8 @@ class Shared(object):
                 if not getattr(self.__class__, '_dry_run_engine', False):
                     self.__class__._dry_run_engine = create_async_engine(
                         "sqlite+aiosqlite://",
-                        connect_args={"check_same_thread": False}
+                        connect_args={"check_same_thread": False},
+                        poolclass=StaticPool
                     )
                 engine = self.__class__._dry_run_engine
             else:
@@ -57,7 +59,8 @@ class Shared(object):
                 if not getattr(self.__class__, '_dry_run_engine_sync', False):
                     self.__class__._dry_run_engine_sync = create_engine(
                         "sqlite://",
-                        connect_args={"check_same_thread": False}
+                        connect_args={"check_same_thread": False},
+                        poolclass=StaticPool
                     )
                 engine = self.__class__._dry_run_engine_sync
             else:
