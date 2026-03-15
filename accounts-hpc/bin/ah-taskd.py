@@ -42,9 +42,10 @@ class FakeArgs(object):
 
 
 class AhDaemon(object):
-    def __init__(self):
+    def __init__(self, dry_run=False):
         self.fakeargs = FakeArgs()
         self.confopts = shared.confopts
+        self.dry_run = dry_run
 
     def _cancel_tasks(self):
         if self.task_apisync:
@@ -102,32 +103,44 @@ class AhDaemon(object):
         except OSError:
             return 0
 
+    async def _init_inmemory_db(self):
+        from accounts_hpc.db import Base  # type: ignore
+        engine = shared._dry_run_engine
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+
     async def run(self):
         try:
             self.task_apisync, self.task_usermetadata, self.task_ldapupdate = None, None, None
             self.task_fairshare, self.task_createdirectories, self.task_emailsend = None, None, None
-            initial_delay, initial_done = self._initial_delay(), False
 
-            runpid, is_running = self._read_pidfile(), False
-            if runpid:
-                is_running = self._is_running(runpid)
+            if self.dry_run:
+                logger.info("* DRY-RUN mode: using in-memory DB, running all tasks once")
+                await self._init_inmemory_db()
+            else:
+                initial_delay, initial_done = self._initial_delay(), False
 
-            if runpid and is_running:
-                logger.info(f'{CALLER_NAME} already running')
-                raise SystemExit(1)
-            elif runpid and not is_running:
-                logger.info(f'{CALLER_NAME} cleaning stale pidfile')
-                os.remove(self.confopts['tasks']['pidfile'])
+                runpid, is_running = self._read_pidfile(), False
+                if runpid:
+                    is_running = self._is_running(runpid)
 
-            self._write_pidfile()
+                if runpid and is_running:
+                    logger.info(f'{CALLER_NAME} already running')
+                    raise SystemExit(1)
+                elif runpid and not is_running:
+                    logger.info(f'{CALLER_NAME} cleaning stale pidfile')
+                    os.remove(self.confopts['tasks']['pidfile'])
+
+                self._write_pidfile()
 
             while True:
                 calls_str = ', '.join(self.confopts['tasks']['call_list'])
-                logger.info(f"* Scheduled tasks ({calls_str}) every {self.confopts['tasks']['every_min']} minutes...")
-                if initial_delay and not initial_done:
-                    logger.info(f"* Initial delay ({initial_delay})...")
-                    await asyncio.sleep(initial_delay)
-                    initial_done = True
+                if not self.dry_run:
+                    logger.info(f"* Scheduled tasks ({calls_str}) every {self.confopts['tasks']['every_min']} minutes...")
+                    if initial_delay and not initial_done:
+                        logger.info(f"* Initial delay ({initial_delay})...")
+                        await asyncio.sleep(initial_delay)
+                        initial_done = True
 
                 if 'apisync' in self.confopts['tasks']['call_list']:
                     logger.info("> Calling apisync task")
@@ -143,7 +156,7 @@ class AhDaemon(object):
                     logger.info("> Calling usermetadata task")
                     start = timeit.default_timer()
                     self.task_usermetadata = asyncio.create_task(
-                        UserMetadata(f'{CALLER_NAME}.usermetadata', self.fakeargs, daemon=True).run()
+                        UserMetadata(f'{CALLER_NAME}.usermetadata', self.fakeargs, daemon=True, dry_run=self.dry_run).run()
                     )
                     await self.task_usermetadata
                     end = timeit.default_timer()
@@ -153,7 +166,7 @@ class AhDaemon(object):
                     logger.info("> Calling ldapupdate task")
                     start = timeit.default_timer()
                     self.task_ldapupdate = asyncio.create_task(
-                        LdapUpdate(f'{CALLER_NAME}.ldapupdate', self.fakeargs, daemon=True).run()
+                        LdapUpdate(f'{CALLER_NAME}.ldapupdate', self.fakeargs, daemon=True, dry_run=self.dry_run).run()
                     )
                     await self.task_ldapupdate
                     end = timeit.default_timer()
@@ -162,19 +175,19 @@ class AhDaemon(object):
                 scheduled = []
                 if 'fairshare' in self.confopts['tasks']['call_list']:
                     self.task_fairshare = asyncio.create_task(
-                        FairshareUpdate(f'{CALLER_NAME}.fairshare', self.fakeargs, daemon=True).run()
+                        FairshareUpdate(f'{CALLER_NAME}.fairshare', self.fakeargs, daemon=True, dry_run=self.dry_run).run()
                     )
                     scheduled.append('fairshare')
 
                 if 'createdirectories' in self.confopts['tasks']['call_list']:
                     self.task_createdirectories = asyncio.create_task(
-                        DirectoriesCreate(f'{CALLER_NAME}.createdirectories', self.fakeargs, daemon=True).run()
+                        DirectoriesCreate(f'{CALLER_NAME}.createdirectories', self.fakeargs, daemon=True, dry_run=self.dry_run).run()
                     )
                     scheduled.append('createdirectories')
 
                 if 'emailsend' in self.confopts['tasks']['call_list']:
                     self.task_emailsend = asyncio.create_task(
-                        SendEmail(f'{CALLER_NAME}.emailsend', self.fakeargs, daemon=True).run()
+                        SendEmail(f'{CALLER_NAME}.emailsend', self.fakeargs, daemon=True, dry_run=self.dry_run).run()
                     )
                     scheduled.append('emailsend')
 
@@ -201,6 +214,10 @@ class AhDaemon(object):
                 end = timeit.default_timer()
                 logger.info(f"> Ended {', '.join(scheduled)} in {format(end - start, '.2f')} seconds")
 
+                if self.dry_run:
+                    logger.info("* DRY-RUN completed")
+                    break
+
                 await asyncio.sleep(self._next_delay())
 
         except AhTaskError:
@@ -210,7 +227,8 @@ class AhDaemon(object):
         except asyncio.CancelledError:
             self._cancel_tasks()
             logger.info("* Stopping task runner...")
-            os.remove(self.confopts['tasks']['pidfile'])
+            if not self.dry_run:
+                os.remove(self.confopts['tasks']['pidfile'])
 
 
 def main():
