@@ -18,13 +18,14 @@ from sqlalchemy.exc import NoResultFound
 
 
 class DirectoriesCreate(object):
-    def __init__(self, caller, args, daemon=False):
+    def __init__(self, caller, args, daemon=False, dry_run=False):
         shared = Shared(caller, daemon)
         self.confopts = shared.confopts
         self.logger = shared.log[caller].get()
         self.dbsession = shared.dbsession[caller]
         self.args = args
         self.daemon = daemon
+        self.dry_run = dry_run
 
     async def run(self):
         try:
@@ -33,6 +34,11 @@ class DirectoriesCreate(object):
 
             for user in users:
                 if not user.is_dir_created:
+                    if self.dry_run:
+                        for dir in self.confopts['usersetup']['userdirs_in']:
+                            self.logger.info(f"DRY-RUN: would create {dir + user.username_api} with perm {user.ldap_uid}:{user.ldap_gid}")
+                        continue
+
                     completed = 0
 
                     for dir in self.confopts['usersetup']['userdirs_in']:
@@ -68,6 +74,11 @@ class DirectoriesCreate(object):
             projects = projects.scalars().all()
             for project in projects:
                 if not project.is_dir_created:
+                    if self.dry_run:
+                        for dir in self.confopts['usersetup']['groupdirs_in']:
+                            self.logger.info(f"DRY-RUN: would create {dir + project.identifier} with gid={project.ldap_gid}")
+                        continue
+
                     completed = 0
 
                     for dir in self.confopts['usersetup']['groupdirs_in']:
@@ -109,5 +120,6 @@ class DirectoriesCreate(object):
             raise exc
 
         finally:
-            await self.dbsession.commit()
+            if not self.dry_run:
+                await self.dbsession.commit()
             await self.dbsession.close()

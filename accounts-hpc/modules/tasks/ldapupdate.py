@@ -14,25 +14,27 @@ import json
 
 
 class LdapUpdate(object):
-    def __init__(self, caller, args, daemon=False):
+    def __init__(self, caller, args, daemon=False, dry_run=False):
         shared = Shared(caller, daemon)
         self.confopts = shared.confopts
         self.daemon = daemon
         self.logger = shared.log[caller].get()
         self.dbsession = shared.dbsession[caller]
         self.args = args
+        self.dry_run = dry_run
 
-        try:
-            self.client = bonsai.LDAPClient(self.confopts['ldap']['server'])
-            self.client.set_credentials(
-                "SIMPLE",
-                user=self.confopts['ldap']['user'],
-                password=self.confopts['ldap']['password']
-            )
+        if not dry_run:
+            try:
+                self.client = bonsai.LDAPClient(self.confopts['ldap']['server'])
+                self.client.set_credentials(
+                    "SIMPLE",
+                    user=self.confopts['ldap']['user'],
+                    password=self.confopts['ldap']['password']
+                )
 
-        except bonsai.errors.AuthenticationError as exc:
-            self.logger.error(exc)
-            raise SystemExit(1)
+            except bonsai.errors.AuthenticationError as exc:
+                self.logger.error(exc)
+                raise SystemExit(1)
 
     async def new_organisation_project(self, identifier):
         async with self.client.connect(is_async=True) as conn:
@@ -435,7 +437,105 @@ class LdapUpdate(object):
                     self.logger.info(f"Created resource group {gr} with gid={ldap_gid}")
                     numgroup += 1
 
+    async def run_dry(self):
+        try:
+            stmt = select(User)
+            users = await self.dbsession.execute(stmt)
+            users = users.scalars().all()
+
+            self.logger.info(f"DRY-RUN: {len(users)} users in cache DB")
+
+            for user in users:
+                if not user.username_api:
+                    continue
+
+                projects_db = [pr.identifier for pr in await user.awaitable_attrs.project]
+                projects_diff_add = set(user.projects_api).difference(set(projects_db))
+                projects_diff_del = set(projects_db).difference(set(user.projects_api))
+
+                if not user.is_opened:
+                    self.logger.info(f"DRY-RUN: would create LDAP user {user.username_api} uid={user.ldap_uid} gid={user.ldap_gid} home={self.confopts['usersetup']['homeprefix']}{user.username_api}")
+                    if self.confopts['ldap']['mode'] == 'project_organisation':
+                        for identifier in user.projects_api:
+                            self.logger.info(f"DRY-RUN: would create LDAP user {user.username_api} in PROJECT-{identifier}")
+
+                if projects_diff_add:
+                    for project in projects_diff_add:
+                        self.logger.info(f"DRY-RUN: would add user {user.person_uniqueid} to project {project}")
+
+                if projects_diff_del:
+                    for project in projects_diff_del:
+                        self.logger.info(f"DRY-RUN: would remove user {user.person_uniqueid} from project {project}")
+
+                target_gid = await self.find_target_gid(user)
+                if target_gid != user.ldap_gid and not user.is_staff:
+                    self.logger.info(f"DRY-RUN: would update {user.person_uniqueid} gidNumber {user.ldap_gid} -> {target_gid}")
+                if target_gid and target_gid != user.ldap_gid and user.is_deactivated and not user.is_staff:
+                    self.logger.info(f"DRY-RUN: would update re-activated {user.person_uniqueid} gidNumber to {target_gid}")
+
+                if self.confopts['ldap']['mode'] == 'flat':
+                    if user.is_active == False and user.is_deactivated == False:
+                        self.logger.info(f"DRY-RUN: would deactivate {user.username_api}, setting shell={self.confopts['usersetup']['noshell']}")
+                    if user.is_active == True and user.is_deactivated == True:
+                        self.logger.info(f"DRY-RUN: would activate {user.username_api}, setting shell=/bin/bash")
+                else:
+                    if user.is_deactivated_project:
+                        for proj in user.is_deactivated_project:
+                            if not user.is_deactivated_project[proj]:
+                                self.logger.info(f"DRY-RUN: would deactivate {user.username_api} for {proj}, setting shell={self.confopts['usersetup']['noshell']}")
+                    if user.is_activated_project:
+                        for proj in user.is_activated_project:
+                            if not user.is_activated_project[proj]:
+                                self.logger.info(f"DRY-RUN: would activate {user.username_api} for {proj}, setting shell=/bin/bash")
+                    if user.is_active == False and user.is_deactivated == False:
+                        for proj in await user.awaitable_attrs.project:
+                            self.logger.info(f"DRY-RUN: would deactivate {user.username_api} for {proj.identifier}, setting shell={self.confopts['usersetup']['noshell']}")
+
+                keys_db = [key.fingerprint for key in await user.awaitable_attrs.sshkey]
+                keys_diff_add = set(user.sshkeys_api).difference(set(keys_db))
+                keys_diff_del = set(keys_db).difference(set(user.sshkeys_api))
+                if keys_diff_add:
+                    self.logger.info(f"DRY-RUN: would add {len(keys_diff_add)} SSH key(s) for {user.person_uniqueid}")
+                if keys_diff_del:
+                    self.logger.info(f"DRY-RUN: would remove {len(keys_diff_del)} SSH key(s) for {user.person_uniqueid}")
+
+            stmt = select(Project)
+            projects = await self.dbsession.execute(stmt)
+            projects = projects.scalars().all()
+
+            self.logger.info(f"DRY-RUN: {len(projects)} projects in cache DB")
+
+            for project in projects:
+                project_users = [u.username_api for u in await project.awaitable_attrs.user]
+                if self.confopts['ldap']['mode'] == 'project_organisation':
+                    self.logger.info(f"DRY-RUN: would sync LDAP group cn={project.identifier} in PROJECT-{project.identifier} members=[{', '.join(project_users)}]")
+                else:
+                    self.logger.info(f"DRY-RUN: would sync LDAP group cn={project.identifier} members=[{', '.join(project_users)}]")
+
+            if self.confopts['ldap']['mode'] == 'flat':
+                all_usernames = [user.username_api for user in users]
+                self.logger.info(f"DRY-RUN: would sync default group hpc-users with {len(all_usernames)} members")
+                for gr in self.confopts['usersetup']['resource_groups']:
+                    res_users = []
+                    for user in users:
+                        for project in user.project:
+                            for rt in project.staff_resources_type_api:
+                                if f"HPC-{rt}" == gr.upper():
+                                    res_users.append(user.username_api)
+                                    break
+                    self.logger.info(f"DRY-RUN: would sync resource group {gr} with {len(res_users)} members: [{', '.join(res_users)}]")
+
+        except asyncio.CancelledError as exc:
+            self.logger.info('* Cancelling ldapupdate...')
+            raise exc
+
+        finally:
+            await self.dbsession.close()
+
     async def run(self):
+        if self.dry_run:
+            return await self.run_dry()
+
         try:
             stmt = select(User)
             users = await self.dbsession.execute(stmt)
@@ -526,13 +626,14 @@ class LdapUpdate(object):
                 # update_default_groups(self.confopts, conn, self.logger, users, "hpc", onlyops=True)
 
                 # handle resource groups associations
-                task_update_resgroup1 = asyncio.create_task(self.update_resource_groups(users, "hpc-bigmem"))
-                task_update_resgroup2 = asyncio.create_task(self.update_resource_groups(users, "hpc-gpu"))
-                task_update_resgroup3 = asyncio.create_task(self.update_resource_groups(users, "hpc-gpu-bigmem"))
+                tasks_update_resgroups = [
+                    asyncio.create_task(self.update_resource_groups(users, gr))
+                    for gr in self.confopts['usersetup']['resource_groups']
+                ]
 
                 await task_update_defgroups
-                await task_update_resgroup1
-                await task_update_resgroup2
+                for task in tasks_update_resgroups:
+                    await task
 
             await self.dbsession.commit()
 

@@ -38,16 +38,25 @@ async def update_file(fsobj, projids, nlines):
 
 
 class FairshareUpdate(object):
-    def __init__(self, caller, args, daemon=False):
+    def __init__(self, caller, args, daemon=False, dry_run=False):
         shared = Shared(caller, daemon)
         self.confopts = shared.confopts
         self.logger = shared.log[caller].get()
         self.dbsession = shared.dbsession[caller]
         self.args = args
         self.daemon = daemon
+        self.dry_run = dry_run
 
     async def run(self):
         try:
+            if self.dry_run:
+                projects = await self.dbsession.execute(select(Project))
+                projects = projects.scalars().all()
+                for project in projects:
+                    if not project.is_pbsfairshare_added:
+                        self.logger.info(f"DRY-RUN: would add {project.identifier} to PBS fairshare")
+                return
+
             is_updated = False
             fairshare_path = self.confopts['usersetup']['pbsfairshare_path']
             pbsprocname = self.confopts['usersetup']['pbsprocname']
@@ -97,5 +106,6 @@ class FairshareUpdate(object):
             raise exc
 
         finally:
-            await self.dbsession.commit()
+            if not self.dry_run:
+                await self.dbsession.commit()
             await self.dbsession.close()
