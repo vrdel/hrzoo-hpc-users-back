@@ -16,6 +16,8 @@ async def main():
     dbsession = shared.dbsession[sys.argv[0]]
 
     parser = argparse.ArgumentParser(description="""Helper tool to set all flags to true to not send emails""")
+    parser.add_argument('--username', dest='username', type=str,
+                        help='act only on specified username')
     args = parser.parse_args()
 
     try:
@@ -23,15 +25,23 @@ async def main():
         projects = await dbsession.execute(stmt)
         projects = projects.scalars().all()
 
-        stmt = select(User)
+        if args.username:
+            stmt = select(User).where(User.username_api == args.username)
+        else:
+            stmt = select(User)
         users = await dbsession.execute(stmt)
         users = users.scalars().all()
 
-        for project in projects:
-            if not project.is_dir_created:
-                project.is_dir_created = True
-            if not project.is_pbsfairshare_added:
-                project.is_pbsfairshare_added = True
+        if args.username and not users:
+            print(f"User '{args.username}' not found in DB")
+            return
+
+        if not args.username:
+            for project in projects:
+                if not project.is_dir_created:
+                    project.is_dir_created = True
+                if not project.is_pbsfairshare_added:
+                    project.is_pbsfairshare_added = True
 
         if shared.confopts['ldap']['mode'] == 'flat':
             for user in users:
