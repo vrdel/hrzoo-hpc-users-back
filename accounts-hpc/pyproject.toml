@@ -69,7 +69,6 @@ accounts_hpc = "modules/"
     "bin/ah-taskd.py",
     "bin/ah-user-manage.py",
     "bin/ah-user-metadata-setup.py",
-    "bin/ah-all-flags-set.py"
 ]
 "etc/accounts-hpc" = [
     "config/accounts-hpc.conf.template", "config/replacestring_map.json",
