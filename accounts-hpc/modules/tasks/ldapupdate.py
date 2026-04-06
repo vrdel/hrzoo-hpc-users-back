@@ -22,6 +22,7 @@ class LdapUpdate(object):
         self.dbsession = shared.dbsession[caller]
         self.args = args
         self.dry_run = dry_run
+        self.project_org = self.project_org
 
         if not dry_run:
             try:
@@ -216,147 +217,114 @@ class LdapUpdate(object):
 
         await self.update_default_gid(projects_diff_add, projects_diff_del, user, ldap_user)
 
-    async def user_active_deactive(self, user, ldap_user=None, ldap_conn=None):
-        if self.confopts['ldap']['mode'] == 'flat':
-            if user.is_active == False and user.is_deactivated == False:
-                ldap_user[0].change_attribute('loginShell', bonsai.LDAPModOp.REPLACE, self.confopts['usersetup']['noshell'])
-                await ldap_user[0].modify()
-                self.logger.info(f"Deactivating {user.username_api}, setting disabled shell={self.confopts['usersetup']['noshell']}")
-                user.is_deactivated = True
-                user.mail_is_deactivated = True
+    async def _user_active_deactive_flat(self, user, ldap_user):
+        if user.is_active == False and user.is_deactivated == False:
+            ldap_user[0].change_attribute('loginShell', bonsai.LDAPModOp.REPLACE, self.confopts['usersetup']['noshell'])
+            await ldap_user[0].modify()
+            self.logger.info(f"Deactivating {user.username_api}, setting disabled shell={self.confopts['usersetup']['noshell']}")
+            user.is_deactivated = True
+            user.mail_is_deactivated = True
 
-            if user.is_active == True and user.is_deactivated == True:
-                ldap_user[0].change_attribute('loginShell', bonsai.LDAPModOp.REPLACE, '/bin/bash')
-                await ldap_user[0].modify()
+        if user.is_active == True and user.is_deactivated == True:
+            ldap_user[0].change_attribute('loginShell', bonsai.LDAPModOp.REPLACE, '/bin/bash')
+            await ldap_user[0].modify()
+            self.logger.info(f"Activating {user.username_api}, setting default shell=/bin/bash")
+            user.is_deactivated = False
+            user.mail_is_activated = True
 
-                self.logger.info(f"Activating {user.username_api}, setting default shell=/bin/bash")
-                user.is_deactivated = False
-                user.mail_is_activated = True
-        else:
-            if user.is_deactivated_project:
-                for proj in user.is_deactivated_project:
-                    if not user.is_deactivated_project[proj]:
-                        ldap_user = await ldap_conn.search(f"cn={user.username_api},ou=People,o=PROJECT-{proj},{self.confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
-                        ldap_user[0].change_attribute('loginShell', bonsai.LDAPModOp.REPLACE, self.confopts['usersetup']['noshell'])
-                        await ldap_user[0].modify()
-                        self.logger.info(f"Deactivating {user.username_api} for {proj}, setting disabled shell={self.confopts['usersetup']['noshell']}")
-                        user.is_deactivated_project[proj] = True
-                        user.mail_project_is_deactivated[proj] = False
-            if user.is_activated_project:
-                for proj in user.is_activated_project:
-                    if not user.is_activated_project[proj]:
-                        ldap_user = await ldap_conn.search(f"cn={user.username_api},ou=People,o=PROJECT-{proj},{self.confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
-                        ldap_user[0].change_attribute('loginShell', bonsai.LDAPModOp.REPLACE, '/bin/bash')
-                        await ldap_user[0].modify()
-                        self.logger.info(f"Activating {user.username_api} for {proj}, setting default shell=/bin/bash")
-                        user.is_activated_project[proj] = True
-                        user.mail_project_is_activated[proj] = False
-                        user.is_deactivated = False
-            if user.is_active == False and user.is_deactivated == False:
-                for proj in await user.awaitable_attrs.project:
-                    ldap_user = await ldap_conn.search(f"cn={user.username_api},ou=People,o=PROJECT-{proj.identifier},{self.confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
+    async def _user_active_deactive_project_org(self, user, ldap_conn):
+        if user.is_deactivated_project:
+            for proj in user.is_deactivated_project:
+                if not user.is_deactivated_project[proj]:
+                    ldap_user = await ldap_conn.search(f"cn={user.username_api},ou=People,o=PROJECT-{proj},{self.confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
                     ldap_user[0].change_attribute('loginShell', bonsai.LDAPModOp.REPLACE, self.confopts['usersetup']['noshell'])
                     await ldap_user[0].modify()
-                    self.logger.info(f"user.is_active=0, deactivating {user.username_api} for {proj.identifier}, setting disabled shell={self.confopts['usersetup']['noshell']}")
-                    user.is_deactivated_project[proj.identifier] = True
-                    user.mail_project_is_deactivated[proj.identifier] = False
-                    user.is_deactivated = True
+                    self.logger.info(f"Deactivating {user.username_api} for {proj}, setting disabled shell={self.confopts['usersetup']['noshell']}")
+                    user.is_deactivated_project[proj] = True
+                    user.mail_project_is_deactivated[proj] = False
+        if user.is_activated_project:
+            for proj in user.is_activated_project:
+                if not user.is_activated_project[proj]:
+                    ldap_user = await ldap_conn.search(f"cn={user.username_api},ou=People,o=PROJECT-{proj},{self.confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
+                    ldap_user[0].change_attribute('loginShell', bonsai.LDAPModOp.REPLACE, '/bin/bash')
+                    await ldap_user[0].modify()
+                    self.logger.info(f"Activating {user.username_api} for {proj}, setting default shell=/bin/bash")
+                    user.is_activated_project[proj] = True
+                    user.mail_project_is_activated[proj] = False
+                    user.is_deactivated = False
+        if user.is_active == False and user.is_deactivated == False:
+            for proj in await user.awaitable_attrs.project:
+                ldap_user = await ldap_conn.search(f"cn={user.username_api},ou=People,o=PROJECT-{proj.identifier},{self.confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
+                ldap_user[0].change_attribute('loginShell', bonsai.LDAPModOp.REPLACE, self.confopts['usersetup']['noshell'])
+                await ldap_user[0].modify()
+                self.logger.info(f"user.is_active=0, deactivating {user.username_api} for {proj.identifier}, setting disabled shell={self.confopts['usersetup']['noshell']}")
+                user.is_deactivated_project[proj.identifier] = True
+                user.mail_project_is_deactivated[proj.identifier] = False
+                user.is_deactivated = True
 
-    async def user_key_update(self, user, ldap_user, identifier=None):
-        """
-            check if sshkeys are added or removed
-        """
-        keys_diff_add, keys_diff_del = set(), set()
-        keys_db = [key.fingerprint for key in await user.awaitable_attrs.sshkey]
+    async def user_active_deactive(self, user, ldap_user=None, ldap_conn=None):
+        if self.project_org:
+            await self._user_active_deactive_project_org(user, ldap_conn)
+        else:
+            await self._user_active_deactive_flat(user, ldap_user)
+
+    async def _resolve_target_key(self, user, key):
+        """Look up an SshKey by fingerprint, handling duplicate fingerprints."""
+        try:
+            stmt = select(SshKey).where(
+                and_(
+                    SshKey.fingerprint == key,
+                    SshKey.uid_api == user.uid_api,
+                )
+            )
+            target_key = await self.dbsession.execute(stmt)
+            return target_key.scalars().one()
+        except MultipleResultsFound:
+            try:
+                stmt = select(SshKey).where(
+                    and_(
+                        SshKey.fingerprint == key,
+                        SshKey.user_id == user.id,
+                    )
+                )
+                target_key = await self.dbsession.execute(stmt)
+                return target_key.scalars().one()
+            except NoResultFound:
+                stmt = select(SshKey).where(
+                    and_(
+                        SshKey.fingerprint == key,
+                        SshKey.user_id == None
+                    )
+                )
+                target_key = await self.dbsession.execute(stmt)
+                return target_key.scalars().one()
+
+    async def _user_key_update_flat(self, user, ldap_user, keys_db):
         keys_diff_add = set(user.sshkeys_api).difference(set(keys_db))
         if keys_diff_add:
             for key in keys_diff_add:
-                try:
-                    stmt = select(SshKey).where(
-                        and_(
-                            SshKey.fingerprint == key,
-                            SshKey.uid_api == user.uid_api,
-                        )
-                    )
-                    target_key = await self.dbsession.execute(stmt)
-                    target_key = target_key.scalars().one()
-                except MultipleResultsFound:
-                    try:
-                        stmt = select(SshKey).where(
-                            and_(
-                                SshKey.fingerprint == key,
-                                SshKey.user_id == user.id,
-                            )
-                        )
-                        target_key = await self.dbsession.execute(stmt)
-                        target_key = target_key.scalars().one()
-                    except NoResultFound:
-                        stmt = select(SshKey).where(
-                            and_(
-                                SshKey.fingerprint == key,
-                                SshKey.user_id == None
-                            )
-                        )
-                        target_key = await self.dbsession.execute(stmt)
-                        target_key = target_key.scalars().one()
+                target_key = await self._resolve_target_key(user, key)
                 user_sshkey = await user.awaitable_attrs.sshkey
-                if self.confopts['ldap']['mode'] == 'project_organisation':
-                    # update (user,sshkey) relation only at the end (last project)
-                    # ensuring that SSH keys will be propagated for all LDAP
-                    # subtrees/projects
-                    if identifier == user.projects_api[-1]:
-                        user_sshkey.append(target_key)
-                else:
-                    user_sshkey.append(target_key)
+                user_sshkey.append(target_key)
                 if f'ADD:{target_key.name}' not in user.mail_name_sshkey:
                     user.mail_name_sshkey.append(f'ADD:{target_key.name}')
-                if self.confopts['ldap']['mode'] == 'project_organisation':
-                    mp = user.mail_project_is_sshkeyadded
-                    for prj in mp.keys():
-                        if mp[prj]:
-                            mp[prj] = False
-                    user.mail_project_is_sshkeyadded = mp
-                else:
-                    user.mail_is_sshkeyadded = False
-                if self.confopts['ldap']['mode'] == 'project_organisation':
-                    self.logger.info(f"Added key {target_key.name} for user {user.person_uniqueid},{identifier}")
-                else:
-                    self.logger.info(f"Added key {target_key.name} for user {user.person_uniqueid}")
+                user.mail_is_sshkeyadded = False
+                self.logger.info(f"Added key {target_key.name} for user {user.person_uniqueid}")
 
         keys_diff_del = set(keys_db).difference(set(user.sshkeys_api))
         if keys_diff_del:
             for key in keys_diff_del:
                 stmt = select(SshKey).where(
-                    and_(
-                        SshKey.uid_api == user.uid_api,
-                        SshKey.fingerprint == key
-                    )
+                    and_(SshKey.uid_api == user.uid_api, SshKey.fingerprint == key)
                 )
                 target_key = await self.dbsession.execute(stmt)
                 target_key = target_key.scalars().one()
                 user_target_key = await user.awaitable_attrs.sshkey
-                if self.confopts['ldap']['mode'] == 'project_organisation':
-                    # update (user,sshkey) relation only at the end (last project)
-                    # ensuring that SSH keys will be propagated for all LDAP
-                    # subtrees/projects
-                    if identifier == user.projects_api[-1]:
-                        user_target_key.remove(target_key)
-                else:
-                    user_target_key.remove(target_key)
+                user_target_key.remove(target_key)
                 if f'DEL:{target_key.name}' not in user.mail_name_sshkey:
                     user.mail_name_sshkey.append(f'DEL:{target_key.name}')
-                if self.confopts['ldap']['mode'] == 'project_organisation':
-                    mp = user.mail_project_is_sshkeyremoved
-                    for prj in mp.keys():
-                        if mp[prj]:
-                            mp[prj] = False
-                    user.mail_project_is_sshkeyremoved = mp
-                else:
-                    user.mail_is_sshkeyremoved = False
-                if self.confopts['ldap']['mode'] == 'project_organisation':
-                    self.logger.info(f"Removed key {target_key.name} for user {user.person_uniqueid},{identifier}")
-                else:
-                    self.logger.info(f"Removed key {target_key.name} for user {user.person_uniqueid}")
+                user.mail_is_sshkeyremoved = False
+                self.logger.info(f"Removed key {target_key.name} for user {user.person_uniqueid}")
 
         if keys_diff_add or keys_diff_del:
             updated_keys = [sshkey.public_key for sshkey in user.sshkey]
@@ -366,14 +334,70 @@ class LdapUpdate(object):
                 ldap_user[0].change_attribute('sshPublicKey', bonsai.LDAPModOp.REPLACE, *updated_keys)
             await ldap_user[0].modify()
             self.dbsession.add(user)
-            if self.confopts['ldap']['mode'] == 'project_organisation':
-                self.logger.info(f"User {user.person_uniqueid},{identifier} LDAP SSH keys updated")
+            self.logger.info(f"User {user.person_uniqueid} LDAP SSH keys updated")
+
+    async def _user_key_update_project_org(self, user, ldap_user, keys_db, identifier):
+        keys_diff_add = set(user.sshkeys_api).difference(set(keys_db))
+        if keys_diff_add:
+            for key in keys_diff_add:
+                target_key = await self._resolve_target_key(user, key)
+                user_sshkey = await user.awaitable_attrs.sshkey
+                # update (user,sshkey) relation only at the end (last project)
+                # ensuring that SSH keys will be propagated for all LDAP subtrees/projects
+                if identifier == user.projects_api[-1]:
+                    user_sshkey.append(target_key)
+                if f'ADD:{target_key.name}' not in user.mail_name_sshkey:
+                    user.mail_name_sshkey.append(f'ADD:{target_key.name}')
+                mp = user.mail_project_is_sshkeyadded
+                for prj in mp.keys():
+                    if mp[prj]:
+                        mp[prj] = False
+                user.mail_project_is_sshkeyadded = mp
+                self.logger.info(f"Added key {target_key.name} for user {user.person_uniqueid},{identifier}")
+
+        keys_diff_del = set(keys_db).difference(set(user.sshkeys_api))
+        if keys_diff_del:
+            for key in keys_diff_del:
+                stmt = select(SshKey).where(
+                    and_(SshKey.uid_api == user.uid_api, SshKey.fingerprint == key)
+                )
+                target_key = await self.dbsession.execute(stmt)
+                target_key = target_key.scalars().one()
+                user_target_key = await user.awaitable_attrs.sshkey
+                # update (user,sshkey) relation only at the end (last project)
+                # ensuring that SSH keys will be propagated for all LDAP subtrees/projects
+                if identifier == user.projects_api[-1]:
+                    user_target_key.remove(target_key)
+                if f'DEL:{target_key.name}' not in user.mail_name_sshkey:
+                    user.mail_name_sshkey.append(f'DEL:{target_key.name}')
+                mp = user.mail_project_is_sshkeyremoved
+                for prj in mp.keys():
+                    if mp[prj]:
+                        mp[prj] = False
+                user.mail_project_is_sshkeyremoved = mp
+                self.logger.info(f"Removed key {target_key.name} for user {user.person_uniqueid},{identifier}")
+
+        if keys_diff_add or keys_diff_del:
+            updated_keys = [sshkey.public_key for sshkey in user.sshkey]
+            if len(updated_keys) == 0:
+                ldap_user[0].change_attribute('sshPublicKey', bonsai.LDAPModOp.REPLACE, '')
             else:
-                self.logger.info(f"User {user.person_uniqueid} LDAP SSH keys updated")
+                ldap_user[0].change_attribute('sshPublicKey', bonsai.LDAPModOp.REPLACE, *updated_keys)
+            await ldap_user[0].modify()
+            self.dbsession.add(user)
+            self.logger.info(f"User {user.person_uniqueid},{identifier} LDAP SSH keys updated")
+
+    async def user_key_update(self, user, ldap_user, identifier=None):
+        """Check if sshkeys are added or removed and sync to LDAP."""
+        keys_db = [key.fingerprint for key in await user.awaitable_attrs.sshkey]
+        if self.project_org:
+            await self._user_key_update_project_org(user, ldap_user, keys_db, identifier)
+        else:
+            await self._user_key_update_flat(user, ldap_user, keys_db)
 
     async def new_group_ldap_add(self, project):
         async with self.client.connect(is_async=True) as conn:
-            if self.confopts['ldap']['mode'] == 'flat':
+            if not self.project_org:
                 ldap_project = bonsai.LDAPEntry(f"cn={project.identifier},ou=Group,{self.confopts['ldap']['basedn']}")
             else:
                 ldap_project = bonsai.LDAPEntry(f"cn={project.identifier},ou=Group,o=PROJECT-{project.identifier},{self.confopts['ldap']['basedn']}")
@@ -437,93 +461,127 @@ class LdapUpdate(object):
                     self.logger.info(f"Created resource group {gr} with gid={ldap_gid}")
                     numgroup += 1
 
+    async def _run_dry_flat(self, users, projects):
+        for user in users:
+            if not user.username_api:
+                continue
+
+            projects_db = [pr.identifier for pr in await user.awaitable_attrs.project]
+            projects_diff_add = set(user.projects_api).difference(set(projects_db))
+            projects_diff_del = set(projects_db).difference(set(user.projects_api))
+
+            if not user.is_opened:
+                self.logger.info(f"DRY-RUN: would create LDAP user {user.username_api} uid={user.ldap_uid} gid={user.ldap_gid} home={self.confopts['usersetup']['homeprefix']}{user.username_api}")
+
+            if projects_diff_add:
+                for project in projects_diff_add:
+                    self.logger.info(f"DRY-RUN: would add user {user.person_uniqueid} to project {project}")
+            if projects_diff_del:
+                for project in projects_diff_del:
+                    self.logger.info(f"DRY-RUN: would remove user {user.person_uniqueid} from project {project}")
+
+            target_gid = await self.find_target_gid(user)
+            if target_gid != user.ldap_gid and not user.is_staff:
+                self.logger.info(f"DRY-RUN: would update {user.person_uniqueid} gidNumber {user.ldap_gid} -> {target_gid}")
+            if target_gid and target_gid != user.ldap_gid and user.is_deactivated and not user.is_staff:
+                self.logger.info(f"DRY-RUN: would update re-activated {user.person_uniqueid} gidNumber to {target_gid}")
+
+            if user.is_active == False and user.is_deactivated == False:
+                self.logger.info(f"DRY-RUN: would deactivate {user.username_api}, setting shell={self.confopts['usersetup']['noshell']}")
+            if user.is_active == True and user.is_deactivated == True:
+                self.logger.info(f"DRY-RUN: would activate {user.username_api}, setting shell=/bin/bash")
+
+            keys_db = [key.fingerprint for key in await user.awaitable_attrs.sshkey]
+            keys_diff_add = set(user.sshkeys_api).difference(set(keys_db))
+            keys_diff_del = set(keys_db).difference(set(user.sshkeys_api))
+            if keys_diff_add:
+                self.logger.info(f"DRY-RUN: would add {len(keys_diff_add)} SSH key(s) for {user.person_uniqueid}")
+            if keys_diff_del:
+                self.logger.info(f"DRY-RUN: would remove {len(keys_diff_del)} SSH key(s) for {user.person_uniqueid}")
+
+        for project in projects:
+            project_users = [u.username_api for u in await project.awaitable_attrs.user]
+            self.logger.info(f"DRY-RUN: would sync LDAP group cn={project.identifier} members=[{', '.join(project_users)}]")
+
+        all_usernames = [user.username_api for user in users]
+        self.logger.info(f"DRY-RUN: would sync default group hpc-users with {len(all_usernames)} members")
+        for gr in self.confopts['usersetup']['resource_groups']:
+            res_users = []
+            for user in users:
+                for project in user.project:
+                    for rt in project.staff_resources_type_api:
+                        if f"HPC-{rt}" == gr.upper():
+                            res_users.append(user.username_api)
+                            break
+            self.logger.info(f"DRY-RUN: would sync resource group {gr} with {len(res_users)} members: [{', '.join(res_users)}]")
+
+    async def _run_dry_project_org(self, users, projects):
+        for user in users:
+            if not user.username_api:
+                continue
+
+            projects_db = [pr.identifier for pr in await user.awaitable_attrs.project]
+            projects_diff_add = set(user.projects_api).difference(set(projects_db))
+            projects_diff_del = set(projects_db).difference(set(user.projects_api))
+
+            if not user.is_opened:
+                self.logger.info(f"DRY-RUN: would create LDAP user {user.username_api} uid={user.ldap_uid} gid={user.ldap_gid} home={self.confopts['usersetup']['homeprefix']}{user.username_api}")
+                for identifier in user.projects_api:
+                    self.logger.info(f"DRY-RUN: would create LDAP user {user.username_api} in PROJECT-{identifier}")
+
+            if projects_diff_add:
+                for project in projects_diff_add:
+                    self.logger.info(f"DRY-RUN: would add user {user.person_uniqueid} to project {project}")
+            if projects_diff_del:
+                for project in projects_diff_del:
+                    self.logger.info(f"DRY-RUN: would remove user {user.person_uniqueid} from project {project}")
+
+            target_gid = await self.find_target_gid(user)
+            if target_gid != user.ldap_gid and not user.is_staff:
+                self.logger.info(f"DRY-RUN: would update {user.person_uniqueid} gidNumber {user.ldap_gid} -> {target_gid}")
+            if target_gid and target_gid != user.ldap_gid and user.is_deactivated and not user.is_staff:
+                self.logger.info(f"DRY-RUN: would update re-activated {user.person_uniqueid} gidNumber to {target_gid}")
+
+            if user.is_deactivated_project:
+                for proj in user.is_deactivated_project:
+                    if not user.is_deactivated_project[proj]:
+                        self.logger.info(f"DRY-RUN: would deactivate {user.username_api} for {proj}, setting shell={self.confopts['usersetup']['noshell']}")
+            if user.is_activated_project:
+                for proj in user.is_activated_project:
+                    if not user.is_activated_project[proj]:
+                        self.logger.info(f"DRY-RUN: would activate {user.username_api} for {proj}, setting shell=/bin/bash")
+            if user.is_active == False and user.is_deactivated == False:
+                for proj in await user.awaitable_attrs.project:
+                    self.logger.info(f"DRY-RUN: would deactivate {user.username_api} for {proj.identifier}, setting shell={self.confopts['usersetup']['noshell']}")
+
+            keys_db = [key.fingerprint for key in await user.awaitable_attrs.sshkey]
+            keys_diff_add = set(user.sshkeys_api).difference(set(keys_db))
+            keys_diff_del = set(keys_db).difference(set(user.sshkeys_api))
+            if keys_diff_add:
+                self.logger.info(f"DRY-RUN: would add {len(keys_diff_add)} SSH key(s) for {user.person_uniqueid}")
+            if keys_diff_del:
+                self.logger.info(f"DRY-RUN: would remove {len(keys_diff_del)} SSH key(s) for {user.person_uniqueid}")
+
+        for project in projects:
+            project_users = [u.username_api for u in await project.awaitable_attrs.user]
+            self.logger.info(f"DRY-RUN: would sync LDAP group cn={project.identifier} in PROJECT-{project.identifier} members=[{', '.join(project_users)}]")
+
     async def run_dry(self):
         try:
             stmt = select(User)
             users = await self.dbsession.execute(stmt)
             users = users.scalars().all()
-
             self.logger.info(f"DRY-RUN: {len(users)} users in cache DB")
-
-            for user in users:
-                if not user.username_api:
-                    continue
-
-                projects_db = [pr.identifier for pr in await user.awaitable_attrs.project]
-                projects_diff_add = set(user.projects_api).difference(set(projects_db))
-                projects_diff_del = set(projects_db).difference(set(user.projects_api))
-
-                if not user.is_opened:
-                    self.logger.info(f"DRY-RUN: would create LDAP user {user.username_api} uid={user.ldap_uid} gid={user.ldap_gid} home={self.confopts['usersetup']['homeprefix']}{user.username_api}")
-                    if self.confopts['ldap']['mode'] == 'project_organisation':
-                        for identifier in user.projects_api:
-                            self.logger.info(f"DRY-RUN: would create LDAP user {user.username_api} in PROJECT-{identifier}")
-
-                if projects_diff_add:
-                    for project in projects_diff_add:
-                        self.logger.info(f"DRY-RUN: would add user {user.person_uniqueid} to project {project}")
-
-                if projects_diff_del:
-                    for project in projects_diff_del:
-                        self.logger.info(f"DRY-RUN: would remove user {user.person_uniqueid} from project {project}")
-
-                target_gid = await self.find_target_gid(user)
-                if target_gid != user.ldap_gid and not user.is_staff:
-                    self.logger.info(f"DRY-RUN: would update {user.person_uniqueid} gidNumber {user.ldap_gid} -> {target_gid}")
-                if target_gid and target_gid != user.ldap_gid and user.is_deactivated and not user.is_staff:
-                    self.logger.info(f"DRY-RUN: would update re-activated {user.person_uniqueid} gidNumber to {target_gid}")
-
-                if self.confopts['ldap']['mode'] == 'flat':
-                    if user.is_active == False and user.is_deactivated == False:
-                        self.logger.info(f"DRY-RUN: would deactivate {user.username_api}, setting shell={self.confopts['usersetup']['noshell']}")
-                    if user.is_active == True and user.is_deactivated == True:
-                        self.logger.info(f"DRY-RUN: would activate {user.username_api}, setting shell=/bin/bash")
-                else:
-                    if user.is_deactivated_project:
-                        for proj in user.is_deactivated_project:
-                            if not user.is_deactivated_project[proj]:
-                                self.logger.info(f"DRY-RUN: would deactivate {user.username_api} for {proj}, setting shell={self.confopts['usersetup']['noshell']}")
-                    if user.is_activated_project:
-                        for proj in user.is_activated_project:
-                            if not user.is_activated_project[proj]:
-                                self.logger.info(f"DRY-RUN: would activate {user.username_api} for {proj}, setting shell=/bin/bash")
-                    if user.is_active == False and user.is_deactivated == False:
-                        for proj in await user.awaitable_attrs.project:
-                            self.logger.info(f"DRY-RUN: would deactivate {user.username_api} for {proj.identifier}, setting shell={self.confopts['usersetup']['noshell']}")
-
-                keys_db = [key.fingerprint for key in await user.awaitable_attrs.sshkey]
-                keys_diff_add = set(user.sshkeys_api).difference(set(keys_db))
-                keys_diff_del = set(keys_db).difference(set(user.sshkeys_api))
-                if keys_diff_add:
-                    self.logger.info(f"DRY-RUN: would add {len(keys_diff_add)} SSH key(s) for {user.person_uniqueid}")
-                if keys_diff_del:
-                    self.logger.info(f"DRY-RUN: would remove {len(keys_diff_del)} SSH key(s) for {user.person_uniqueid}")
 
             stmt = select(Project)
             projects = await self.dbsession.execute(stmt)
             projects = projects.scalars().all()
-
             self.logger.info(f"DRY-RUN: {len(projects)} projects in cache DB")
 
-            for project in projects:
-                project_users = [u.username_api for u in await project.awaitable_attrs.user]
-                if self.confopts['ldap']['mode'] == 'project_organisation':
-                    self.logger.info(f"DRY-RUN: would sync LDAP group cn={project.identifier} in PROJECT-{project.identifier} members=[{', '.join(project_users)}]")
-                else:
-                    self.logger.info(f"DRY-RUN: would sync LDAP group cn={project.identifier} members=[{', '.join(project_users)}]")
-
-            if self.confopts['ldap']['mode'] == 'flat':
-                all_usernames = [user.username_api for user in users]
-                self.logger.info(f"DRY-RUN: would sync default group hpc-users with {len(all_usernames)} members")
-                for gr in self.confopts['usersetup']['resource_groups']:
-                    res_users = []
-                    for user in users:
-                        for project in user.project:
-                            for rt in project.staff_resources_type_api:
-                                if f"HPC-{rt}" == gr.upper():
-                                    res_users.append(user.username_api)
-                                    break
-                    self.logger.info(f"DRY-RUN: would sync resource group {gr} with {len(res_users)} members: [{', '.join(res_users)}]")
+            if self.project_org:
+                await self._run_dry_project_org(users, projects)
+            else:
+                await self._run_dry_flat(users, projects)
 
         except asyncio.CancelledError as exc:
             self.logger.info('* Cancelling ldapupdate...')
@@ -531,6 +589,68 @@ class LdapUpdate(object):
 
         finally:
             await self.dbsession.close()
+
+    async def _run_flat(self, users):
+        loop = asyncio.get_event_loop()
+        tasks = [self.create_resource_groups(), self.create_default_groups()]
+        ret_create_groups = await asyncio.gather(*tasks, loop=loop, return_exceptions=True)
+        exc_raised, exc = contains_exception(ret_create_groups)
+        if exc_raised:
+            self.logger.error(f"Error creating default and resource groups - {repr(exc)}")
+            raise AhTaskError
+
+        for user in users:
+            if not user.username_api:
+                continue
+            async with self.client.connect(is_async=True, timeout=None) as conn:
+                ldap_user = await conn.search(f"cn={user.username_api},ou=People,{self.confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
+                try:
+                    if not ldap_user or not user.is_opened:
+                        ldap_user = await self.new_user_ldap_add(user, conn)
+                        await self.user_sync_api_db(user, [ldap_user])
+                        await self.user_active_deactive(user, [ldap_user])
+                        await self.user_key_update(user, [ldap_user])
+                    else:
+                        await self.user_sync_api_db(user, ldap_user)
+                        await self.user_active_deactive(user, ldap_user)
+                        await self.user_key_update(user, ldap_user)
+                    user.is_opened = True
+                except bonsai.errors.AlreadyExists as exc:
+                    self.logger.warning(f'LDAP user {user.username_api} - {repr(exc)}')
+                    await self.user_sync_api_db(user, ldap_user)
+                    await self.user_active_deactive(user, ldap_user)
+                    await self.user_key_update(user, ldap_user)
+                    user.is_opened = True
+                except bonsai.errors.LDAPError as exc:
+                    self.logger.error(f'Error adding/updating LDAP user {user.username_api} - {repr(exc)}')
+
+    async def _run_project_org(self, users):
+        for user in users:
+            if not user.username_api:
+                continue
+            async with self.client.connect(is_async=True) as conn:
+                for identifier in user.projects_api:
+                    ldap_org_proj = await conn.search(f"o=PROJECT-{identifier},{self.confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
+                    if not ldap_org_proj:
+                        await self.new_organisation_project(identifier)
+                    ldap_user = await conn.search(f"cn={user.username_api},ou=People,o=PROJECT-{identifier},{self.confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
+                    try:
+                        if not ldap_user or not user.is_opened:
+                            ldap_user = await self.new_user_ldap_add(user, conn, identifier)
+                            await self.user_sync_api_db(user, [ldap_user])
+                            await self.user_key_update(user, [ldap_user], identifier)
+                        else:
+                            await self.user_sync_api_db(user, ldap_user)
+                            await self.user_key_update(user, ldap_user, identifier)
+                        user.is_opened = True
+                    except bonsai.errors.AlreadyExists as exc:
+                        self.logger.warning(f'LDAP user {user.username_api} - {repr(exc)}')
+                        await self.user_sync_api_db(user, ldap_user)
+                        await self.user_key_update(user, ldap_user)
+                        user.is_opened = True
+                    except bonsai.errors.LDAPError as exc:
+                        self.logger.error(f'Error adding/updating LDAP user {user.username_api} - {repr(exc)}')
+                await self.user_active_deactive(user, ldap_conn=conn)
 
     async def run(self):
         if self.dry_run:
@@ -541,65 +661,10 @@ class LdapUpdate(object):
             users = await self.dbsession.execute(stmt)
             users = users.scalars().all()
 
-            # default and resource groups are created only for flat hierarchies
-            if self.confopts['ldap']['mode'] == 'flat':
-                loop = asyncio.get_event_loop()
-                tasks = [self.create_resource_groups(), self.create_default_groups()]
-                ret_create_groups = await asyncio.gather(*tasks, loop=loop, return_exceptions=True)
-                exc_raised, exc = contains_exception(ret_create_groups)
-                if exc_raised:
-                    self.logger.error(f"Error creating default and resource groups - {repr(exc)}")
-                    raise AhTaskError
-
-            for user in users:
-                if not user.username_api:
-                    continue
-                if self.confopts['ldap']['mode'] == 'flat':
-                    async with self.client.connect(is_async=True, timeout=None) as conn:
-                        ldap_user = await conn.search(f"cn={user.username_api},ou=People,{self.confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
-                        try:
-                            if not ldap_user or not user.is_opened:
-                                ldap_user = await self.new_user_ldap_add(user, conn)
-                                await self.user_sync_api_db(user, [ldap_user])
-                                await self.user_active_deactive(user, [ldap_user])
-                                await self.user_key_update(user, [ldap_user])
-                            else:
-                                await self.user_sync_api_db(user, ldap_user)
-                                await self.user_active_deactive(user, ldap_user)
-                                await self.user_key_update(user, ldap_user)
-                            user.is_opened = True
-                        except bonsai.errors.AlreadyExists as exc:
-                            self.logger.warning(f'LDAP user {user.username_api} - {repr(exc)}')
-                            await self.user_sync_api_db(user, ldap_user)
-                            await self.user_active_deactive(user, ldap_user)
-                            await self.user_key_update(user, ldap_user)
-                            user.is_opened = True
-                        except bonsai.errors.LDAPError as exc:
-                            self.logger.error(f'Error adding/updating LDAP user {user.username_api} - {repr(exc)}')
-                else:
-                    async with self.client.connect(is_async=True) as conn:
-                        for identifier in user.projects_api:
-                            ldap_org_proj = await conn.search(f"o=PROJECT-{identifier},{self.confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
-                            if not ldap_org_proj:
-                                await self.new_organisation_project(identifier)
-                            ldap_user = await conn.search(f"cn={user.username_api},ou=People,o=PROJECT-{identifier},{self.confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
-                            try:
-                                if not ldap_user or not user.is_opened:
-                                    ldap_user = await self.new_user_ldap_add(user, conn, identifier)
-                                    await self.user_sync_api_db(user, [ldap_user])
-                                    await self.user_key_update(user, [ldap_user], identifier)
-                                else:
-                                    await self.user_sync_api_db(user, ldap_user)
-                                    await self.user_key_update(user, ldap_user, identifier)
-                                user.is_opened = True
-                            except bonsai.errors.AlreadyExists as exc:
-                                self.logger.warning(f'LDAP user {user.username_api} - {repr(exc)}')
-                                await self.user_sync_api_db(user, ldap_user)
-                                await self.user_key_update(user, ldap_user)
-                                user.is_opened = True
-                            except bonsai.errors.LDAPError as exc:
-                                self.logger.error(f'Error adding/updating LDAP user {user.username_api} - {repr(exc)}')
-                        await self.user_active_deactive(user, ldap_conn=conn)
+            if self.project_org:
+                await self._run_project_org(users)
+            else:
+                await self._run_flat(users)
 
             stmt = select(Project)
             projects = await self.dbsession.execute(stmt)
@@ -607,10 +672,10 @@ class LdapUpdate(object):
 
             async with self.client.connect(is_async=True) as conn:
                 for project in projects:
-                    if self.confopts['ldap']['mode'] == 'flat':
-                        ldap_project = await conn.search(f"cn={project.identifier},ou=Group,{self.confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
-                    else:
+                    if self.project_org:
                         ldap_project = await conn.search(f"cn={project.identifier},ou=Group,o=PROJECT-{project.identifier},{self.confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
+                    else:
+                        ldap_project = await conn.search(f"cn={project.identifier},ou=Group,{self.confopts['ldap']['basedn']}", bonsai.LDAPSearchScope.SUBTREE)
                     try:
                         if not ldap_project:
                             ldap_project = await self.new_group_ldap_add(project)
@@ -620,17 +685,12 @@ class LdapUpdate(object):
                     except bonsai.errors.LDAPError as exc:
                         self.logger.error(f'Error adding/updating LDAP group {project.identifier} - {repr(exc)}')
 
-            if self.confopts['ldap']['mode'] == 'flat':
-                # handle default groups associations
+            if not self.project_org:
                 task_update_defgroups = asyncio.create_task(self.update_default_groups(users, "hpc-users"))
-                # update_default_groups(self.confopts, conn, self.logger, users, "hpc", onlyops=True)
-
-                # handle resource groups associations
                 tasks_update_resgroups = [
                     asyncio.create_task(self.update_resource_groups(users, gr))
                     for gr in self.confopts['usersetup']['resource_groups']
                 ]
-
                 await task_update_defgroups
                 for task in tasks_update_resgroups:
                     await task
