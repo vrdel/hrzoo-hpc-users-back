@@ -186,7 +186,7 @@ def user_delete(logger, args, session):
         raise SystemExit(1)
 
 
-def user_update(logger, args, session):
+def user_update(logger, args, session, confopts):
     try:
         user = session.query(User).filter(User.username_api == args.username).one()
 
@@ -315,6 +315,26 @@ def user_update(logger, args, session):
                 if k not in user.mail_name_sshkey:
                     user.mail_name_sshkey.append(k)
                     logger.info(f"Added {k} to mail_name_sshkey for {user.username_api}")
+
+        if args.flagactivatedproject:
+            identifier, raw_value = args.flagactivatedproject
+            if confopts['ldap']['mode'] == 'project_organisation':
+                flag = user.is_activated_project
+                flag[identifier] = raw_value != '0'
+                user.is_activated_project = flag
+                logger.info(f"Set is_activated_project[{identifier}]={flag[identifier]} for {user.username_api}")
+            else:
+                logger.warning("--flag-activated-project requires ldap mode project_organisation")
+
+        if args.flagdeactivatedproject:
+            identifier, raw_value = args.flagdeactivatedproject
+            if confopts['ldap']['mode'] == 'project_organisation':
+                flag = user.is_deactivated_project
+                flag[identifier] = raw_value != '0'
+                user.is_deactivated_project = flag
+                logger.info(f"Set is_deactivated_project[{identifier}]={flag[identifier]} for {user.username_api}")
+            else:
+                logger.warning("--flag-deactivated-project requires ldap mode project_organisation")
 
     except NoResultFound:
         logger.error(f"User {args.username} not found")
@@ -793,6 +813,12 @@ def main():
                                required=False, help='Add one or multiple keys to mail_name_sshkey list indicating a key was added')
     parser_update.add_argument('--mailname-sshkey-remove', dest='mailnamesshkeyremove', type=str, nargs='+',
                                required=False, help='Add one or multiple keys to mail_name_sshkey list indicating a key was removed')
+    parser_update.add_argument('--flag-activated-project', dest='flagactivatedproject', type=str, nargs=2,
+                               metavar=('IDENTIFIER', '0/1'), required=False,
+                               help='Set is_activated_project[IDENTIFIER] flag (project_organisation mode only)')
+    parser_update.add_argument('--flag-deactivated-project', dest='flagdeactivatedproject', type=str, nargs=2,
+                               metavar=('IDENTIFIER', '0/1'), required=False,
+                               help='Set is_deactivated_project[IDENTIFIER] flag (project_organisation mode only)')
 
     parser_delete = subparsers.add_parser('delete', help='Delete user metadata')
     parser_delete.add_argument('--username', dest='username', type=str,
@@ -816,7 +842,7 @@ def main():
     args = parser.parse_args()
 
     shared = Shared(sys.argv[0])
-    _ = shared.confopts
+    confopts = shared.confopts
     logger = shared.log[sys.argv[0]].get()
     dbsession = shared.dbsession_sync[sys.argv[0]]
 
@@ -825,7 +851,7 @@ def main():
         key_fingerprint = user_key_add(logger, args, dbsession, new_user, args.pubkey)
         logger.info(f"Created user {args.first} {args.last} with key {key_fingerprint} and added to project {args.project}")
     elif args.command == "update":
-        user_update(logger, args, dbsession)
+        user_update(logger, args, dbsession, confopts)
     elif args.command == "delete":
         user_delete(logger, args, dbsession)
     elif args.command == "list":
