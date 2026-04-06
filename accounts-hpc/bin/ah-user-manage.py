@@ -336,6 +336,19 @@ def user_update(logger, args, session, confopts):
             else:
                 logger.warning("--flag-deactivated-project requires ldap mode project_organisation")
 
+        if args.setactivatedproject:
+            identifier = args.setactivatedproject
+            if confopts['ldap']['mode'] == 'project_organisation':
+                is_activated = user.is_activated_project
+                is_activated[identifier] = False
+                user.is_activated_project = is_activated
+                mail_activated = user.mail_project_is_activated
+                mail_activated[identifier] = False
+                user.mail_project_is_activated = mail_activated
+                logger.info(f"Set is_activated_project[{identifier}]=False and mail_project_is_activated[{identifier}]=False for {user.username_api}")
+            else:
+                logger.warning("--set-activated-project requires ldap mode project_organisation")
+
     except NoResultFound:
         logger.error(f"User {args.username} not found")
         raise SystemExit(1)
@@ -819,6 +832,9 @@ def main():
     parser_update.add_argument('--flag-deactivated-project', dest='flagdeactivatedproject', type=str, nargs=2,
                                metavar=('IDENTIFIER', '0/1'), required=False,
                                help='Set is_deactivated_project[IDENTIFIER] flag (project_organisation mode only)')
+    parser_update.add_argument('--set-activated-project', dest='setactivatedproject', type=str,
+                               metavar='IDENTIFIER', required=False,
+                               help='Trigger LDAP activation and reactivation email for given project by setting is_activated_project and mail_project_is_activated to False (project_organisation mode only)')
 
     parser_delete = subparsers.add_parser('delete', help='Delete user metadata')
     parser_delete.add_argument('--username', dest='username', type=str,
