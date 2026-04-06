@@ -349,6 +349,19 @@ def user_update(logger, args, session, confopts):
             else:
                 logger.warning("--set-activated-project requires ldap mode project_organisation")
 
+        if args.setdeactivatedproject:
+            identifier = args.setdeactivatedproject
+            if confopts['ldap']['mode'] == 'project_organisation':
+                is_deactivated = user.is_deactivated_project
+                is_deactivated[identifier] = False
+                user.is_deactivated_project = is_deactivated
+                mail_deactivated = user.mail_project_is_deactivated
+                mail_deactivated[identifier] = False
+                user.mail_project_is_deactivated = mail_deactivated
+                logger.info(f"Set is_deactivated_project[{identifier}]=False and mail_project_is_deactivated[{identifier}]=False for {user.username_api}")
+            else:
+                logger.warning("--set-deactivated-project requires ldap mode project_organisation")
+
     except NoResultFound:
         logger.error(f"User {args.username} not found")
         raise SystemExit(1)
@@ -835,6 +848,9 @@ def main():
     parser_update.add_argument('--set-activated-project', dest='setactivatedproject', type=str,
                                metavar='IDENTIFIER', required=False,
                                help='Trigger LDAP activation and reactivation email for given project by setting is_activated_project and mail_project_is_activated to False (project_organisation mode only)')
+    parser_update.add_argument('--set-deactivated-project', dest='setdeactivatedproject', type=str,
+                               metavar='IDENTIFIER', required=False,
+                               help='Trigger LDAP deactivation and deactivation email for given project by setting is_deactivated_project and mail_project_is_deactivated to False (project_organisation mode only)')
 
     parser_delete = subparsers.add_parser('delete', help='Delete user metadata')
     parser_delete.add_argument('--username', dest='username', type=str,
