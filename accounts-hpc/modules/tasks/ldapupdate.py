@@ -22,7 +22,7 @@ class LdapUpdate(object):
         self.dbsession = shared.dbsession[caller]
         self.args = args
         self.dry_run = dry_run
-        self.project_org = self.project_org
+        self.project_org = self.confopts['ldap']['mode'].lower() == 'project_organisation'.lower()
 
         if not dry_run:
             try:
