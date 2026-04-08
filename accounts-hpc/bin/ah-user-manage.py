@@ -861,6 +861,12 @@ def main():
     parser_delete.add_argument('--project', dest='project', type=str,
                                required=False, help='Project identifier that user will be removed from')
 
+    parser_justusername = subparsers.add_parser('just-username', help='Print what username would be generated for given first and last name without creating any DB entries')
+    parser_justusername.add_argument('--first', dest='first', type=str,
+                                     required=True, help='First name of user')
+    parser_justusername.add_argument('--last', dest='last', type=str,
+                                     required=True, help='Last name of user')
+
     parser_list = subparsers.add_parser('list', help='List users and their metadata')
     parser_list.add_argument('--username', dest='username', type=str,
                              required=False, help='Username of user')
@@ -888,6 +894,11 @@ def main():
         user_delete(logger, args, dbsession)
     elif args.command == "list":
         user_project_list(logger, args, dbsession)
+    elif args.command == "just-username":
+        first_name = only_alnum(unidecode(args.first))
+        last_name = only_alnum(unidecode(args.last))
+        username = gen_username(first_name, last_name, dbsession)
+        print(username)
 
     if args.flushkeys:
         flush_sshkeys(logger, dbsession)
