@@ -230,9 +230,12 @@ def user_update(logger, args, session, confopts):
             user.person_mail = args.email
             logger.info(f"Update email with {args.email} for user {args.username}")
 
-        if args.staff:
-            user.is_staff = True
-            logger.info(f"Promote user {args.username} to staff")
+        if args.staff is not None:
+            user.is_staff = args.staff > 0
+            if user.is_staff:
+                logger.info(f"Promote user {args.username} to staff")
+            else:
+                logger.info(f"Demote user {args.username} from staff")
 
         if args.nullgid:
             user.ldap_gid = 0
@@ -811,8 +814,8 @@ def main():
                                help='OIB of the user')
     parser_update.add_argument('--uid', dest='uid', type=int, required=False,
                                help='Update UID of the user - be careful')
-    parser_update.add_argument('--staff', dest='staff', action='store_true',
-                               required=False, help='Flag user as staff')
+    parser_update.add_argument('--staff', dest='staff', type=int, metavar='0/1',
+                               required=False, help='Promote (1) or demote (0) user to/from staff')
     parser_update.add_argument('--project', dest='project', type=str,
                                required=False, help='Project identifier that user will be associated to')
     parser_update.add_argument('--flag-dircreated', dest='flagisdircreated', type=int, metavar='0/1',
