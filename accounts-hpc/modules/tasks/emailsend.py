@@ -20,7 +20,7 @@ class SendEmail(object):
         self.args = args
         self.daemon = daemon
         self.dry_run = dry_run
-        self.project_org = self.project_org
+        self.project_org = self.confopts['ldap']['mode'].lower() == 'project_organisation'.lower()
         self.users_opened = set()
         self.users_project_opened = dict()
 
