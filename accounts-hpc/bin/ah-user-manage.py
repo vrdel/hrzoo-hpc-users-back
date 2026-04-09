@@ -50,6 +50,24 @@ def reset_all_flags(logger, args, session):
         users = session.query(User).all()
 
     for user in users:
+        if args.null:
+            user.mail_is_opensend = False
+            user.mail_is_sshkeyadded = False
+            user.mail_is_sshkeyremoved = False
+            user.mail_is_activated = False
+            user.mail_is_deactivated = False
+            user.mail_name_sshkey = []
+            user.is_deactivated = False
+            user.mail_project_is_sshkeyadded = {}
+            user.mail_project_is_sshkeyremoved = {}
+            user.mail_project_is_activated = {}
+            user.mail_project_is_deactivated = {}
+            user.mail_project_is_opensend = {}
+            user.is_activated_project = {}
+            user.is_deactivated_project = {}
+            logger.info(f"Nullified all mail related flags for {user.username_api}")
+            continue
+
         if not user.mail_is_opensend:
             user.mail_is_opensend = True
             logger.info(f"Reset mail_is_opensend flag to True for {user.username_api}")
@@ -69,6 +87,10 @@ def reset_all_flags(logger, args, session):
         if user.mail_is_deactivated:
             user.mail_is_deactivated = False
             logger.info(f"Reset mail_is_deactivated flag to False for {user.username_api}")
+
+        if user.is_deactivated:
+            user.is_deactivated = False
+            logger.info(f"Reset is_deactivated flag to False for {user.username_api}")
 
         sshkeyadded_flag = user.mail_project_is_sshkeyadded
         sshkeyadded_changed = False
@@ -129,6 +151,16 @@ def reset_all_flags(logger, args, session):
         if mail_deactivated_changed:
             user.mail_project_is_deactivated = mail_project_deactivated_flag
             logger.info(f"Reset mail_project_is_deactivated flags to True for {user.username_api}")
+
+        opensend_project_flag = user.mail_project_is_opensend
+        opensend_changed = False
+        for k, v in opensend_project_flag.items():
+            if not v:
+                opensend_project_flag[k] = True
+                opensend_changed = True
+        if opensend_changed:
+            user.mail_project_is_opensend = opensend_project_flag
+            logger.info(f"Reset mail_project_is_opensend flags to True for {user.username_api}")
 
         if len(user.mail_name_sshkey) > 0:
             user.mail_name_sshkey = []
@@ -878,6 +910,8 @@ def main():
     parser_resetallflags = subparsers.add_parser('reset-all-flags', help='Reset all mail flags to sent state suppressing pending emails')
     parser_resetallflags.add_argument('--username', dest='username', type=str,
                                       required=False, help='Username of specific user to reset flags for')
+    parser_resetallflags.add_argument('--null', dest='null', action='store_true',
+                                      required=False, help='Nullify all mail related flags - set to empty values')
 
     parser_list = subparsers.add_parser('list', help='List users and their metadata')
     parser_list.add_argument('--username', dest='username', type=str,
