@@ -39,8 +39,15 @@ def flush_sshkeys(logger, session):
         logger.info('No keys without owner found')
 
 
-def reset_all_flags(logger, session):
-    users = session.query(User).all()
+def reset_all_flags(logger, args, session):
+    if args.username:
+        try:
+            users = [session.query(User).filter(User.username_api == args.username).one()]
+        except NoResultFound:
+            logger.error(f"User {args.username} not found")
+            return
+    else:
+        users = session.query(User).all()
 
     for user in users:
         if not user.mail_is_opensend:
@@ -778,8 +785,6 @@ def main():
                         help='Flush all keys not associated to any user')
     parser.add_argument('--flush-users', dest='flushusers', action='store_true', required=False,
                         help='Flush all users without any keys and projects associated')
-    parser.add_argument('--reset-all-flags', dest='resetallflags', action='store_true', required=False,
-                        help='Reset all mail flags to sent state suppressing pending emails for all users')
     subparsers = parser.add_subparsers(help="User subcommands", dest="command")
 
     parser_create = subparsers.add_parser('create', help='Create user based on passed metadata')
@@ -870,6 +875,10 @@ def main():
     parser_justusername.add_argument('--last', dest='last', type=str,
                                      required=True, help='Last name of user')
 
+    parser_resetallflags = subparsers.add_parser('reset-all-flags', help='Reset all mail flags to sent state suppressing pending emails')
+    parser_resetallflags.add_argument('--username', dest='username', type=str,
+                                      required=False, help='Username of specific user to reset flags for')
+
     parser_list = subparsers.add_parser('list', help='List users and their metadata')
     parser_list.add_argument('--username', dest='username', type=str,
                              required=False, help='Username of user')
@@ -902,15 +911,14 @@ def main():
         last_name = only_alnum(unidecode(args.last))
         username = gen_username(first_name, last_name, dbsession)
         print(username)
+    elif args.command == "reset-all-flags":
+        reset_all_flags(logger, args, dbsession)
 
     if args.flushkeys:
         flush_sshkeys(logger, dbsession)
 
     if args.flushusers:
         flush_users(logger, dbsession)
-
-    if args.resetallflags:
-        reset_all_flags(logger, dbsession)
 
     try:
         dbsession.commit()
