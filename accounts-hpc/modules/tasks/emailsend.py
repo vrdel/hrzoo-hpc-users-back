@@ -20,6 +20,7 @@ class SendEmail(object):
         self.args = args
         self.daemon = daemon
         self.dry_run = dry_run
+        self.project_org = self.confopts['ldap']['mode'].lower() == 'project_organisation'.lower()
         self.users_opened = set()
         self.users_project_opened = dict()
 
@@ -185,54 +186,60 @@ class SendEmail(object):
                 user.mail_is_sshkeyremoved = True
                 user.mail_name_sshkey = [key for key in user.mail_name_sshkey if not key.startswith('DEL:')]
 
+    async def _run_dry_project_org(self, users):
+        for user in users:
+            if user.is_activated_project:
+                for proj in user.is_activated_project:
+                    if not user.is_activated_project[proj]:
+                        self.logger.info(f"DRY-RUN: would send reactivation email to {user.username_api} - {proj} @ {user.person_mail}")
+            if user.mail_project_is_deactivated:
+                for proj in user.mail_project_is_deactivated:
+                    if not user.mail_project_is_deactivated[proj]:
+                        self.logger.info(f"DRY-RUN: would send deactivation email to {user.username_api} - {proj} @ {user.person_mail}")
+            for project in user.mail_project_is_opensend.keys():
+                if user.mail_project_is_opensend[project] == False:
+                    self.logger.info(f"DRY-RUN: would send new account email to {user.username_api} - {project} @ {user.person_mail}")
+            added_keys = [key for key in user.mail_name_sshkey if key.startswith('ADD:')]
+            removed_keys = [key for key in user.mail_name_sshkey if key.startswith('DEL:')]
+            for sshkeyname in added_keys:
+                key_name = sshkeyname.split('ADD:', 1)[1]
+                for project in user.mail_project_is_sshkeyadded.keys():
+                    if user.mail_project_is_sshkeyadded[project] == False:
+                        self.logger.info(f"DRY-RUN: would send added key {key_name} email to {user.username_api} - {project}")
+            for sshkeyname in removed_keys:
+                key_name = sshkeyname.split('DEL:', 1)[1]
+                for project in user.mail_project_is_sshkeyremoved.keys():
+                    if user.mail_project_is_sshkeyremoved[project] == False:
+                        self.logger.info(f"DRY-RUN: would send removed key {key_name} email to {user.username_api} - {project}")
+
+    async def _run_dry_flat(self, users):
+        for user in users:
+            if user.mail_is_activated:
+                self.logger.info(f"DRY-RUN: would send reactivation email to {user.username_api} @ {user.person_mail}")
+            if user.mail_is_deactivated:
+                self.logger.info(f"DRY-RUN: would send deactivation email to {user.username_api} @ {user.person_mail}")
+            if not user.mail_is_opensend:
+                self.logger.info(f"DRY-RUN: would send new account email to {user.username_api} @ {user.person_mail}")
+            if not user.mail_is_sshkeyadded:
+                added_keys = [key for key in user.mail_name_sshkey if key.startswith('ADD:')]
+                for sshkeyname in added_keys:
+                    key_name = sshkeyname.split('ADD:', 1)[1]
+                    self.logger.info(f"DRY-RUN: would send added key {key_name} email to {user.username_api}")
+            if not user.mail_is_sshkeyremoved:
+                removed_keys = [key for key in user.mail_name_sshkey if key.startswith('DEL:')]
+                for sshkeyname in removed_keys:
+                    key_name = sshkeyname.split('DEL:', 1)[1]
+                    self.logger.info(f"DRY-RUN: would send removed key {key_name} email to {user.username_api}")
+
     async def run_dry(self):
         try:
             users = await self.dbsession.execute(select(User))
             users = users.scalars().all()
 
-            if self.confopts['ldap']['mode'] == 'project_organisation':
-                for user in users:
-                    if user.is_activated_project:
-                        for proj in user.is_activated_project:
-                            if not user.is_activated_project[proj]:
-                                self.logger.info(f"DRY-RUN: would send reactivation email to {user.username_api} - {proj} @ {user.person_mail}")
-                    if user.mail_project_is_deactivated:
-                        for proj in user.mail_project_is_deactivated:
-                            if not user.mail_project_is_deactivated[proj]:
-                                self.logger.info(f"DRY-RUN: would send deactivation email to {user.username_api} - {proj} @ {user.person_mail}")
-                    for project in user.mail_project_is_opensend.keys():
-                        if user.mail_project_is_opensend[project] == False:
-                            self.logger.info(f"DRY-RUN: would send new account email to {user.username_api} - {project} @ {user.person_mail}")
-                    added_keys = [key for key in user.mail_name_sshkey if key.startswith('ADD:')]
-                    removed_keys = [key for key in user.mail_name_sshkey if key.startswith('DEL:')]
-                    for sshkeyname in added_keys:
-                        key_name = sshkeyname.split('ADD:', 1)[1]
-                        for project in user.mail_project_is_sshkeyadded.keys():
-                            if user.mail_project_is_sshkeyadded[project] == False:
-                                self.logger.info(f"DRY-RUN: would send added key {key_name} email to {user.username_api} - {project}")
-                    for sshkeyname in removed_keys:
-                        key_name = sshkeyname.split('DEL:', 1)[1]
-                        for project in user.mail_project_is_sshkeyremoved.keys():
-                            if user.mail_project_is_sshkeyremoved[project] == False:
-                                self.logger.info(f"DRY-RUN: would send removed key {key_name} email to {user.username_api} - {project}")
+            if self.project_org:
+                await self._run_dry_project_org(users)
             else:
-                for user in users:
-                    if user.mail_is_activated:
-                        self.logger.info(f"DRY-RUN: would send reactivation email to {user.username_api} @ {user.person_mail}")
-                    if user.mail_is_deactivated:
-                        self.logger.info(f"DRY-RUN: would send deactivation email to {user.username_api} @ {user.person_mail}")
-                    if not user.mail_is_opensend:
-                        self.logger.info(f"DRY-RUN: would send new account email to {user.username_api} @ {user.person_mail}")
-                    if not user.mail_is_sshkeyadded:
-                        added_keys = [key for key in user.mail_name_sshkey if key.startswith('ADD:')]
-                        for sshkeyname in added_keys:
-                            key_name = sshkeyname.split('ADD:', 1)[1]
-                            self.logger.info(f"DRY-RUN: would send added key {key_name} email to {user.username_api}")
-                    if not user.mail_is_sshkeyremoved:
-                        removed_keys = [key for key in user.mail_name_sshkey if key.startswith('DEL:')]
-                        for sshkeyname in removed_keys:
-                            key_name = sshkeyname.split('DEL:', 1)[1]
-                            self.logger.info(f"DRY-RUN: would send removed key {key_name} email to {user.username_api}")
+                await self._run_dry_flat(users)
 
         except asyncio.CancelledError as exc:
             self.logger.info('* Cancelling emailsend...')
@@ -241,92 +248,68 @@ class SendEmail(object):
         finally:
             await self.dbsession.close()
 
+    async def _run_project_org(self):
+        users = await self.dbsession.execute(select(User))
+        users = users.scalars().all()
+
+        for handler in [self._email_project_activate, self._email_project_deactivate, self._email_project_account]:
+            coros = [handler(chunk) for chunk in chunk_list(users)]
+            calrets = await asyncio.gather(*coros, return_exceptions=True)
+            exc_raised, exc = contains_exception(calrets)
+            if exc_raised:
+                raise exc
+
+        await self._email_project_key(users)
+
+    async def _run_flat(self):
+        stmt = select(User).where(User.mail_is_activated == True)
+        users = await self.dbsession.execute(stmt)
+        users = users.scalars().all()
+        coros = [self._email_activate(chunk) for chunk in chunk_list(users)]
+        calrets = await asyncio.gather(*coros, return_exceptions=True)
+        exc_raised, exc = contains_exception(calrets)
+        if exc_raised:
+            raise exc
+
+        stmt = select(User).where(User.mail_is_deactivated == True)
+        users = await self.dbsession.execute(stmt)
+        users = users.scalars().all()
+        coros = [self._email_deactivate(chunk) for chunk in chunk_list(users)]
+        calrets = await asyncio.gather(*coros, return_exceptions=True)
+        exc_raised, exc = contains_exception(calrets)
+        if exc_raised:
+            raise exc
+
+        stmt = select(User).where(User.mail_is_opensend == False)
+        users = await self.dbsession.execute(stmt)
+        users = users.scalars().all()
+        coros = [self._email_account(chunk) for chunk in chunk_list(users)]
+        calrets = await asyncio.gather(*coros, return_exceptions=True)
+        exc_raised, exc = contains_exception(calrets)
+        if exc_raised:
+            raise exc
+
+        stmt = select(User).where(or_(
+            User.mail_is_sshkeyadded == False,
+            User.mail_is_sshkeyremoved == False
+        ))
+        users = await self.dbsession.execute(stmt)
+        users = users.scalars().all()
+        coros = [self._email_key(chunk) for chunk in chunk_list(users)]
+        calrets = await asyncio.gather(*coros, return_exceptions=True)
+        exc_raised, exc = contains_exception(calrets)
+        if exc_raised:
+            raise exc
+
     async def run(self):
         if self.dry_run:
             return await self.run_dry()
 
         try:
-            if self.confopts['ldap']['mode'] == 'project_organisation':
-                users = await self.dbsession.execute(select(User))
-                users = users.scalars().all()
-
-                coros = []
-                for chunk in chunk_list(users):
-                    coros.append(self._email_project_activate(chunk))
-                calrets = await asyncio.gather(*coros, return_exceptions=True)
-                exc_raised, exc = contains_exception(calrets)
-                if exc_raised:
-                    raise exc
-
-                coros = []
-                for chunk in chunk_list(users):
-                    coros.append(self._email_project_deactivate(chunk))
-                calrets = await asyncio.gather(*coros, return_exceptions=True)
-                exc_raised, exc = contains_exception(calrets)
-                if exc_raised:
-                    raise exc
-
-                coros = []
-                for chunk in chunk_list(users):
-                    coros.append(self._email_project_account(chunk))
-                calrets = await asyncio.gather(*coros, return_exceptions=True)
-                exc_raised, exc = contains_exception(calrets)
-                if exc_raised:
-                    raise exc
-
-                await self._email_project_key(users)
-
+            if self.project_org:
+                await self._run_project_org()
             else:
-                stmt = select(User).where(User.mail_is_activated == True)
-                users = await self.dbsession.execute(stmt)
-                users = users.scalars().all()
-
-                coros = []
-                for chunk in chunk_list(users):
-                    coros.append(self._email_activate(chunk))
-                calrets = await asyncio.gather(*coros, return_exceptions=True)
-                exc_raised, exc = contains_exception(calrets)
-                if exc_raised:
-                    raise exc
-
-                stmt = select(User).where(User.mail_is_deactivated == True)
-                users = await self.dbsession.execute(stmt)
-                users = users.scalars().all()
-
-                coros = []
-                for chunk in chunk_list(users):
-                    coros.append(self._email_deactivate(chunk))
-                calrets = await asyncio.gather(*coros, return_exceptions=True)
-                exc_raised, exc = contains_exception(calrets)
-                if exc_raised:
-                    raise exc
-
-                stmt = select(User).where(User.mail_is_opensend == False)
-                users = await self.dbsession.execute(stmt)
-                users = users.scalars().all()
-
-                coros = []
-                for chunk in chunk_list(users):
-                    coros.append(self._email_account(chunk))
-                calrets = await asyncio.gather(*coros, return_exceptions=True)
-                exc_raised, exc = contains_exception(calrets)
-                if exc_raised:
-                    raise exc
-
-                stmt = select(User).where(or_(
-                    User.mail_is_sshkeyadded == False,
-                    User.mail_is_sshkeyremoved == False
-                ))
-                users = await self.dbsession.execute(stmt)
-                users = users.scalars().all()
-
-                coros = []
-                for chunk in chunk_list(users):
-                    coros.append(self._email_key(chunk))
-                calrets = await asyncio.gather(*coros, return_exceptions=True)
-                exc_raised, exc = contains_exception(calrets)
-                if exc_raised:
-                    raise exc
+                await self._run_flat()
 
         except asyncio.CancelledError as exc:
             self.logger.info('* Cancelling emailsend...')

@@ -39,10 +39,35 @@ def flush_sshkeys(logger, session):
         logger.info('No keys without owner found')
 
 
-def reset_all_flags(logger, session):
-    users = session.query(User).all()
+def reset_all_flags(logger, args, session):
+    if args.username:
+        try:
+            users = [session.query(User).filter(User.username_api == args.username).one()]
+        except NoResultFound:
+            logger.error(f"User {args.username} not found")
+            return
+    else:
+        users = session.query(User).all()
 
     for user in users:
+        if args.null:
+            user.mail_is_opensend = False
+            user.mail_is_sshkeyadded = False
+            user.mail_is_sshkeyremoved = False
+            user.mail_is_activated = False
+            user.mail_is_deactivated = False
+            user.mail_name_sshkey = []
+            user.is_deactivated = False
+            user.mail_project_is_sshkeyadded = {}
+            user.mail_project_is_sshkeyremoved = {}
+            user.mail_project_is_activated = {}
+            user.mail_project_is_deactivated = {}
+            user.mail_project_is_opensend = {}
+            user.is_activated_project = {}
+            user.is_deactivated_project = {}
+            logger.info(f"Nullified all mail related flags for {user.username_api}")
+            continue
+
         if not user.mail_is_opensend:
             user.mail_is_opensend = True
             logger.info(f"Reset mail_is_opensend flag to True for {user.username_api}")
@@ -62,6 +87,10 @@ def reset_all_flags(logger, session):
         if user.mail_is_deactivated:
             user.mail_is_deactivated = False
             logger.info(f"Reset mail_is_deactivated flag to False for {user.username_api}")
+
+        if user.is_deactivated:
+            user.is_deactivated = False
+            logger.info(f"Reset is_deactivated flag to False for {user.username_api}")
 
         sshkeyadded_flag = user.mail_project_is_sshkeyadded
         sshkeyadded_changed = False
@@ -122,6 +151,16 @@ def reset_all_flags(logger, session):
         if mail_deactivated_changed:
             user.mail_project_is_deactivated = mail_project_deactivated_flag
             logger.info(f"Reset mail_project_is_deactivated flags to True for {user.username_api}")
+
+        opensend_project_flag = user.mail_project_is_opensend
+        opensend_changed = False
+        for k, v in opensend_project_flag.items():
+            if not v:
+                opensend_project_flag[k] = True
+                opensend_changed = True
+        if opensend_changed:
+            user.mail_project_is_opensend = opensend_project_flag
+            logger.info(f"Reset mail_project_is_opensend flags to True for {user.username_api}")
 
         if len(user.mail_name_sshkey) > 0:
             user.mail_name_sshkey = []
@@ -186,7 +225,7 @@ def user_delete(logger, args, session):
         raise SystemExit(1)
 
 
-def user_update(logger, args, session):
+def user_update(logger, args, session, confopts):
     try:
         user = session.query(User).filter(User.username_api == args.username).one()
 
@@ -230,9 +269,12 @@ def user_update(logger, args, session):
             user.person_mail = args.email
             logger.info(f"Update email with {args.email} for user {args.username}")
 
-        if args.staff:
-            user.is_staff = True
-            logger.info(f"Promote user {args.username} to staff")
+        if args.staff is not None:
+            user.is_staff = args.staff > 0
+            if user.is_staff:
+                logger.info(f"Promote user {args.username} to staff")
+            else:
+                logger.info(f"Demote user {args.username} from staff")
 
         if args.nullgid:
             user.ldap_gid = 0
@@ -315,6 +357,52 @@ def user_update(logger, args, session):
                 if k not in user.mail_name_sshkey:
                     user.mail_name_sshkey.append(k)
                     logger.info(f"Added {k} to mail_name_sshkey for {user.username_api}")
+
+        if args.flagactivatedproject:
+            identifier, raw_value = args.flagactivatedproject
+            if confopts['ldap']['mode'] == 'project_organisation':
+                flag = user.is_activated_project
+                flag[identifier] = raw_value != '0'
+                user.is_activated_project = flag
+                logger.info(f"Set is_activated_project[{identifier}]={flag[identifier]} for {user.username_api}")
+            else:
+                logger.warning("--flag-activated-project requires ldap mode project_organisation")
+
+        if args.flagdeactivatedproject:
+            identifier, raw_value = args.flagdeactivatedproject
+            if confopts['ldap']['mode'] == 'project_organisation':
+                flag = user.is_deactivated_project
+                flag[identifier] = raw_value != '0'
+                user.is_deactivated_project = flag
+                logger.info(f"Set is_deactivated_project[{identifier}]={flag[identifier]} for {user.username_api}")
+            else:
+                logger.warning("--flag-deactivated-project requires ldap mode project_organisation")
+
+        if args.setactivatedproject:
+            identifier = args.setactivatedproject
+            if confopts['ldap']['mode'] == 'project_organisation':
+                is_activated = user.is_activated_project
+                is_activated[identifier] = False
+                user.is_activated_project = is_activated
+                mail_activated = user.mail_project_is_activated
+                mail_activated[identifier] = False
+                user.mail_project_is_activated = mail_activated
+                logger.info(f"Set is_activated_project[{identifier}]=False and mail_project_is_activated[{identifier}]=False for {user.username_api}")
+            else:
+                logger.warning("--set-activated-project requires ldap mode project_organisation")
+
+        if args.setdeactivatedproject:
+            identifier = args.setdeactivatedproject
+            if confopts['ldap']['mode'] == 'project_organisation':
+                is_deactivated = user.is_deactivated_project
+                is_deactivated[identifier] = False
+                user.is_deactivated_project = is_deactivated
+                mail_deactivated = user.mail_project_is_deactivated
+                mail_deactivated[identifier] = False
+                user.mail_project_is_deactivated = mail_deactivated
+                logger.info(f"Set is_deactivated_project[{identifier}]=False and mail_project_is_deactivated[{identifier}]=False for {user.username_api}")
+            else:
+                logger.warning("--set-deactivated-project requires ldap mode project_organisation")
 
     except NoResultFound:
         logger.error(f"User {args.username} not found")
@@ -729,8 +817,6 @@ def main():
                         help='Flush all keys not associated to any user')
     parser.add_argument('--flush-users', dest='flushusers', action='store_true', required=False,
                         help='Flush all users without any keys and projects associated')
-    parser.add_argument('--reset-all-flags', dest='resetallflags', action='store_true', required=False,
-                        help='Reset all mail flags to sent state suppressing pending emails for all users')
     subparsers = parser.add_subparsers(help="User subcommands", dest="command")
 
     parser_create = subparsers.add_parser('create', help='Create user based on passed metadata')
@@ -765,8 +851,8 @@ def main():
                                help='OIB of the user')
     parser_update.add_argument('--uid', dest='uid', type=int, required=False,
                                help='Update UID of the user - be careful')
-    parser_update.add_argument('--staff', dest='staff', action='store_true',
-                               required=False, help='Flag user as staff')
+    parser_update.add_argument('--staff', dest='staff', type=int, metavar='0/1',
+                               required=False, help='Promote (1) or demote (0) user to/from staff')
     parser_update.add_argument('--project', dest='project', type=str,
                                required=False, help='Project identifier that user will be associated to')
     parser_update.add_argument('--flag-dircreated', dest='flagisdircreated', type=int, metavar='0/1',
@@ -793,6 +879,18 @@ def main():
                                required=False, help='Add one or multiple keys to mail_name_sshkey list indicating a key was added')
     parser_update.add_argument('--mailname-sshkey-remove', dest='mailnamesshkeyremove', type=str, nargs='+',
                                required=False, help='Add one or multiple keys to mail_name_sshkey list indicating a key was removed')
+    parser_update.add_argument('--flag-activated-project', dest='flagactivatedproject', type=str, nargs=2,
+                               metavar=('IDENTIFIER', '0/1'), required=False,
+                               help='Set is_activated_project[IDENTIFIER] flag (project_organisation mode only)')
+    parser_update.add_argument('--flag-deactivated-project', dest='flagdeactivatedproject', type=str, nargs=2,
+                               metavar=('IDENTIFIER', '0/1'), required=False,
+                               help='Set is_deactivated_project[IDENTIFIER] flag (project_organisation mode only)')
+    parser_update.add_argument('--set-activated-project', dest='setactivatedproject', type=str,
+                               metavar='IDENTIFIER', required=False,
+                               help='Trigger LDAP activation and reactivation email for given project by setting is_activated_project and mail_project_is_activated to False (project_organisation mode only)')
+    parser_update.add_argument('--set-deactivated-project', dest='setdeactivatedproject', type=str,
+                               metavar='IDENTIFIER', required=False,
+                               help='Trigger LDAP deactivation and deactivation email for given project by setting is_deactivated_project and mail_project_is_deactivated to False (project_organisation mode only)')
 
     parser_delete = subparsers.add_parser('delete', help='Delete user metadata')
     parser_delete.add_argument('--username', dest='username', type=str,
@@ -802,6 +900,18 @@ def main():
                                help='String to match in public key to delete')
     parser_delete.add_argument('--project', dest='project', type=str,
                                required=False, help='Project identifier that user will be removed from')
+
+    parser_justusername = subparsers.add_parser('just-username', help='Print what username would be generated for given first and last name without creating any DB entries')
+    parser_justusername.add_argument('--first', dest='first', type=str,
+                                     required=True, help='First name of user')
+    parser_justusername.add_argument('--last', dest='last', type=str,
+                                     required=True, help='Last name of user')
+
+    parser_resetallflags = subparsers.add_parser('reset-all-flags', help='Reset all mail flags to sent state suppressing pending emails')
+    parser_resetallflags.add_argument('--username', dest='username', type=str,
+                                      required=False, help='Username of specific user to reset flags for')
+    parser_resetallflags.add_argument('--null', dest='null', action='store_true',
+                                      required=False, help='Nullify all mail related flags - set to empty values')
 
     parser_list = subparsers.add_parser('list', help='List users and their metadata')
     parser_list.add_argument('--username', dest='username', type=str,
@@ -816,7 +926,7 @@ def main():
     args = parser.parse_args()
 
     shared = Shared(sys.argv[0])
-    _ = shared.confopts
+    confopts = shared.confopts
     logger = shared.log[sys.argv[0]].get()
     dbsession = shared.dbsession_sync[sys.argv[0]]
 
@@ -825,20 +935,24 @@ def main():
         key_fingerprint = user_key_add(logger, args, dbsession, new_user, args.pubkey)
         logger.info(f"Created user {args.first} {args.last} with key {key_fingerprint} and added to project {args.project}")
     elif args.command == "update":
-        user_update(logger, args, dbsession)
+        user_update(logger, args, dbsession, confopts)
     elif args.command == "delete":
         user_delete(logger, args, dbsession)
     elif args.command == "list":
         user_project_list(logger, args, dbsession)
+    elif args.command == "just-username":
+        first_name = only_alnum(unidecode(args.first))
+        last_name = only_alnum(unidecode(args.last))
+        username = gen_username(first_name, last_name, dbsession)
+        print(username)
+    elif args.command == "reset-all-flags":
+        reset_all_flags(logger, args, dbsession)
 
     if args.flushkeys:
         flush_sshkeys(logger, dbsession)
 
     if args.flushusers:
         flush_users(logger, dbsession)
-
-    if args.resetallflags:
-        reset_all_flags(logger, dbsession)
 
     try:
         dbsession.commit()
