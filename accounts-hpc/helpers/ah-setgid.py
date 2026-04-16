@@ -4,14 +4,14 @@ import argparse
 import os
 import stat
 
-from accounts_hpc.shared import Shared  # type: ignore
+from accounts_hpc.shared import shared, init as init_shared  # type: ignore
 
 
 def main():
     parser = argparse.ArgumentParser(description="Set setgid bit on all subdirectories within a specified path")
     parser.add_argument('--path', required=True, help="Path to the directory containing group subdirectories")
-    shared = Shared("cron-ah-setgid", False)
-    logger = shared.log["cron-ah-setgid"].get()
+    init_shared("cron-ah-setgid")
+    logger = shared.logger
 
     args = parser.parse_args()
 

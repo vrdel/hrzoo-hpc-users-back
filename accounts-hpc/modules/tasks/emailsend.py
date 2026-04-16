@@ -1,4 +1,4 @@
-from accounts_hpc.shared import Shared  # type: ignore
+from accounts_hpc.shared import shared  # type: ignore
 from accounts_hpc.db import User  # type: ignore
 from accounts_hpc.emailsend import EmailSend  # type: ignore
 from accounts_hpc.exceptions import AhTaskError
@@ -12,11 +12,10 @@ import sys
 
 
 class SendEmail(object):
-    def __init__(self, caller, args, daemon=False, dry_run=False):
-        shared = Shared(caller, daemon)
+    def __init__(self, args, daemon=False, dry_run=False):
         self.confopts = shared.confopts
-        self.logger = shared.log[caller].get()
-        self.dbsession = shared.dbsession[caller]
+        self.logger = shared.logger
+        self.dbsession = shared.dbsession
         self.args = args
         self.daemon = daemon
         self.dry_run = dry_run

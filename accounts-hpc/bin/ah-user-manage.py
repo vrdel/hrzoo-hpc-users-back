@@ -3,7 +3,7 @@
 import sys
 import argparse
 
-from accounts_hpc.shared import Shared  # type: ignore
+from accounts_hpc.shared import shared, init as init_shared  # type: ignore
 from accounts_hpc.db import Base, Project, User, SshKey  # type: ignore
 from accounts_hpc.utils import only_alnum, get_ssh_key_fingerprint, gen_username  # type: ignore
 
@@ -925,10 +925,10 @@ def main():
 
     args = parser.parse_args()
 
-    shared = Shared(sys.argv[0])
+    init_shared(sys.argv[0])
     confopts = shared.confopts
-    logger = shared.log[sys.argv[0]].get()
-    dbsession = shared.dbsession_sync[sys.argv[0]]
+    logger = shared.logger
+    dbsession = shared.dbsession_sync
 
     if args.command == "create":
         new_user = user_project_add(logger, args, dbsession)

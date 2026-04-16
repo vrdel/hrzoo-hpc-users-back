@@ -1,4 +1,4 @@
-from accounts_hpc.shared import Shared  # type: ignore
+from accounts_hpc.shared import shared  # type: ignore
 from accounts_hpc.db import Base, Project, User, SshKey  # type: ignore
 from accounts_hpc.exceptions import AhTaskError
 from accounts_hpc.utils import contains_exception
@@ -14,12 +14,11 @@ import json
 
 
 class LdapUpdate(object):
-    def __init__(self, caller, args, daemon=False, dry_run=False):
-        shared = Shared(caller, daemon)
+    def __init__(self, args, daemon=False, dry_run=False):
         self.confopts = shared.confopts
         self.daemon = daemon
-        self.logger = shared.log[caller].get()
-        self.dbsession = shared.dbsession[caller]
+        self.logger = shared.logger
+        self.dbsession = shared.dbsession
         self.args = args
         self.dry_run = dry_run
         self.project_org = self.confopts['ldap']['mode'].lower() == 'project_organisation'.lower()
