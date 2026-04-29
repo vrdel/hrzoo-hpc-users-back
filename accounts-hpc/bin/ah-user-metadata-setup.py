@@ -5,6 +5,7 @@ import argparse
 import sys
 
 from accounts_hpc.tasks.usermetadata import UserMetadata  # type: ignore
+from accounts_hpc.shared import init as init_shared
 
 
 async def main():
@@ -12,7 +13,9 @@ async def main():
     parser.add_argument('--verbose', dest='verbose', action='store_true', help='Report every step')
     args = parser.parse_args()
 
-    await UserMetadata(sys.argv[0], args).run()
+    init_shared(sys.argv[0])
+
+    await UserMetadata(args).run()
 
 
 if __name__ == '__main__':

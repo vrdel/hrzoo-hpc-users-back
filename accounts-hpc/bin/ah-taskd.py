@@ -16,7 +16,7 @@ from accounts_hpc.tasks.ldapupdate import LdapUpdate
 from accounts_hpc.tasks.createdirectories import DirectoriesCreate
 from accounts_hpc.tasks.emailsend import SendEmail
 from accounts_hpc.tasks.fairshare import FairshareUpdate
-from accounts_hpc.shared import Shared
+from accounts_hpc.shared import shared, init as init_shared
 from accounts_hpc.exceptions import AhTaskError
 from accounts_hpc.utils import contains_exception
 
@@ -31,8 +31,8 @@ def parse_args():
 
 CALLER_NAME = "ah-taskd"
 args = parse_args()
-shared = Shared(CALLER_NAME, daemon=True, dry_run=args.dry_run)
-logger = shared.log[CALLER_NAME].get()
+init_shared(CALLER_NAME, daemon=True, dry_run=args.dry_run)
+logger = shared.logger
 
 
 class FakeArgs(object):
@@ -105,7 +105,7 @@ class AhDaemon(object):
 
     async def _init_inmemory_db(self):
         from accounts_hpc.db import Base  # type: ignore
-        engine = shared._dry_run_engine
+        engine = shared._async_engine
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
 
@@ -146,7 +146,7 @@ class AhDaemon(object):
                     logger.info("> Calling apisync task")
                     start = timeit.default_timer()
                     self.task_apisync = asyncio.create_task(
-                        ApiSync(f'{CALLER_NAME}.apisync', self.fakeargs, daemon=True).run()
+                        ApiSync(self.fakeargs, daemon=True).run()
                     )
                     await self.task_apisync
                     end = timeit.default_timer()
@@ -156,7 +156,7 @@ class AhDaemon(object):
                     logger.info("> Calling usermetadata task")
                     start = timeit.default_timer()
                     self.task_usermetadata = asyncio.create_task(
-                        UserMetadata(f'{CALLER_NAME}.usermetadata', self.fakeargs, daemon=True, dry_run=self.dry_run).run()
+                        UserMetadata(self.fakeargs, daemon=True, dry_run=self.dry_run).run()
                     )
                     await self.task_usermetadata
                     end = timeit.default_timer()
@@ -166,7 +166,7 @@ class AhDaemon(object):
                     logger.info("> Calling ldapupdate task")
                     start = timeit.default_timer()
                     self.task_ldapupdate = asyncio.create_task(
-                        LdapUpdate(f'{CALLER_NAME}.ldapupdate', self.fakeargs, daemon=True, dry_run=self.dry_run).run()
+                        LdapUpdate(self.fakeargs, daemon=True, dry_run=self.dry_run).run()
                     )
                     await self.task_ldapupdate
                     end = timeit.default_timer()
@@ -175,19 +175,19 @@ class AhDaemon(object):
                 scheduled = []
                 if 'fairshare' in self.confopts['tasks']['call_list']:
                     self.task_fairshare = asyncio.create_task(
-                        FairshareUpdate(f'{CALLER_NAME}.fairshare', self.fakeargs, daemon=True, dry_run=self.dry_run).run()
+                        FairshareUpdate(self.fakeargs, daemon=True, dry_run=self.dry_run).run()
                     )
                     scheduled.append('fairshare')
 
                 if 'createdirectories' in self.confopts['tasks']['call_list']:
                     self.task_createdirectories = asyncio.create_task(
-                        DirectoriesCreate(f'{CALLER_NAME}.createdirectories', self.fakeargs, daemon=True, dry_run=self.dry_run).run()
+                        DirectoriesCreate(self.fakeargs, daemon=True, dry_run=self.dry_run).run()
                     )
                     scheduled.append('createdirectories')
 
                 if 'emailsend' in self.confopts['tasks']['call_list']:
                     self.task_emailsend = asyncio.create_task(
-                        SendEmail(f'{CALLER_NAME}.emailsend', self.fakeargs, daemon=True, dry_run=self.dry_run).run()
+                        SendEmail(self.fakeargs, daemon=True, dry_run=self.dry_run).run()
                     )
                     scheduled.append('emailsend')
 
