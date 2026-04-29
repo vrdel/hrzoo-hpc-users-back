@@ -328,6 +328,14 @@ def user_update(logger, args, session, confopts):
                 user.mail_name_sshkey = []
             logger.info(f"Set mail_is_sshkeyadded={user.mail_is_sshkeyadded} for {user.username_api}")
 
+        if args.flagmailactivated is not None:
+            user.mail_is_activated = args.flagmailactivated > 0
+            logger.info(f"Set mail_is_activated={user.mail_is_activated} for {user.username_api}")
+
+        if args.flagmaildeactivated is not None:
+            user.mail_is_deactivated = args.flagmaildeactivated > 0
+            logger.info(f"Set mail_is_deactivated={user.mail_is_deactivated} for {user.username_api}")
+
         if args.flagisactive is not None:
             user.is_active = args.flagisactive > 0
             logger.info(f"Set is_active={user.is_active} for {user.username_api}")
@@ -865,6 +873,10 @@ def main():
                                required=False, help='Set flag mail_is_sshkeyadded')
     parser_update.add_argument('--flag-opensend', dest='flagisopensend', type=int, metavar='0/1',
                                required=False, help='Set flag mail_is_opensend')
+    parser_update.add_argument('--flag-mail-activated', dest='flagmailactivated', type=int, metavar='0/1',
+                               required=False, help='Set flag mail_is_activated')
+    parser_update.add_argument('--flag-mail-deactivated', dest='flagmaildeactivated', type=int, metavar='0/1',
+                               required=False, help='Set flag mail_is_deactivated')
     parser_update.add_argument('--type-create', dest='typecreate', type=str, metavar='api/manual',
                                required=False, help='Set type_create')
     parser_update.add_argument('--type-person', dest='typeperson', type=str, metavar='local/foreign',
