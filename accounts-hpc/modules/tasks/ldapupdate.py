@@ -176,7 +176,7 @@ class LdapUpdate(object):
         # explicitly set GID here for reactivated in separate clause
         # as ldap_gid is previously set in usermetadata task so previous
         # does not apply
-        if target_gid and target_gid != user.ldap_gid and user.is_deactivated and not user.is_staff:
+        if target_gid and user.is_deactivated and not user.is_staff:
             ldap_user[0].change_attribute('gidNumber', bonsai.LDAPModOp.REPLACE, target_gid)
             await ldap_user[0].modify()
             self.logger.info(f"Re-activated user {user.person_uniqueid} gidNumber updated to {target_gid}")
