@@ -5,13 +5,16 @@ import asyncio
 import argparse
 
 from accounts_hpc.tasks.emailsend import SendEmail
+from accounts_hpc.shared import init as init_shared
 
 
 async def main():
     parser = argparse.ArgumentParser(description="""Send email for newly opened user and added SSH keys""")
     args = parser.parse_args()
 
-    await SendEmail(sys.argv[0], args).run()
+    init_shared(sys.argv[0])
+
+    await SendEmail(args).run()
 
 
 if __name__ == '__main__':

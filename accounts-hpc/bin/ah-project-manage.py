@@ -227,7 +227,7 @@ def main():
 
     args = parser.parse_args()
 
-    init_shared(sys.argv[0])
+    shared = Shared(sys.argv[0])
     confopts = shared.confopts
     logger = shared.log[sys.argv[0]].get()
     dbsession = shared.dbsession_sync[sys.argv[0]]
