@@ -1,69 +1,101 @@
+from sqlalchemy import create_engine
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import StaticPool
+
 from accounts_hpc.config import parse_config  # type: ignore
 from accounts_hpc.log import Logger  # type: ignore
-from sqlalchemy.ext.asyncio import create_async_engine
-from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy import create_engine
-from sqlalchemy.pool import StaticPool
 
 
 class Shared(object):
     """
-       Singleton object used to store configuration options and some runtime
-       options that need to be shared throughout the code
+       Global runtime object used to store configuration, loggers, and
+       database sessions that need to be shared throughout the code.
     """
     def __new__(cls, *args, **kwargs):
-        if getattr(cls, 'sharedobj', False):
-            return cls.sharedobj
-        else:
-            setattr(cls, 'sharedobj', object.__new__(cls))
-            return cls.sharedobj
+        if not getattr(cls, '_globalobj', None):
+            cls._globalobj = object.__new__(cls)
+        return cls._globalobj
 
-    def __init__(self, caller, daemon=False, dry_run=False):
-        if not getattr(self.__class__, 'log', False):
-            self.__class__.log = dict()
+    def __init__(self, caller=None, daemon=False, dry_run=False):
+        if not getattr(self, '_initialized', False):
+            self.reset()
+            self._initialized = True
 
-        if not getattr(self.__class__, 'confopts', False):
-            confopts = parse_config()
-            self.__class__.confopts = confopts
+        if caller is not None:
+            self.init(caller, daemon=daemon, dry_run=dry_run)
+
+    def reset(self):
+        self.confopts = None
+        self.log = dict()
+        self.dbsession = dict()
+        self.dbsession_sync = dict()
+        self.dry_run = False
+        self._dry_run_engine = None
+        self._dry_run_engine_sync = None
+        self.caller = None
+        self.logger = None
+
+    def init(self, caller, daemon=False, dry_run=False):
+        self.caller = caller
+
+        if self.confopts is None:
+            self.confopts = parse_config()
 
         if dry_run:
-            self.__class__.dry_run = True
+            self.dry_run = True
 
-        if caller not in self.__class__.log.keys():
-            conf_loggers = self.__class__.confopts.get('general', None)
+        if caller not in self.log.keys():
+            conf_loggers = self.confopts.get('general', None)
             if conf_loggers:
                 conf_loggers = conf_loggers.get('loggers', None)
-            self.__class__.log[caller] = Logger(caller, daemon, conf_loggers)
+            self.log[caller] = Logger(caller, daemon, conf_loggers)
 
-        if not getattr(self.__class__, 'dbsession', False):
-            self.__class__.dbsession = dict()
-        if caller not in self.__class__.dbsession:
-            if getattr(self.__class__, 'dry_run', False):
-                if not getattr(self.__class__, '_dry_run_engine', False):
-                    self.__class__._dry_run_engine = create_async_engine(
+        if caller not in self.dbsession:
+            if self.dry_run:
+                if self._dry_run_engine is None:
+                    self._dry_run_engine = create_async_engine(
                         "sqlite+aiosqlite://",
                         connect_args={"check_same_thread": False},
                         poolclass=StaticPool
                     )
-                engine = self.__class__._dry_run_engine
+                engine = self._dry_run_engine
             else:
-                engine = create_async_engine("sqlite+aiosqlite:///{}".format(self.__class__.confopts['db']['path']))
-            async_session = sessionmaker(bind=engine, expire_on_commit=False, class_=AsyncSession)
-            self.__class__.dbsession[caller] = async_session()
+                engine = create_async_engine(
+                    "sqlite+aiosqlite:///{}".format(self.confopts['db']['path'])
+                )
+            async_session = sessionmaker(
+                bind=engine, expire_on_commit=False, class_=AsyncSession
+            )
+            self.dbsession[caller] = async_session()
 
-        if not getattr(self.__class__, 'dbsession_sync', False):
-            self.__class__.dbsession_sync = dict()
-        if caller not in self.__class__.dbsession_sync:
-            if getattr(self.__class__, 'dry_run', False):
-                if not getattr(self.__class__, '_dry_run_engine_sync', False):
-                    self.__class__._dry_run_engine_sync = create_engine(
+        if caller not in self.dbsession_sync:
+            if self.dry_run:
+                if self._dry_run_engine_sync is None:
+                    self._dry_run_engine_sync = create_engine(
                         "sqlite://",
                         connect_args={"check_same_thread": False},
                         poolclass=StaticPool
                     )
-                engine = self.__class__._dry_run_engine_sync
+                engine = self._dry_run_engine_sync
             else:
-                engine = create_engine("sqlite:///{}".format(self.__class__.confopts['db']['path']))
+                engine = create_engine(
+                    "sqlite:///{}".format(self.confopts['db']['path'])
+                )
             Session = sessionmaker(engine)
-            self.__class__.dbsession_sync[caller] = Session()
+            self.dbsession_sync[caller] = Session()
+
+        self.logger = self.log[caller].get()
+        return self
+
+
+shared = Shared()
+
+
+def init(caller, daemon=False, dry_run=False):
+    return shared.init(caller, daemon=daemon, dry_run=dry_run)
+
+
+def reset():
+    shared.reset()
