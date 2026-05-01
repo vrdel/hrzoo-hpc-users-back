@@ -1,5 +1,5 @@
 from accounts_hpc.db import Base, Project, User, SshKey  # type: ignore
-from accounts_hpc.shared import shared  # type: ignore
+from accounts_hpc.shared import init as init_shared, shared
 
 import sys
 import os
@@ -18,10 +18,11 @@ from sqlalchemy.exc import NoResultFound
 
 
 class DirectoriesCreate(object):
-    def __init__(self, args, daemon=False, dry_run=False):
+    def __init__(self, caller, args, daemon=False, dry_run=False):
+        init_shared(caller, daemon)
         self.confopts = shared.confopts
-        self.logger = shared.logger
-        self.dbsession = shared.dbsession
+        self.logger = shared.log[caller].get()
+        self.dbsession = shared.dbsession[caller]
         self.args = args
         self.daemon = daemon
         self.dry_run = dry_run

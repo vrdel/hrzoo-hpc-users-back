@@ -5,7 +5,7 @@ import argparse
 import asyncio
 
 from accounts_hpc.db import Base  # type: ignore
-from accounts_hpc.shared import shared, init as init_shared  # type: ignore
+from accounts_hpc.shared import init as init_shared, shared
 
 from alembic.config import Config
 from alembic import command

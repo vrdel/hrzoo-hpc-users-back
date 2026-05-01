@@ -1,5 +1,5 @@
 from accounts_hpc.db import User  # type: ignore
-from accounts_hpc.shared import shared  # type: ignore
+from accounts_hpc.shared import init as init_shared, shared
 from typing import Any
 from unidecode import unidecode
 
@@ -33,9 +33,10 @@ def gen_username(first, last, session):
 
 
 def chunk_list(lst):
-    chunk = shared.confopts['tasks']['db_chunks']
-    for i in range(0, len(lst), chunk):
-        yield lst[i:i + chunk]
+    init_shared('utils.chunk_list()')
+
+    for i in range(0, len(lst), shared.confopts['tasks']['db_chunks']):
+        yield lst[i:i + shared.confopts['tasks']['db_chunks']]
 
 
 def get_ssh_key_fingerprint(ssh_key):
