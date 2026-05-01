@@ -7,7 +7,7 @@ from accounts_hpc.config import parse_config  # type: ignore
 from accounts_hpc.log import Logger  # type: ignore
 from accounts_hpc.db import Base, Project, User, SshKey  # type: ignore
 from accounts_hpc.utils import only_alnum, all_none, contains_exception, get_ssh_key_fingerprint
-from accounts_hpc.shared import Shared  # type: ignore
+from accounts_hpc.shared import init as init_shared, shared
 
 from rich import print
 from rich.columns import Columns
@@ -227,7 +227,7 @@ def main():
 
     args = parser.parse_args()
 
-    shared = Shared(sys.argv[0])
+    init_shared(sys.argv[0])
     confopts = shared.confopts
     logger = shared.log[sys.argv[0]].get()
     dbsession = shared.dbsession_sync[sys.argv[0]]

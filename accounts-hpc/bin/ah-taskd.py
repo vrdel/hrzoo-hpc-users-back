@@ -16,7 +16,7 @@ from accounts_hpc.tasks.ldapupdate import LdapUpdate
 from accounts_hpc.tasks.createdirectories import DirectoriesCreate
 from accounts_hpc.tasks.emailsend import SendEmail
 from accounts_hpc.tasks.fairshare import FairshareUpdate
-from accounts_hpc.shared import Shared
+from accounts_hpc.shared import init as init_shared, shared
 from accounts_hpc.exceptions import AhTaskError
 from accounts_hpc.utils import contains_exception
 
@@ -31,7 +31,7 @@ def parse_args():
 
 CALLER_NAME = "ah-taskd"
 args = parse_args()
-shared = Shared(CALLER_NAME, daemon=True, dry_run=args.dry_run)
+init_shared(CALLER_NAME, daemon=True, dry_run=args.dry_run)
 logger = shared.log[CALLER_NAME].get()
 
 

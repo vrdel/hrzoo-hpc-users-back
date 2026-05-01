@@ -1,5 +1,5 @@
 from accounts_hpc.db import User  # type: ignore
-from accounts_hpc.shared import Shared  # type: ignore
+from accounts_hpc.shared import init as init_shared, shared
 from typing import Any
 from unidecode import unidecode
 
@@ -33,7 +33,7 @@ def gen_username(first, last, session):
 
 
 def chunk_list(lst):
-    shared = Shared('utils.chunk_list()')
+    init_shared('utils.chunk_list()')
 
     for i in range(0, len(lst), shared.confopts['tasks']['db_chunks']):
         yield lst[i:i + shared.confopts['tasks']['db_chunks']]
