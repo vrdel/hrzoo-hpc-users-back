@@ -8,7 +8,7 @@ import os
 from sqlalchemy import select
 
 from accounts_hpc.db import Project  # type: ignore
-from accounts_hpc.shared import Shared  # type: ignore
+from accounts_hpc.shared import init as init_shared, shared
 from accounts_hpc.exceptions import AhTaskError
 
 
@@ -39,7 +39,7 @@ async def update_file(fsobj, projids, nlines):
 
 class FairshareUpdate(object):
     def __init__(self, caller, args, daemon=False, dry_run=False):
-        shared = Shared(caller, daemon)
+        init_shared(caller, daemon)
         self.confopts = shared.confopts
         self.logger = shared.log[caller].get()
         self.dbsession = shared.dbsession[caller]

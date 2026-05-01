@@ -8,7 +8,7 @@ from accounts_hpc.db import Base, Project, User, SshKey  # type: ignore
 from accounts_hpc.httpconn import SessionWithRetry
 from accounts_hpc.exceptions import SyncHttpError
 from accounts_hpc.utils import only_alnum, all_none, contains_exception, check_error_statuses
-from accounts_hpc.shared import Shared  # type: ignore
+from accounts_hpc.shared import init as init_shared, shared
 
 from sqlalchemy import and_
 from sqlalchemy import update
@@ -29,7 +29,7 @@ def replace_projectsapi_fields(projectsfields, userproject):
 
 class ApiSync(object):
     def __init__(self, caller, args, daemon=False):
-        shared = Shared(caller, daemon)
+        init_shared(caller, daemon)
         self.confopts = shared.confopts
         self.logger = shared.log[caller].get()
         self.dbsession = shared.dbsession[caller]

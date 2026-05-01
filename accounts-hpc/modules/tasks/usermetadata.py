@@ -3,7 +3,7 @@ from sqlalchemy.exc import NoResultFound
 from sqlalchemy import select
 
 from accounts_hpc.db import Project, User  # type: ignore
-from accounts_hpc.shared import Shared  # type: ignore
+from accounts_hpc.shared import init as init_shared, shared
 
 import json
 import aiofiles
@@ -15,7 +15,7 @@ class UserMetadata(object):
         Initial set of user's UID and GID (when both or one is 0)
     """
     def __init__(self, caller, args, daemon=False, dry_run=False):
-        shared = Shared(caller, daemon)
+        init_shared(caller, daemon)
         self.confopts = shared.confopts
         self.confopts = shared.confopts
         self.logger = shared.log[caller].get()

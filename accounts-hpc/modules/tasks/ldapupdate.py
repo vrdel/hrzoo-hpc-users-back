@@ -1,4 +1,4 @@
-from accounts_hpc.shared import Shared  # type: ignore
+from accounts_hpc.shared import init as init_shared, shared
 from accounts_hpc.db import Base, Project, User, SshKey  # type: ignore
 from accounts_hpc.exceptions import AhTaskError
 from accounts_hpc.utils import contains_exception
@@ -15,7 +15,7 @@ import json
 
 class LdapUpdate(object):
     def __init__(self, caller, args, daemon=False, dry_run=False):
-        shared = Shared(caller, daemon)
+        init_shared(caller, daemon)
         self.confopts = shared.confopts
         self.daemon = daemon
         self.logger = shared.log[caller].get()
